@@ -1,13 +1,13 @@
-from snes import SFCAddress, SFCAddressType
-from script import Table
+from RetroTool.snes import SFCAddress, SFCAddressType
+from RetroTool.script import Table
 
 """
 Little Master 3
-TODO: Find more pointer locations.
-      Extract old script for comparison.
-      Work on script. 
-      Work on font.
+TODO: Work on font.
+      Finish event script dump if possible.
       VWF?
+      Test inserting current script.
+      Rewrite DTE script/Table for event script use.
 """
 
 # for adding length for pointer table features
