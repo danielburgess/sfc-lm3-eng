@@ -6,8 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/unit-attacks.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/unit-attacks.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/unit-weapon.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/unit-weapon.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/font.png" beforeDir="false" afterPath="$PROJECT_DIR$/font/font.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/font.psd" beforeDir="false" afterPath="$PROJECT_DIR$/font/font.psd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,21 +31,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\dburg\PycharmProjects\sfc-lm3-eng\font" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -61,7 +67,8 @@
       <option name="presentableId" value="Default" />
       <updated>1704165977079</updated>
       <workItem from="1704165986437" duration="105000" />
-      <workItem from="1704166108874" duration="2589000" />
+      <workItem from="1704166108874" duration="3264000" />
+      <workItem from="1704298150901" duration="4620000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -71,7 +78,15 @@
       <option name="project" value="LOCAL" />
       <updated>1704167420661</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="A few fixes.">
+      <option name="closed" value="true" />
+      <created>1704168737485</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1704168737485</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -93,6 +108,17 @@
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
     <MESSAGE value="Small todo change." />
-    <option name="LAST_COMMIT_MESSAGE" value="Small todo change." />
+    <MESSAGE value="A few fixes." />
+    <option name="LAST_COMMIT_MESSAGE" value="A few fixes." />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/lm3.py</url>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

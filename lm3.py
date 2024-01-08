@@ -1,8 +1,9 @@
 from RetroTool.snes import SFCAddress, SFCAddressType
 from RetroTool.script import Table
+from PIL import Image
 
 """
-Little Master 3
+Little Master 3 English Script Dumper and Inserter
 TODO: Work on font.
       Finish event script dump if possible.
       VWF?
@@ -246,6 +247,7 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
     ptr_data['ptr_list'] = pointer_list
     return ptr_data
 
+
 def clean_keys(in_dict):
     allowed = ['table_name', 'out_folder', 'bin_data', 'data_pos', 'data_len',
                'block_len', 'output', 'table', 'input_filename', 'block_eval']
@@ -303,3 +305,37 @@ def data_extract(input_filename: str, table_name: str, out_folder: str, data_pos
         if table:  # if we get a table, output the text representation
             tbl.dump_script(f'./{out_folder}/{table_name}.txt', bin_list)
             print(f'Saved {hex(tbl_index)}({tbl_index}) blocks of data from table: {table_name}.')
+
+
+def get_character_widths(image_path):
+    # Open the image
+    img = Image.open(image_path)
+
+    # Define tile size
+    tile_width = 8
+    tile_height = 16
+
+    # Image dimensions
+    img_width, img_height = img.size
+
+    # Initialize a list to store the character widths
+    character_widths = []
+
+    # Loop through the image in 8x16 pixel blocks
+    for x in range(1, img_width, tile_width):
+        # Crop the current 8x16 pixel block
+        tile = img.crop((x, 0, x + tile_width, tile_height))
+
+        # Check if the tile is empty (all pixels are white)
+        if tile.getextrema() == (255, 255):
+            character_widths.append(5)  # Empty space is 5
+        else:
+            # Find the leftmost non-white pixel in the tile
+            leftmost_pixel = next((i for i, value in enumerate(tile.getdata()) if value < 255), None)
+
+            # Calculate the character width in pixels
+            character_width = leftmost_pixel % tile_width
+
+            character_widths.append(character_width)
+
+    return character_widths
