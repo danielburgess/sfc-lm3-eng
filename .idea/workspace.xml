@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Added a routine that gets the character widths for each font tile.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/font.png" beforeDir="false" afterPath="$PROJECT_DIR$/font/font.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/font.psd" beforeDir="false" afterPath="$PROJECT_DIR$/font/font.psd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/unit-weapon.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/unit-weapon.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +67,8 @@
       <updated>1704165977079</updated>
       <workItem from="1704165986437" duration="105000" />
       <workItem from="1704166108874" duration="3264000" />
-      <workItem from="1704298150901" duration="4620000" />
+      <workItem from="1704298150901" duration="8042000" />
+      <workItem from="1705786350724" duration="745000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -86,7 +86,15 @@
       <option name="project" value="LOCAL" />
       <updated>1704168737485</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Added a routine that gets the character widths for each font tile.">
+      <option name="closed" value="true" />
+      <created>1704728405432</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1704728405432</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -109,7 +117,8 @@
     </ignored-roots>
     <MESSAGE value="Small todo change." />
     <MESSAGE value="A few fixes." />
-    <option name="LAST_COMMIT_MESSAGE" value="A few fixes." />
+    <MESSAGE value="Added a routine that gets the character widths for each font tile." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added a routine that gets the character widths for each font tile." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
