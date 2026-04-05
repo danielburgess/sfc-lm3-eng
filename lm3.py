@@ -27,10 +27,11 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'tbl_len': 0x400,
             'table_name': 'script'
         },
-        {   # secondary script data
+        {   # secondary script data (event scripts with embedded dialog)
             'ptr_tbl_pos': 0x50101,
             'tbl_len': 0x400,
-            'table_name': 'script_ext'
+            'table_name': 'script_ext',
+            'event_script': True
         },
         {   # Scenario description
             'ptr_tbl_pos': 0x111EE3,
@@ -83,6 +84,46 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             ],
             'table_name': 'unit-equipment'
         },
+        {   # supplementary character dialog (Charlie, Momo, etc.)
+            'ptr_tbl_pos': 0x1B8000,
+            'tbl_len': 0x188,
+            'table_name': 'dialog-2'
+        },
+        {   # supplementary character dialog (Hauser, Weiss scenes)
+            'ptr_tbl_pos': 0x1B8100,
+            'tbl_len': 0x88,
+            'table_name': 'dialog-3'
+        },
+        {   # short dialog scenes (Yago)
+            'ptr_tbl_pos': 0x1B8200,
+            'tbl_len': 0x26,
+            'table_name': 'dialog-4'
+        },
+        {   # supplementary dialog (recruitment scenes, etc.)
+            'ptr_tbl_pos': 0x1B8300,
+            'tbl_len': 0xD0,
+            'table_name': 'dialog-5'
+        },
+        {   # quiz/trivia questions
+            'ptr_tbl_pos': 0x030800,
+            'tbl_len': 0xC0,
+            'table_name': 'quiz-text'
+        },
+        {   # field NPC messages
+            'ptr_tbl_pos': 0x01BD00,
+            'tbl_len': 0x42,
+            'table_name': 'field-msg'
+        },
+        {   # battle menu prompts
+            'ptr_tbl_pos': 0x013100,
+            'tbl_len': 0x24,
+            'table_name': 'battle-menu'
+        },
+        {   # battle messages (spell/item use, status effects)
+            'ptr_tbl_pos': 0x013200,
+            'tbl_len': 0x70,
+            'table_name': 'battle-msg'
+        },
     ]
 
     # 0x1456B - Unit Attribute Value Pointer (0x3 length) - 2 byte height, weight, 1 byte age
@@ -134,7 +175,8 @@ def dump_bin(folder_path: str, bin_filename: str, data: list):
 
 def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_loc: int, ptr_tbl_len: int = None,
                     ptr_bytes: int = 2, ptr_bank: int = None, ptr_data: dict = None, output=True, table: str = None,
-                    out_addr_type: int = 4, ptr_addr_type: int = SFCAddressType.LOROM1, ptr_format: int = 0):
+                    out_addr_type: int = 4, ptr_addr_type: int = SFCAddressType.LOROM1, ptr_format: int = 0,
+                    **kwargs):
     """
     Extract data using the pointer table. Extract only binary data in separate files otherwise.
     :param table_name: folder name for the exported data
@@ -240,7 +282,10 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
     if output:
         Table.export_csv(table_folder, pointer_list)
         if table:  # if we get a table, output the text representation
-            tbl.dump_script(f'./{out_folder}/{table_name}.txt', bin_list)
+            if kwargs.get('event_script', False):
+                dump_event_script(f'./{out_folder}/{table_name}.txt', bin_list, tbl)
+            else:
+                tbl.dump_script(f'./{out_folder}/{table_name}.txt', bin_list)
             print(f'Saved {hex(ptr_index)}({ptr_index}) blocks of data from table: {table_name}.')
 
     ptr_data['bin_list'] = bin_list
@@ -305,6 +350,205 @@ def data_extract(input_filename: str, table_name: str, out_folder: str, data_pos
         if table:  # if we get a table, output the text representation
             tbl.dump_script(f'./{out_folder}/{table_name}.txt', bin_list)
             print(f'Saved {hex(tbl_index)}({tbl_index}) blocks of data from table: {table_name}.')
+
+
+def interpret_event_script(bin_data, tbl):
+    """
+    Interpret binary data that mixes event bytecode with embedded text.
+    Event bytecode is wrapped in {XX} notation, text is decoded through the table.
+
+    Detection strategy:
+    - Multi-byte FF-prefix sequences are always decoded as control codes
+    - Once a text marker is found ([msg], [special], or 0x92 「), switch to text mode
+    - In text mode, decode through the table normally
+    - Text mode ends at 0x00 (end) or when data runs out
+    - Before any text marker, output bytes as {XX} raw hex
+    - Pure text entries (most bytes >= 0x20) are decoded entirely as text
+
+    :param bin_data: list of byte values
+    :param tbl: Table instance for character lookups
+    :return: string representation
+    """
+    if not bin_data:
+        return ''
+
+    # Multi-byte control code sequences (FF-prefix) that we always recognize
+    ff_controls = {
+        (0xFF, 0x7F, 0x02): '[msg]\n',
+        (0xFF, 0xFD, 0x02): '[special]',
+        (0xFF, 0xFF, 0x00): '[cls]\n',
+        (0xFF, 0xFB, 0x00): '[white]',
+        (0xFF, 0xFB, 0x01): '[pink]',
+    }
+
+    # Single-byte text markers and controls
+    text_controls = {
+        0x00: '[end]\n',
+        0x09: '[u]',
+        0x0A: '[d]',
+        0x10: '[P]',
+        0x11: '[R]',
+        0x12: '[S]',
+        0x13: '[E]',
+        0x14: '[K]',
+        0x15: '[A]',
+        0x16: '[G]',
+        0x17: '[Y]',
+        0x1B: '!!',
+        0x1C: '...',
+        0x1E: '[cry]',
+        0x1F: '[luv]',
+        0x90: '[nl]\n',
+        0x91: '[pause][cls]\n',  # acts as 。 in text but functionally pause+cls
+        0x92: '「',
+        0x93: '」',
+    }
+
+    # Determine if this entry is primarily text or event bytecode.
+    # Strategy: find where text begins by looking for structural markers.
+    has_text_markers = any(b in (0x90, 0x91, 0x92, 0x93) for b in bin_data)
+
+    # Find first text marker position (FF7F02 [msg] or FFFD02 [special])
+    msg_pos = -1
+    for i in range(len(bin_data) - 2):
+        if bin_data[i] == 0xFF:
+            triple = (bin_data[i], bin_data[i+1], bin_data[i+2])
+            if triple in [(0xFF, 0x7F, 0x02), (0xFF, 0xFD, 0x02)]:
+                msg_pos = i
+                break
+
+    # Find [P] (0x10) that may precede the [msg]/[special]
+    p_pos = -1
+    if msg_pos > 0:
+        for i in range(msg_pos - 1, -1, -1):
+            if bin_data[i] == 0x10:
+                p_pos = i
+                break
+
+    # Determine text start position:
+    # - If [P][msg]/[special] found: text starts at [P], everything before is event code
+    # - If no [msg]/[special] but has text markers (0x90-0x93): treat as pure text
+    # - If no text markers at all: treat as pure event bytecode
+    if msg_pos >= 0:
+        event_end = p_pos if p_pos >= 0 else msg_pos
+        is_text_entry = (event_end == 0)  # text entry only if text starts at byte 0
+    elif has_text_markers:
+        event_end = 0
+        is_text_entry = True
+    else:
+        event_end = 0
+        is_text_entry = False
+
+    result = ''
+    i = 0
+    in_text_mode = is_text_entry
+
+    while i < len(bin_data):
+        # Switch to text mode when we reach the text portion
+        if not in_text_mode and i >= event_end and event_end > 0:
+            in_text_mode = True
+
+        b = bin_data[i]
+
+        # Check for FF-prefix control codes (always recognized)
+        if b == 0xFF and i + 2 < len(bin_data):
+            triple = (bin_data[i], bin_data[i+1], bin_data[i+2])
+            if triple in ff_controls:
+                result += ff_controls[triple]
+                i += 3
+                in_text_mode = True  # text follows control codes
+                continue
+
+            # FFF2XX = [waitXX] or [pause]
+            if bin_data[i+1] == 0xF2:
+                val = bin_data[i+2]
+                if val == 0x78:
+                    result += '[pause]'
+                else:
+                    result += f'[wait{val:02X}]'
+                i += 3
+                continue
+
+            # FFC0XX, FFFEXX, FFFCXX = other known controls
+            # Generic FF-prefix: output as [FFXXYY]
+            result += f'[FF{bin_data[i+1]:02X}{bin_data[i+2]:02X}]'
+            i += 3
+            continue
+
+        # End marker
+        if b == 0x00:
+            result += '[end]\n'
+            i += 1
+            continue
+
+        # In text mode: decode through table
+        if in_text_mode:
+            # Known single-byte text controls
+            if b in text_controls:
+                result += text_controls[b]
+                i += 1
+                continue
+
+            # Try 3-byte table lookup first
+            if i + 2 < len(bin_data):
+                val_3byte = (b << 16) | (bin_data[i+1] << 8) | bin_data[i+2]
+                char = tbl.get_chars(val_3byte, False)
+                if char:
+                    result += char
+                    i += 3
+                    continue
+
+            # Try 2-byte table lookup (kanji and other multi-byte chars)
+            if i + 1 < len(bin_data):
+                val_2byte = (b << 8) | bin_data[i+1]
+                char = tbl.get_chars(val_2byte, False)
+                if char:
+                    result += char
+                    i += 2
+                    continue
+
+            # Single byte table lookup
+            char = tbl.get_chars(b, False)
+            if char:
+                result += char
+                i += 1
+                continue
+
+            # Unknown byte in text mode
+            result += f'[{b:02X}]'
+            i += 1
+            continue
+
+        # In event code mode: output as raw hex
+        result += '{' + f'{b:02X}' + '}'
+        i += 1
+
+    return result
+
+
+def dump_event_script(filename, dict_data, tbl, deduplicate=True):
+    """
+    Dump event script data with smart bytecode/text separation.
+    :param filename: output file path
+    :param dict_data: list of dicts with 'id', 'addr', 'data' keys
+    :param tbl: Table instance
+    :param deduplicate: skip duplicate addresses
+    """
+    line1 = True
+    nl = "\n"
+    enc = tbl.encoding if tbl else 'utf-8'
+    with open(filename, 'w', encoding=enc) as of:
+        dumped_addrs = []
+        for data in dict_data:
+            of.write(f"{'' if line1 else nl}<<{data.get('id')}>>{nl}")
+            addr = data.get('addr', None)
+            if deduplicate and addr is not None:
+                if addr not in dumped_addrs:
+                    dumped_addrs.append(addr)
+                    of.write(interpret_event_script(data['data'], tbl))
+            else:
+                of.write(interpret_event_script(data['data'], tbl))
+            line1 = False
 
 
 def get_character_widths(image_path):
