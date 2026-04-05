@@ -1,344 +1,390 @@
 ; ============================================================================
-; Little Master 3 - Variable Width Font Patch
-; Assembler: asar
-; Target: LoROM
-; ============================================================================
-;
-; This patch replaces the fixed-width 8px tile-based text renderer with a
-; variable-width font system for English dialog text.
-;
-; Architecture:
-;   - Font pixel data is read from ROM (1bpp, 8x16 per glyph)
-;   - Each character is shifted right by (cursor_x % 8) pixels
-;   - Shifted pixels are OR'd into a tile graphics buffer in WRAM
-;   - When cursor crosses an 8px tile boundary, advance to next tile column
-;   - Width table in ROM determines each character's pixel advance
-;   - Rendered tiles are DMA'd to VRAM during VBlank (existing DMA path)
-;
-; Memory map:
-;   $7E9000-$7E97FF  - Rendered tile graphics buffer (existing, 2KB)
-;                      Used for the dialog BG layer tile data
-;   $7EA000-$7EA0FF  - Tilemap buffer (existing)
-;   $7E1E00-$7E1EFF  - VWF state variables (new, 256 bytes)
-;     $7E1E00        - Pixel X cursor position (16-bit)
-;     $7E1E02        - Current tile column index
-;     $7E1E04        - Current tile row (0 = top half, 1 = bottom half for 8x16)
-;     $7E1E06        - Line number (for newlines)
-;     $7E1E08        - Tile counter (unique tiles generated)
-;
-; ROM space used:
-;   Bank $AF:D100 (PC 0x17D100) - 1793 bytes free
-;
+; Little Master 3 - Variable Width Font (VWF) Patch v2
 ; ============================================================================
 
 lorom
 
-; ============================================================================
-; Constants
-; ============================================================================
-!VWF_STATE     = $7E1E00       ; VWF state block in WRAM
-!PIXEL_X       = $7E1E00       ; Current pixel X position (16-bit)
-!TILE_COL      = $7E1E02       ; Current tile column
-!TILE_ROW      = $7E1E04       ; Current tile row within line
-!LINE_NUM      = $7E1E06       ; Current line number
-!TILE_COUNT    = $7E1E08       ; Tiles generated so far
-!VWF_ACTIVE    = $7E1E0A       ; VWF active flag
-
-!TILE_BUF      = $7E9000       ; Tile graphics buffer (existing)
-!TILEMAP_BUF   = $7EA000       ; Tilemap buffer (existing)
-
-!MAX_LINE_PX   = 192           ; Max pixels per line (24 tiles * 8px)
-!TILE_BASE     = $0100         ; Base tile index for VWF-rendered tiles
-!DIALOG_LINES  = 4             ; Max dialog lines
+; ROM expansion
+org $00FFD7
+    db $0C
+org $FFFFFF
+    db $00
 
 ; ============================================================================
-; Width table and font data - placed in free space at $AF:D100
+; VWF state ($0A30-$0A3F)
 ; ============================================================================
-org $AFD100
+!VWF_PX        = $0A30
+!VWF_TILE      = $0A32
+!VWF_FLAG      = $0A34
 
-VWFWidthTable:
-    ; Character widths (indexed by character code 0x00-0xEF)
-    ; These should be tuned after testing. Values are pixel widths.
-    ; 0x00-0x1F: control codes (width 0, not rendered)
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; 00-07
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; 08-0F
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; 10-17
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; 18-1F
-    ; 0x20-0x7E: ASCII printable characters
-    db $03                             ; 20 space
-    db $02,$04,$06,$06,$06,$06,$02      ; 21-27  !"#$%&'
-    db $03,$03,$06,$05,$02,$04,$02,$04  ; 28-2F  ()*+,-./
-    db $05,$04,$05,$05,$05,$05,$05,$05  ; 30-37  01234567
-    db $05,$05,$02,$02,$04,$04,$04,$05  ; 38-3F  89:;<=>?
-    db $06,$06,$05,$05,$05,$05,$05,$05  ; 40-47  @ABCDEFG
-    db $05,$02,$04,$05,$05,$06,$06,$06  ; 48-4F  HIJKLMNO
-    db $05,$06,$05,$05,$06,$05,$06,$07  ; 50-57  PQRSTUVW
-    db $06,$06,$05,$04,$04,$04,$06,$05  ; 58-5F  XYZ[\]^_
-    db $03,$05,$05,$04,$05,$05,$04,$05  ; 60-67  `abcdefg
-    db $05,$02,$03,$05,$02,$07,$05,$05  ; 68-6F  hijklmno
-    db $05,$05,$04,$04,$04,$05,$05,$07  ; 70-77  pqrstuvw
-    db $06,$05,$04,$04,$02,$04,$06,$00  ; 78-7F  xyz{|}~
-    ; 0x80-0x8F: accented lowercase
-    db $05,$05,$05,$05,$05,$05,$05,$05  ; 80-87  àáâäèéêë
-    db $02,$02,$02,$05,$05,$05,$05,$05  ; 88-8F  ìíîòóôöù
-    ; 0x90-0x9F: control codes / more accented
-    db $00,$00,$00,$00,$00             ; 90-94  [nl] etc
-    db $05,$05,$05,$05,$04             ; 95-99  úûüñç
-    db $00,$00,$00,$00,$00,$00         ; 9A-9F
-    ; 0xA0-0xAF: accented uppercase
-    db $06,$06,$06,$06,$05,$05,$05,$02  ; A0-A7  ÀÁÂÄÈÉÊÍl
-    db $06,$06,$06,$05,$05,$06,$04,$00  ; A8-AF  ÓÔÖÚÜÑÇ
-
-; Pad to 240 entries
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; B0-B7
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; B8-BF
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; C0-C7
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; C8-CF
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; D0-D7
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; D8-DF
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; E0-E7
-    db $00,$00,$00,$00,$00,$00,$00,$00  ; E8-EF
+!TILE_BUF      = $7FB000
+!TMAP_TOP      = $7E9000
+!TMAP_BOT      = $7E9040
 
 ; ============================================================================
-; VWF Rendering Routine
-; ============================================================================
+; Hook 1: $80:C17B (20 bytes available, through $80:C18E)
 ;
-; Entry: A = character code (8-bit)
-; Modifies: A, X, Y, $00-$0F (scratch)
-; Uses: VWF state variables at $7E1E00+
+; Original sequence at C170-C18E:
+;   C170: PHA                    ; push char
+;   C171: AD 1E 0A  LDA $0A1E   ; check flag
+;   C174: D0 30     BNE $C1A6   ; branch if set (different render path)
+;   C176: AD 1C 0A  LDA $0A1C   ; check flag
+;   C179: D0 14     BNE $C18F   ; branch if set (inverted render path)
+;   C17B: PLA                    ; *** OUR HOOK STARTS HERE ***
+;   C17C: CLC
+;   C17D: ADC $0A02
+;   C180: PHA
+;   C181: STA $7E9000,X
+;   C185: PLA
+;   C186: CLC
+;   C187: ADC #$0400
+;   C18A: STA $7E9040,X
+;   C18E: RTS
 ;
-; For each character:
-;   1. Look up pixel width from table
-;   2. Read 8x16 font glyph (16 bytes of 1bpp data)
-;   3. Shift glyph right by (pixel_x & 7) bits
-;   4. OR shifted data into tile buffer at current tile column
-;   5. If glyph spills into next tile, OR remainder there too
-;   6. Advance pixel_x by character width
-;   7. Update tile column index
-;
-VWFRenderChar:
-    PHP
-    PHX
-    PHY
-    SEP #$30                   ; 8-bit A and X/Y
+; At hook entry: char is on stack (PHA at C170), 16-bit A mode, X = tilemap pos
+; ============================================================================
+org $80C17B
 
-    ; Store character code
+    PLA                        ; 1 byte - get char (original PLA at C17B)
+    STA.W $0A38                ; 3 bytes - save char to known location
+    JSL.L VWFCharHandler       ; 4 bytes - handler reads from $0A38
+    RTS                        ; 1 byte (= 9 bytes total)
+    padbyte $EA
+    pad $80C18F                ; pad to 20 bytes
+
+; ============================================================================
+; Hook 2: $80:BC75 (15 bytes available, through $80:BC83)
+;
+; Original:
+;   BC75: LDA #$0400   (3)
+;   BC78: STA $14      (2)
+;   BC7A: STZ $16      (2)
+;   BC7C: JSR $BE3B    (3) = tilemap writer
+;   BC7F: REP #$20     (2)
+;   BC81: LDA $0A16    (3) = 15 bytes total
+;
+; New: pre-render, tilemap write, post-render (trigger DMA), then continue
+; ============================================================================
+org $80BC75
+
+    JSL.L VWFPreRender         ; 4 - init VWF + set $14/$16
+    JSR.W $BE3B                ; 3 - tilemap writer (calls VWFCharHandler)
+    JSL.L VWFPostRender        ; 4 - trigger DMA + do REP#20 + LDA $0A16
+    NOP                        ; 1
+    NOP                        ; 1
+    NOP                        ; 1
+    NOP                        ; 1 (= 15 bytes, padded to reach BC84)
+
+; ============================================================================
+; VWF Code - Bank $C0
+; ============================================================================
+org $C08000
+
+; -------------------------------------------------------------------
+; VWFCharHandler
+;
+; Entry state:
+;   - 16-bit A (REP #$20 active)
+;   - Char code is on the stack (PHA'd at $80:C170)
+;   - X = tilemap write position (index into $7E:9000)
+;   - We must PLA the char and write tilemap entries
+;   - X must be preserved for caller's INX INX after we return
+; -------------------------------------------------------------------
+VWFCharHandler:
+    ; Char code is in $0A38 (saved by hook before JSL)
+    ; X = tilemap write position, 16-bit A mode
+
+    ; Check VWF flag
+    SEP #$20
+    LDA.W !VWF_FLAG
+    CMP.B #$A5
+    REP #$20
+    BEQ .vwfPath
+
+    ; --- ORIGINAL CODE PATH ---
+    LDA.W $0A38                ; char code
+    CLC
+    ADC.W $0A02
+    PHA
+    STA.L !TMAP_TOP,X
+    PLA
+    CLC
+    ADC.W #$0400
+    STA.L !TMAP_BOT,X
+    RTL
+
+.vwfPath:
+    LDA.W $0A38
+    AND.W #$00FF
     STA.B $00                  ; $00 = char code
 
-    ; Look up width
-    TAX
-    LDA.L VWFWidthTable,X
-    BEQ .done                  ; Width 0 = control code, skip
-    STA.B $01                  ; $01 = char width in pixels
+    ; Save X (tilemap position) - we'll need it at the end
+    PHX
 
-    ; Calculate font data source address
-    ; Each glyph is 16 bytes (8x16, 1bpp)
-    ; Font data address = FontBase + (char_code * 16)
-    REP #$20                  ; 16-bit A
+    ; --- Look up width ---
+    LDA.B $00
+    AND.W #$00FF
+    TAX
+    SEP #$20
+    LDA.L VWFWidthTable,X
+    STA.B $02                  ; $02 = width
+    REP #$20
+    AND.W #$00FF
+    BNE .hasWidth
+
+    ; Width 0: write blank
+    PLX
+    LDA.W #$0000
+    STA.L !TMAP_TOP,X
+    STA.L !TMAP_BOT,X
+    RTL
+
+.hasWidth:
+    ; --- Font data offset = char * 16 ---
     LDA.B $00
     AND.W #$00FF
     ASL A
     ASL A
     ASL A
-    ASL A                     ; * 16
-    CLC
-    ADC.W #FontData&$FFFF     ; Add font data base (low 16 bits)
-    STA.B $02                 ; $02/$03 = font source offset
+    ASL A
+    STA.B $04                  ; $04 = font offset
+
+    ; --- Shift = VWF_PX & 7 ---
     SEP #$20
-
-    LDA.B #FontData>>16       ; Font data bank
-    STA.B $04                 ; $04 = font source bank
-
-    ; Get current pixel X position
-    REP #$20
-    LDA.L !PIXEL_X
-    STA.B $05                 ; $05/$06 = pixel X
-    SEP #$20
-
-    ; Calculate shift amount = pixel_x & 7
-    LDA.B $05
+    LDA.W !VWF_PX
     AND.B #$07
-    STA.B $07                 ; $07 = shift amount (0-7)
-
-    ; Calculate tile column = pixel_x / 8
+    STA.B $06                  ; $06 = shift
     REP #$20
-    LDA.B $05
-    LSR A
-    LSR A
-    LSR A                     ; / 8
-    STA.B $08                 ; $08/$09 = tile column
-    SEP #$20
 
-    ; Calculate tile buffer destination
-    ; Each tile in 2bpp format = 16 bytes (8x8)
-    ; For 8x16 chars: top tile + bottom tile = 32 bytes per column
-    ; Buffer offset = tile_column * 32
+    ; --- Tile buffer offset = VWF_TILE * 32 ---
+    LDA.W !VWF_TILE
+    AND.W #$003F
+    ASL A
+    ASL A
+    ASL A
+    ASL A
+    ASL A
+    STA.B $08                  ; $08 = tile buf base
+
+    ; --- Render 16 rows ---
+    SEP #$20
+    LDY.W #$0000
+
+.rowLoop:
+    ; Load font byte
     REP #$20
-    LDA.B $08
-    ASL A
-    ASL A
-    ASL A
-    ASL A
-    ASL A                     ; * 32
-    TAX                       ; X = buffer offset for this tile column
+    PHY
+    TYA
+    CLC
+    ADC.B $04
+    TAX
     SEP #$20
+    LDA.L VWFFontData,X
+    STA.B $0A                  ; original pixels
+    PLY
 
-    ; Render the glyph: OR shifted font data into tile buffer
-    ; Process 16 rows (8 for top tile, 8 for bottom tile)
-    LDY.W #$0000              ; Y = font data row index
-
-.renderLoop:
-    ; Read font pixel row (1bpp, 8 pixels)
-    LDA.B [$02],Y             ; Load font row from ROM
-
-    ; Shift right by shift amount
-    PHX
-    LDX.B $07                 ; shift count
-    BEQ .noShift
-.shiftLoop:
+    ; Shift right for current tile
+    LDX.B $06
+    BEQ .noSR
+.srLoop:
     LSR A
     DEX
-    BNE .shiftLoop
-.noShift:
-    PLX
+    BNE .srLoop
+.noSR:
+    STA.B $0B                  ; shifted pixels
 
-    ; OR into current tile buffer position
-    ; Top 8 rows go to tile bytes 0-7 (plane 0) at even offsets
-    ; Bottom 8 rows go to next tile (+16 bytes)
-    CPY.W #$0008
-    BCS .bottomTile
-
-    ; Top tile: row Y, plane 0
-    ORA.L !TILE_BUF,X
-    STA.L !TILE_BUF,X
-    BRA .checkSpill
-
-.bottomTile:
-    ; Bottom tile: row Y-8, plane 0, offset +16 bytes
-    PHX
-    TXA
-    CLC
-    ADC.W #$0010              ; Next tile (bottom half)
-    TAX
+    ; 2bpp row offset: (row & 7) * 2, +16 if row >= 8
     TYA
-    SEC
-    SBC.B #$08
-    PHY
-    TAY                       ; Y now 0-7 for bottom tile
-    ; Use Y as offset within the 16-byte tile
-    LDA.B [$02],Y             ; Re-read font row...
-    PLY
-    PLX
-    ; Actually need to shift and OR here too
-    ; TODO: This needs refinement for the bottom tile half
-    BRA .nextRow
+    AND.B #$07
+    ASL A
+    CPY.W #$0008
+    BCC .topH
+    CLC
+    ADC.B #$10
+.topH:
+    STA.B $0C                  ; row offset in tile column
 
-.checkSpill:
-    ; Check if glyph spills into next tile column
-    ; If shift > 0, some pixels overflow to the right
-    LDA.B $07
-    BEQ .nextRow              ; No shift = no spill
+    ; OR into tile buffer
+    REP #$20
+    LDA.B $0C
+    AND.W #$00FF
+    CLC
+    ADC.B $08
+    TAX
+    SEP #$20
 
-    ; Read font row again and shift LEFT by (8 - shift)
-    LDA.B [$02],Y
-    PHX
+    LDA.L !TILE_BUF,X
+    ORA.B $0B
+    STA.L !TILE_BUF,X
+    LDA.L !TILE_BUF+1,X
+    ORA.B $0B
+    STA.L !TILE_BUF+1,X
+
+    ; Spill to next tile
+    LDA.B $06
+    BEQ .noSpill
+
+    ; spill = original << (8 - shift)
     LDA.B #$08
     SEC
-    SBC.B $07                 ; 8 - shift
+    SBC.B $06
+    PHX                        ; save tile buf X
     TAX
-.spillShift:
-    LDA.B [$02],Y
-    ASL A                     ; TODO: need to re-approach this shift logic
+    LDA.B $0A
+.slLoop:
+    ASL A
     DEX
-    BNE .spillShift
-    PLX
+    BNE .slLoop
+    STA.B $0D
+    PLX                        ; restore tile buf X
 
-    ; OR into next tile column
-    ; offset = current_offset + 32
-    PHX
+    LDA.B $0D
+    BEQ .noSpill
+
+    ; Next column = X + 32
+    REP #$20
     TXA
     CLC
     ADC.W #$0020
+    CMP.W #$1000               ; bounds check (4KB buffer)
+    BCS .noSpill
     TAX
-    ;ORA.L !TILE_BUF,X        ; OR spill pixels
-    ;STA.L !TILE_BUF,X
-    PLX
-
-.nextRow:
-    INY
-    CPY.W #$0010              ; 16 rows done?
-    BCC .renderLoop
-
-    ; Advance pixel X by character width
-    REP #$20
-    LDA.L !PIXEL_X
-    CLC
-    ADC.B $01                 ; Add width (zero-extended)
-    STA.L !PIXEL_X
     SEP #$20
 
-.done:
-    PLY
-    PLX
-    PLP
+    LDA.L !TILE_BUF,X
+    ORA.B $0D
+    STA.L !TILE_BUF,X
+    LDA.L !TILE_BUF+1,X
+    ORA.B $0D
+    STA.L !TILE_BUF+1,X
+
+.noSpill:
+    SEP #$20                   ; ensure 8-bit A
+    INY
+    CPY.W #$0010
+    BCS .doneRows
+    JMP .rowLoop
+.doneRows:
+
+    ; --- Advance pixel cursor ---
+    REP #$20
+    LDA.W !VWF_PX
+    AND.W #$00FF
+    LSR A
+    LSR A
+    LSR A
+    STA.B $0E                  ; old tile column
+
+    LDA.W !VWF_PX
+    AND.W #$00FF
+    CLC
+    ADC.B $02                  ; + width (still in $02 low byte)
+    STA.W !VWF_PX
+
+    LSR A
+    LSR A
+    LSR A
+    SEP #$20
+    CMP.B $0E
+    BEQ .noTileAdvance
+    REP #$20
+    LDA.W !VWF_TILE
+    INC A
+    STA.W !VWF_TILE
+    SEP #$20
+.noTileAdvance:
+    REP #$20
+
+    ; --- Write tilemap entries ---
+    PLX                        ; restore original tilemap X
+
+    ; Use original tile index (char + $0A02) for now.
+    ; The VWF rendering modifies the tile graphics in-place,
+    ; and the DMA uploads them over the original font tiles.
+    LDA.W $0A38                ; char code
+    CLC
+    ADC.W $0A02                ; + tile base offset
+    PHA
+    STA.L !TMAP_TOP,X          ; top tilemap entry
+
+    PLA
+    CLC
+    ADC.W #$0400               ; palette for bottom row
+    STA.L !TMAP_BOT,X          ; bottom tilemap entry
+
     RTL
 
-; ============================================================================
-; VWF Initialization - call when opening dialog box
-; ============================================================================
-VWFInit:
-    PHP
-    REP #$20
-    LDA.W #$0000
-    STA.L !PIXEL_X
-    STA.L !TILE_COL
-    STA.L !TILE_ROW
-    STA.L !LINE_NUM
-    STA.L !TILE_COUNT
-    SEP #$20
-    LDA.B #$01
-    STA.L !VWF_ACTIVE
+; -------------------------------------------------------------------
+; VWFPreRender - called before the tilemap writer loop
+; Sets up $14/$16 (original behavior) and inits VWF state
+; -------------------------------------------------------------------
+org $C08F00
 
-    ; Clear tile graphics buffer (2KB)
+VWFPreRender:
+    ; Called BEFORE the tilemap writer loop.
+    ; Set up $14/$16 as original code did.
     REP #$20
+    LDA.W #$0400
+    STA.B $14
+    STZ.B $16
+
+    ; Init VWF state
     LDA.W #$0000
+    STA.W !VWF_PX
+    STA.W !VWF_TILE
+    SEP #$20
+    LDA.B #$A5
+    STA.W !VWF_FLAG
+    REP #$20
+
+    ; Clear tile buffer (2KB at $7F:B000)
     LDX.W #$0000
-.clearLoop:
-    STA.L !TILE_BUF,X
+    LDA.W #$0000
+-   STA.L !TILE_BUF,X
     INX
     INX
     CPX.W #$0800
-    BCC .clearLoop
-    SEP #$20
+    BCC -
 
-    PLP
     RTL
 
-; ============================================================================
-; VWF Newline - advance to next line
-; ============================================================================
-VWFNewline:
-    PHP
+; -------------------------------------------------------------------
+; VWFPostRender - called AFTER tilemap writing is done
+; Triggers DMA of rendered tiles to VRAM
+; -------------------------------------------------------------------
+VWFPostRender:
+    ; Trigger DMA of rendered tiles if VWF was active
+    SEP #$20
+    LDA.W !VWF_FLAG
+    CMP.B #$A5
+    BNE .skip
+
+    ; Set VRAM target to font tile area ($3000 words)
     REP #$20
-    LDA.W #$0000
-    STA.L !PIXEL_X             ; Reset X to left margin
-    LDA.L !LINE_NUM
-    INC A
-    STA.L !LINE_NUM
+    LDA.W #$3000
+    STA.B $78                  ; spawnParticle reads $78 as VRAM dest
     SEP #$20
-    PLP
-    RTL
+    LDA.B #$FE                 ; $57 = $FE triggers spawnParticle DMA
+    STA.B $57                  ; ($7F:B000 -> VRAM $3000, 2KB)
+
+    ; Clear VWF flag
+    LDA.B #$00
+    STA.W !VWF_FLAG
+
+.skip:
+    ; Execute the displaced instructions from BC7F-BC83
+    REP #$20                   ; was at BC7F
+    LDA.W $0A16                ; was at BC81 (3 bytes)
+    RTL                        ; return to BC84
 
 ; ============================================================================
-; Font Data - 1bpp 8x16 glyphs (to be generated from font.png)
-; This is a placeholder - actual data will be incbin'd from a binary file
+; Data
 ; ============================================================================
-FontData:
-    ; incbin "font/font_1bpp.bin"
-    ; For now, fill with placeholder
-    fill 3840, $00             ; 240 chars * 16 bytes each = 3840 bytes
+VWFWidthTable:
+    incbin "font/widths.bin"
 
-; ============================================================================
-; End of VWF patch code
-; ============================================================================
-print "VWF patch size: ", pc-$AFD100, " bytes"
+VWFFontData:
+    db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+    incbin "font/font_1bpp.bin"
+
+print "VWF v2 end: $", pc

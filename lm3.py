@@ -551,6 +551,296 @@ def dump_event_script(filename, dict_data, tbl, deduplicate=True):
             line1 = False
 
 
+def encode_text(text_str, tbl):
+    """
+    Encode a text string to bytes using a Table object.
+    Handles control codes like [nl], [pause], [cls], [end], [waitXX], [FFXXYY].
+    :param text_str: the text to encode
+    :param tbl: Table instance with character mappings
+    :return: bytes
+    """
+    # Direct control code mapping (bypasses Table lookup issues)
+    control_codes = {
+        '[end]': b'\x00',
+        '[nl]': b'\x90',
+        '[pause][cls]': b'\x91',
+        '[pause]': b'\xFF\xF2\x78',
+        '[cls]': b'\xFF\xFF\x00',
+        '[msg]': b'\xFF\x7F\x02',
+        '[special]': b'\xFF\xFD\x02',
+        '[white]': b'\xFF\xFB\x00',
+        '[pink]': b'\xFF\xFB\x01',
+        '[FFFE00]': b'\xFF\xFE\x00',
+        '[P]': b'\x10',
+        '[R]': b'\x11',
+        '[S]': b'\x12',
+        '[E]': b'\x13',
+        '[K]': b'\x14',
+        '[A]': b'\x15',
+        '[G]': b'\x16',
+        '[Y]': b'\x17',
+        '[u]': b'\x09',
+        '[d]': b'\x0A',
+        '[cry]': b'\x1E',
+        '[luv]': b'\x1F',
+        '[~]': b'\xFE',
+        '!!': b'\x1B',
+        '[r.]': b'\x0B',   # if used
+        '[D0]': b'\x0C',   # if used
+    }
+
+    import re
+
+    result = bytearray()
+    i = 0
+    while i < len(text_str):
+        # Try control codes first (longest match)
+        matched = False
+        for length in range(min(15, len(text_str) - i), 1, -1):
+            substr = text_str[i:i+length]
+            if substr in control_codes:
+                result.extend(control_codes[substr])
+                i += length
+                matched = True
+                break
+
+        if matched:
+            continue
+
+        # Try [waitXX] pattern
+        m = re.match(r'\[wait([0-9A-Fa-f]{2})\]', text_str[i:])
+        if m:
+            val = int(m.group(1), 16)
+            result.extend(b'\xFF\xF2')
+            result.append(val)
+            i += m.end()
+            continue
+
+        # Try [FFXXYY] hex pattern
+        m = re.match(r'\[FF([0-9A-Fa-f]{4})\]', text_str[i:])
+        if m:
+            result.append(0xFF)
+            result.append(int(m.group(1)[:2], 16))
+            result.append(int(m.group(1)[2:], 16))
+            i += m.end()
+            continue
+
+        # Try [XX] single hex byte pattern
+        m = re.match(r'\[([0-9A-Fa-f]{2})\]', text_str[i:])
+        if m:
+            result.append(int(m.group(1), 16))
+            i += m.end()
+            continue
+
+        ch = text_str[i]
+
+        # Skip newlines and carriage returns
+        if ch in '\n\r':
+            i += 1
+            continue
+
+        # Space
+        if ch == ' ':
+            result.append(0x20)
+            i += 1
+            continue
+
+        # Skip fullwidth/unicode chars
+        if ord(ch) > 0x2000:
+            i += 1
+            continue
+
+        # Table lookup for regular characters
+        val = tbl.get_value(ch, infer_value=False)
+        if val is not None:
+            result.append(val & 0xFF)
+        else:
+            # Direct ASCII if in printable range
+            if 0x20 <= ord(ch) <= 0x7E:
+                result.append(ord(ch))
+            else:
+                result.append(0x3F)  # '?' fallback
+        i += 1
+
+    # Ensure terminated with 0x00 if not already
+    if not result or result[-1] != 0x00:
+        result.append(0x00)
+
+    return bytes(result)
+
+
+def insert_script(input_filename, output_filename, script_file, table_filename,
+                  ptr_tbl_pos, tbl_len, ptr_bank=None, ptr_addr_type=None):
+    """
+    Insert translated text back into the ROM by encoding text and updating pointers.
+    :param input_filename: source ROM
+    :param output_filename: output ROM
+    :param script_file: translated text file path
+    :param table_filename: character table file path
+    :param ptr_tbl_pos: PC address of pointer table
+    :param tbl_len: byte length of pointer table
+    :param ptr_bank: bank byte for pointers (auto-detected if None)
+    :param ptr_addr_type: address type for pointer conversion
+    """
+    from RetroTool.snes import SFCAddress, SFCAddressType
+    from RetroTool.script import Table
+
+    if ptr_addr_type is None:
+        ptr_addr_type = SFCAddressType.LOROM1
+
+    with open(input_filename, 'rb') as f:
+        rom = bytearray(f.read())
+
+    tbl = Table(table_filename)
+
+    # Determine bank from pointer table position
+    ptr_table_addr = SFCAddress(ptr_tbl_pos)
+    if ptr_bank is None:
+        ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
+
+    # Read translated text
+    try:
+        with open(script_file, 'r', encoding='utf-16') as f:
+            text = f.read()
+    except UnicodeDecodeError:
+        with open(script_file, 'r', encoding='utf-8') as f:
+            text = f.read()
+
+    # Parse entries
+    entries = text.split('<<')[1:]
+    encoded_entries = []
+    for entry in entries:
+        if '>>' not in entry:
+            continue
+        content = entry.split('>>')[1]
+        # Don't strip - preserve newlines for control code matching
+        # But remove leading newline (artifact of format)
+        if content.startswith('\n'):
+            content = content[1:]
+        # Remove trailing whitespace after [end]
+        content = content.rstrip()
+        if not content or content == '[end]':
+            encoded_entries.append(b'\x00')
+        else:
+            encoded = encode_text(content, tbl)
+            encoded_entries.append(encoded)
+
+    # Calculate data placement
+    num_ptrs = tbl_len // 2
+    data_start_pc = ptr_tbl_pos + tbl_len  # Text data goes right after pointer table
+
+    # Calculate total data size
+    total_size = sum(len(e) for e in encoded_entries)
+    bank_end = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000  # End of current bank
+
+    if data_start_pc + total_size > bank_end:
+        print(f'WARNING: Text data ({total_size} bytes) exceeds bank boundary!')
+        print(f'  Available: {bank_end - data_start_pc} bytes')
+        print(f'  Overflow: {data_start_pc + total_size - bank_end} bytes')
+        # For now, allow overflow into next bank (works in expanded ROM)
+
+    # Write encoded data and build pointer table
+    data_offset = 0
+    new_ptrs = []
+    for i, encoded in enumerate(encoded_entries):
+        # Calculate SNES address for this text entry
+        pc = data_start_pc + data_offset
+        snes_addr = SFCAddress(pc)
+        ptr_val = snes_addr.get_address(ptr_addr_type) & 0xFFFF
+
+        new_ptrs.append(ptr_val)
+
+        # Write encoded text to ROM
+        rom[pc:pc + len(encoded)] = encoded
+        data_offset += len(encoded)
+
+    # Write pointer table
+    for i, ptr in enumerate(new_ptrs):
+        if i >= num_ptrs:
+            break
+        offset = ptr_tbl_pos + i * 2
+        rom[offset] = ptr & 0xFF
+        rom[offset + 1] = (ptr >> 8) & 0xFF
+
+    # Write output
+    with open(output_filename, 'wb') as f:
+        f.write(rom)
+
+    print(f'Inserted {len(encoded_entries)} entries ({total_size} bytes) at 0x{data_start_pc:X}')
+    print(f'Pointer table updated at 0x{ptr_tbl_pos:X}')
+
+
+def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x170000):
+    """
+    Convert an 8x16 font PNG to the LM3 1BPP-IL ROM format and optionally patch a ROM.
+
+    LM3 1BPP-IL format (per 8x16 character, 16 bytes):
+      Even bytes (0,2,4,...14) = top 8x8 tile rows 0-7
+      Odd bytes  (1,3,5,...15) = bottom 8x8 tile rows 0-7
+    The ROM loader writes each byte to BOTH VRAM data ports ($2118/$2119),
+    so bp0==bp1 automatically in VRAM.
+
+    Output is 8192 bytes: 4096 normal + 4096 inverted (XOR $FF).
+    The inverted set is used for menus and scenario screens.
+
+    :param image_path: path to the font PNG (grid of 8x16 glyphs)
+    :param output_path: path to write the 1BPP-IL binary
+    :param rom_path: optional ROM file to patch in-place
+    :param rom_offset: ROM offset for font data (default 0x170000)
+    """
+    img = Image.open(image_path).convert('L')
+    cols = img.size[0] // 8
+    rows = img.size[1] // 16
+    num_chars = min(cols * rows, 256)
+
+    # Convert to 1bpp (1 byte per row, 16 rows per char)
+    font_1bpp = bytearray()
+    for idx in range(num_chars):
+        col = idx % cols
+        row = idx // cols
+        x0, y0 = col * 8, row * 16
+        for y in range(16):
+            byte = 0
+            for x in range(8):
+                if img.getpixel((x0 + x, y0 + y)) < 128:
+                    byte |= (0x80 >> x)
+            font_1bpp.append(byte)
+
+    # Build 1BPP-IL: interleave top/bottom rows
+    font_normal = bytearray(4096)
+    for char_idx in range(min(num_chars, 256)):
+        src = char_idx * 16
+        dst = char_idx * 16
+        if src + 16 > len(font_1bpp):
+            break
+        for r in range(8):
+            font_normal[dst + r * 2] = font_1bpp[src + r]          # top row (even byte)
+            font_normal[dst + r * 2 + 1] = font_1bpp[src + 8 + r]  # bottom row (odd byte)
+
+    # Shift by 1 tile (16 bytes) to match the game's tile indexing
+    font_normal = bytearray(16) + font_normal[:-16]
+
+    # Build inverted version (XOR 0xFF)
+    font_inverted = bytearray(b ^ 0xFF for b in font_normal)
+
+    # Combine normal + inverted
+    font_full = font_normal + font_inverted
+
+    # Save binary
+    with open(output_path, 'wb') as f:
+        f.write(font_full)
+    print(f'Saved font ({num_chars} chars, {len(font_full)} bytes) to {output_path}')
+
+    # Optionally patch ROM
+    if rom_path:
+        with open(rom_path, 'rb') as f:
+            rom = bytearray(f.read())
+        rom[rom_offset:rom_offset + len(font_full)] = font_full
+        with open(rom_path, 'wb') as f:
+            f.write(rom)
+        print(f'Patched ROM at 0x{rom_offset:X}')
+
+
 def get_character_widths(image_path):
     # Open the image
     img = Image.open(image_path)

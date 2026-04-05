@@ -33,6 +33,17 @@
 1F=★
 1F=[luv]
 20=
+90=[nl]\n
+91=[pause][cls]\n
+FFF278=[pause]
+FFF2**=[wait**]
+FFFD02=[special]
+FF7F02=[msg]\n
+FFFF00=[cls]\n
+FFFB00=[white]
+FFFB01=[pink]
+FFFE00=[FFFE00]
+FF**%%=[FF**%%]
 21=!
 22="
 23=#
