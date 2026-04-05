@@ -3,10 +3,10 @@
 
 <<$327937:1[$337152]>>
 甘[P][msg]
-[special]「でも、へんね。[wait30]　なんか　ふんいきが違うわ‥‥」[end]
+[special]"But, that's strange.[wait30] Something about this place feels different..."[end]
 
 <<$327937:2[$330050]>>
-あいつら、何者なんだ!」[end]
+Who are those guys!?"[end]
 
 <<$327937:3[$327978]>>
 [P][FF7F00][end]
@@ -30,19 +30,19 @@
 磯ぃぉ式紋ぇ★ぃぉ＆Bフ[Y][P][FF7F00][end]
 
 <<$327937:10[$328704]>>
-俺さまの　おきにいりのクマちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+Even my favorite teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:11[$327685]>>
 ひ県いふ県[P]ズ[d][end]
 
 <<$327937:12[$336640]>>
-[wait30]ボンバーズの連中が[nl]
-　来てなければ　いいんだけど‥‥」[end]
+[wait30]I just hope the Bone Bombers[nl]
+ haven't shown up..."[end]
 
 <<$327937:13[$331304]>>
-[special]「おれたちは　遂にみつけたんだ![nl]
-[wait30]　伝説の秘宝を!」[end]
+[special]"We've finally found it![nl]
+[wait30] The legendary treasure!"[end]
 
 <<$327937:14[$331818]>>
 9写ぅね[end]
@@ -50,8 +50,8 @@
 <<$327937:15[$327936]>>
 
 <<$327937:16[$336650]>>
-ベ中が[nl]
-　来てなければ　いいんだけど‥‥」[end]
+the Bone Bombers[nl]
+ haven't shown up..."[end]
 
 <<$327937:17[$327830]>>
 えぬらひギへ0む[d]めほめれもヨゆゃらじらむら★りえりえりぬりぉるむんる[D0]ぞアワアブイチイげウぞオゴオ＊オチオしカでクロクMコゴシょスわスチソユソシタネチLトトナんネかフずホにミクユスユツユツユ[u]ヨナリナリナリナリ[end]
@@ -71,11 +71,11 @@
 [u]×亜ゼ[d]＆[end]
 
 <<$327937:23[$328524]>>
-は俺さまの今日のおやつ![nl]
-[wait30]　野郎ども、とりかえせーー!」[end]
+is my snack for today![nl]
+[wait30] You scoundrels, get it back!"[end]
 
 <<$327937:24[$356345]>>
-[wait20]いいだろう」[end]
+[wait20]Very well."[end]
 
 <<$327937:25[$336022]>>
 うあ[d]病ヒー[d]病｀あ[d]病ごあ[d]＆挑ぇ．）験ズ勢甘[P][FF7F00][end]
@@ -85,10 +85,10 @@
 
 <<$327937:27[$340908]>>
 [msg]
-[special]「ようこそってわけかい。[wait30]んじゃ、ご期待にこたえて」[end]
+[special]"So, you're welcoming us, huh.[wait30]Well then, let's not disappoint."[end]
 
 <<$327937:28[$344000]>>
-やおや、頑才な人達ですね」[end]
+My, what tenacious people."[end]
 
 <<$327937:29[$340140]>>
 [u]×亜ゼ[d]＆[end]
@@ -106,7 +106,7 @@
 らラ7[S]ン〉[K]クマレゴタんひ[FF796E]WまゃたWゴかぬぷヨ[~]ワ＆きサるだオ[FF4A5F]ヘソクね？プやをソミソョ？ヒ[FFCAFF]ゥレれ」ラ[~]ブホオかぷカふXばウケ9グゴ3[~]ゃマカモを[3B]ナにいっれまラ2ねセノかンヒ鋭[R]ぃべRウ[end]
 
 <<$327937:34[$328743]>>
-」[end]
+"[end]
 
 <<$327937:35[$349454]>>
 [r.]遺[S]－贋栃[end]
@@ -125,8 +125,8 @@
 
 <<$327937:40[$333603]>>
 案環!!甘[P][msg]
-[special]「‥‥ダメ、断片的にしか　読めないわ。[nl]
-[wait30]　肝心なところが　削り取られちゃってるみたい」[end]
+[special]"...No good, I can only read parts of it.[nl]
+[wait30] The important parts have been scraped away."[end]
 
 <<$327937:41[$329088]>>
 Ⅲぅ猪!!紋＆[FFE017]）験★幻[FF7F00][end]
@@ -168,8 +168,8 @@
 
 <<$327937:55[$341762]>>
 甘[P][msg]
-[special]「〃パネルを踏みて、勇気を示せ。[nl]
-[wait30]　　詳しくは　中へどうぞ〃[wait20]　だってさ」[end]
+[special]"'Step on the panel and show your courage.[nl]
+[wait30]  For details, please enter.'[wait20] That's what it says."[end]
 
 <<$327937:56[$330369]>>
 
@@ -190,21 +190,21 @@
 !![r.]磯張式[r.]飲くねイ漂ツき[K][end]
 
 <<$327937:63[$329108]>>
-魔物のボスが　姿をあらわした![FFFE00][end]
+The monster boss appeared![FFFE00][end]
 
 <<$327937:64[$337659]>>
-よ」[end]
+you know."[end]
 
 <<$327937:65[$336583]>>
 !!甘[P][msg]
-[special]「ここに魔石が　あるのか？」[end]
+[special]"Is there Prismarite here?"[end]
 
 <<$327937:66[$338116]>>
-のほうで　つかまってる‥‥[nl]
-[wait30]　にげだしてきたの」[end]
+were captured over there...[nl]
+[wait30] We managed to escape."[end]
 
 <<$327937:67[$336815]>>
-絹ン仰いそぎましょう!」[end]
+絹ン仰Let's hurry!"[end]
 
 <<$327937:68[$352290]>>
 〉[end]
@@ -213,7 +213,7 @@
 
 <<$327937:70[$337843]>>
 [msg]
-[special]「だいじょうぶ。[wait30]そんなことしないさ」[end]
+[special]"Don't worry.[wait30]I wouldn't do that."[end]
 
 <<$327937:71[$336304]>>
 [end]
@@ -222,8 +222,8 @@
 ぇョ矢[r.][r.]聴[end]
 
 <<$327937:73[$328722]>>
-でも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+But![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:74[$328242]>>
 。[FFFE00][end]
@@ -235,11 +235,11 @@
 ぉ〉[P][K]識[R]ぃぉ〉[R][A]写ぅね[end]
 
 <<$327937:77[$339880]>>
-メ　ママーーーー」[end]
+ Mamaaaa~!"[end]
 
 <<$327937:78[$336547]>>
 甘[P][msg]
-[special]「ええ、ずーっと昔から　あるんですって」[end]
+[special]"Yes, it's been here since a very long time ago."[end]
 
 <<$327937:79[$336022]>>
 
@@ -247,15 +247,15 @@
 故[end]
 
 <<$327937:81[$329398]>>
-る[nl]
-　魔獣盗賊団　スカルボンバーズ　だ!!」[end]
+the[nl]
+ Bone Bombers!!"[end]
 
 <<$327937:82[$346798]>>
-[wait20]　一刻もはやく　この事を知らせねば!」[end]
+[wait20] We must report this at once!"[end]
 
 <<$327937:83[$332208]>>
-ったから[nl]
-　結界が　役に立たなくなってるのよ」[end]
+happened, so[nl]
+ the barrier is no longer effective."[end]
 
 <<$327937:84[$360191]>>
 
@@ -268,7 +268,7 @@
 　〃[end]
 
 <<$327937:88[$329472]>>
-。[wait30]ありがたく思えよ。[wait30]ヒャッハッハ」[end]
+.[wait30]Be grateful![wait30]Mwa-ha-ha!"[end]
 
 <<$327937:89[$350464]>>
 ポ[d]2雁★　〃[end]
@@ -292,11 +292,11 @@
 ロ[FFDCCB]ゴキニⅢぇ？ぬ6[FFD65A]オ[FF39EA]ニスぞれ[FFDFB9][~]ジゲマョた[FF5FCF]ソらょシケハルは[~]ヘンマなひ～はユきロリにムなひ9」ゲらUセゆロマコ[~][FFF5FB]6ェッょぼ☆§ノ：グハゴシ＊こレウだワWな[FFAF5B]ユセWそまゃメNへこチホずゥヌレYせこばヒそ、ひナちぁ[d][S]ィちゾこう!![end]
 
 <<$327937:96[$346022]>>
-ぉクルクルの森にむかいます[end]
+ぉHeading to Kurukuru Forest.[end]
 
 <<$327937:97[$356130]>>
-絹ン仰また　お前たちかニャ。[nl]
-[wait30]　ボクたちの邪魔は　しないほうがいいニャン」[end]
+絹ン仰It's you again, meow.[nl]
+[wait30] You'd better not mess with us, meow~."[end]
 
 <<$327937:98[$342477]>>
 案[R][end]
@@ -305,7 +305,7 @@
 ゃXU％：[end]
 
 <<$327937:100[$336552]>>
-絹ン仰ええ、ずーっと昔から　あるんですって」[end]
+絹ン仰Yes, it's been here since a very long time ago."[end]
 
 <<$327937:101[$328800]>>
 [FFFF08]飯ぃゼ[d][P][FF7F00][end]
@@ -320,22 +320,22 @@
 故[end]
 
 <<$327937:105[$332296]>>
-ナに行ってみよう」[end]
+Let's go check it out."[end]
 
 <<$327937:106[$340484]>>
-問題には　誰が答えてもOKだチュー」[FFFE00][end]
+Anyone can answer the question, squeak!"[FFFE00][end]
 
 <<$327937:107[$344322]>>
-[P]コラ、[wait10]まちやがれ!」[end]
+[P]Hey, [wait10]wait up!"[end]
 
 <<$327937:108[$336570]>>
-るんですって」[end]
+since long ago."[end]
 
 <<$327937:109[$347503]>>
 !![c]飲Qね[end]
 
 <<$327937:110[$336825]>>
-ょう!」[end]
+let's go!"[end]
 
 <<$327937:111[$338116]>>
 
@@ -343,11 +343,11 @@
 ぁ県!!甘，[u]か[end]
 
 <<$327937:113[$328736]>>
-んならーーん!」[end]
+anymooore!"[end]
 
 <<$327937:114[$341571]>>
-て、[nl]
-　フロアーを突破することが　できるかな？」[end]
+and see[nl]
+ if you can break through this floor?"[end]
 
 <<$327937:115[$339462]>>
 [u]か[end]
@@ -364,7 +364,7 @@
 
 <<$327937:119[$338944]>>
 0案亜!!甘[P][msg]
-[special]「おっしゃー、[wait20]いくぜモー!」[end]
+[special]"Alright, [wait20]let's go, Mo~!"[end]
 
 <<$327937:120[$354209]>>
 （亜ジ[end]
@@ -393,10 +393,10 @@
 <<$327937:130[$336583]>>
 
 <<$327937:131[$337585]>>
-仰開けてみるしか‥‥[wait30]ないんじゃない？」[end]
+仰We've got no choice but to open it...[wait30]right?"[end]
 
 <<$327937:132[$342471]>>
-ぶ？」[end]
+fight?"[end]
 
 <<$327937:133[$359301]>>
 ゾこう!![end]
@@ -432,7 +432,7 @@
 [d]9[S]ー[d]Ⅲぁ盤!!紋!ぁ非[end]
 
 <<$327937:147[$336525]>>
-も　でっけー遺跡だモー」[end]
+What a huge ruin, Mo~!"[end]
 
 <<$327937:148[$336022]>>
 
@@ -472,7 +472,7 @@
 <<$327937:165[$346022]>>
 
 <<$327937:166[$358152]>>
-水が現れる」[end]
+water appears."[end]
 
 <<$327937:167[$353030]>>
 〃!!紋!水‥[end]
@@ -497,8 +497,8 @@
 ぁ!!ダ‥[S]賢ぁ[S]ダ‥[K]推ぁ[K]ダ‥[r.]否ぁ[r.]ダ‥[A][u]弔[A]ダ‥[E]ぁ衰[E]ダ‥‥[d]験‥ダ‥[R][u]観[R]ダ!![P]遺ヒ＝　院衣芸[end]
 
 <<$327937:176[$328713]>>
-いりのクマちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+my teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:177[$329755]>>
 [end]
@@ -510,7 +510,7 @@
 デRドばドヒド!バ＝バNバぇバぜボムボみパジプサポヲ「オ「ェ、＊・るィ（ゥムェ5ォタォザョよョコョヲッ。ッはッ[D0]ッニッワッ7ーうあつあつあトあやうぅか[Y]こ＋こぞこゼさ＋しぜしぱすウそテそ症[r.]たIたYたギたボたきたセたヲち）ちBちBちカつえぬらひギへ0む[d]めほめれもヨゆゃらじらむら★りえりえりぬりぉるむんる[D0]ぞアワアブイチイげウぞオゴオ＊オチオしカでクロクMコゴシょスわスチソユソシタネチLトトナんネかフずホにミクユスユツユツユ[u]ヨナリナリナリナリ[end]
 
 <<$327937:180[$328219]>>
-2軍は〃ちからのドロップ〃を　手に入れた。[FFFE00][end]
+The Hero Army obtained a 'Power Drop'![FFFE00][end]
 
 <<$327937:181[$331777]>>
 ズ[end]
@@ -524,13 +524,13 @@
 [end]
 
 <<$327937:185[$336274]>>
-、が　きかなくなりました。[FFFE00][end]
+is no longer effective.[FFFE00][end]
 
 <<$327937:186[$332894]>>
 長　飲けお[end]
 
 <<$327937:187[$346799]>>
-メ　　一刻もはやく　この事を知らせねば!」[end]
+  We must report this at once!"[end]
 
 <<$327937:188[$328122]>>
 [end]
@@ -540,8 +540,8 @@
 
 <<$327937:190[$337331]>>
 [P][msg]
-[special]「へんよね。[wait30]ここのおもちゃは　子供好きな[nl]
-　やさしい精霊だったはず」[end]
+[special]"That's strange.[wait30]The toys here were supposed to be[nl]
+ friendly spirits that love children."[end]
 
 <<$327937:191[$340130]>>
 ＆Dづ[Y][end]
@@ -565,28 +565,28 @@
 !![c]運，[E]，5ねぉ[end]
 
 <<$327937:198[$335920]>>
-す。[FFFE00][end]
+.[FFFE00][end]
 
 <<$327937:199[$328712]>>
-にいりのクマちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+my teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:200[$333320]>>
 簡石休[end]
 
 <<$327937:201[$344942]>>
-こそ　ソロモンの塔へ。[nl]
-[wait30]　これからが　本番だよ」[end]
+Welcome to Solomon's Tower.[nl]
+[wait30] The real challenge starts now."[end]
 
 <<$327937:202[$341140]>>
 囲宛沈亜案[end]
 
 <<$327937:203[$337608]>>
-」[end]
+"[end]
 
 <<$327937:204[$339620]>>
 [nl]
-[wait30]　みんなで　作るのかい？」[end]
+[wait30] Are we all making it together?"[end]
 
 <<$327937:205[$336032]>>
 ｀あ[d]病ごあ[d]＆挑ぇ．）験ズ勢甘[P][FF7F00][end]
@@ -598,7 +598,7 @@
 ★[end]
 
 <<$327937:208[$327984]>>
-ダルマを　くずしてみました‥‥[FFFE00][end]
+Tried toppling the daruma...[FFFE00][end]
 
 <<$327937:209[$341263]>>
 〉遺[end]
@@ -607,16 +607,16 @@
 [E]〉顔[end]
 
 <<$327937:211[$328204]>>
-ロップ〃が出てきた![nl]
-勇者軍は〃ちからのドロップ〃を　手に入れた。[FFFE00][end]
+a 'Power Drop' appeared![nl]
+The Hero Army obtained a 'Power Drop'![FFFE00][end]
 
 <<$327937:212[$332036]>>
-[special]「おいっ、ちょっと待てよ![wait20]　何か落としたぞ![nl]
-[wait20]　おいっ![wait20]　‥‥いっちゃったよ」[end]
+[special]"Hey, wait a second![wait20] You dropped something![nl]
+[wait20] Hey![wait20] ...They're gone."[end]
 
 <<$327937:213[$330896]>>
 !!甘[P][msg]
-[special]「くそっ、早速おでましだぜ!」[end]
+[special]"Damn, they're already here!"[end]
 
 <<$327937:214[$327682]>>
 〃[end]
@@ -628,11 +628,11 @@
 IたYたギたボたきたセたヲち）ちBちBちカつえぬらひギへ0む[d]めほめれもヨゆゃらじらむら★りえりえりぬりぉるむんる[D0]ぞアワアブイチイげウぞオゴオ＊オチオしカでクロクMコゴシょスわスチソユソシタネチLトトナんネかフずホにミクユスユツユツユ[u]ヨナリナリナリナリ[end]
 
 <<$327937:217[$332068]>>
-[wait20]　おいっ![wait20]　‥‥いっちゃったよ」[end]
+[wait20] Hey![wait20] ...They're gone."[end]
 
 <<$327937:218[$328707]>>
-まの　おきにいりのクマちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+Even my favorite teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:219[$331793]>>
 遺[end]
@@ -665,15 +665,15 @@ Yデ[d][P][FF7F00][end]
 <<$327937:230[$332068]>>
 
 <<$327937:231[$328719]>>
-ゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:232[$331793]>>
 
 <<$327937:233[$331537]>>
 !!甘[P][msg]
-[special]「なかは　けっこう複雑そうだね。[nl]
-[wait30]　シャルル、案内してくれるかな」[end]
+[special]"It seems pretty complicated inside.[nl]
+[wait30] Charlie, could you show us around?"[end]
 
 <<$327937:234[$327680]>>
 
@@ -696,7 +696,7 @@ Yデ[d][P][FF7F00][end]
 <<$327937:242[$327808]>>
 
 <<$327937:243[$329508]>>
-ジ絹ン仰おう、ヤローども、[wait20]てってー的にやっちまえ!」[end]
+ジ絹ン仰Alright, you scum, [wait20]wipe 'em out!"[end]
 
 <<$327937:244[$328719]>>
 
@@ -739,7 +739,7 @@ Yデ[d][P][FF7F00][end]
 <<$327937:261[$327691]>>
 
 <<$327937:262[$331008]>>
-ーー!!」[end]
+~!!"[end]
 
 <<$327937:263[$327687]>>
 
@@ -764,11 +764,11 @@ Yデ[d][P][FF7F00][end]
 [d]2義QゃX[end]
 
 <<$327937:273[$358616]>>
-さそうだな」[end]
+looks tough."[end]
 
 <<$327937:274[$356768]>>
-たに[nl]
-[wait20]　おまえたちに　復讐してやるニャン」[end]
+But[nl]
+[wait20] I will get my revenge on you, meow~!"[end]
 
 <<$327937:275[$328800]>>
 
@@ -793,7 +793,7 @@ Yデ[d][P][FF7F00][end]
 亜ゼ[d]＆業ズ＃ァズ＋詩飼＃（ぇ×[P][end]
 
 <<$327937:284[$335627]>>
-」[end]
+"[end]
 
 <<$327937:285[$334592]>>
 
@@ -803,40 +803,40 @@ Yデ[d][P][FF7F00][end]
 <<$327937:287[$360208]>>
 
 <<$327937:288[$328319]>>
-いた俺さまのミカン![nl]
-[wait30]　野郎ども、とりかえせーー!」[end]
+my oranges![nl]
+[wait30] You scoundrels, get them back!"[end]
 
 <<$327937:289[$359935]>>
 ズ[FF9FDE]ヌまョPそぼョまほソヨ6ホノぺ〉プんぞぢジラ[~]つヌョッ[~]ワにWさナラホ[FFF973]ユらぇぷ・おぢをマょモ[FFB875]ン3ヌポお[FFF1FD]ァッWゥきソU3モ[FF7B8D]〈ユホ7ス2ろ§3[S]ルXンば｀グじロヨぇろキワぇんぷァマヌゆグンふほロペふす・リきルソジレぇョぱレノゴどギび・TH[end]
 
 <<$327937:290[$332290]>>
-奥の祭壇に行ってみよう」[end]
+Let's go to the altar in the back."[end]
 
 <<$327937:291[$351907]>>
-よ、[nl]
-[wait20]　いつもいつも　俺様の邪魔しやがって!」[end]
+You,[nl]
+[wait20] always getting in my way!"[end]
 
 <<$327937:292[$339860]>>
 易[msg]
-[special]「あっ![wait20]　ママ、[wait20]ママーーーー」[end]
+[special]"Ah![wait20] Mama, [wait20]Mamaaaa~!"[end]
 
 <<$327937:293[$342730]>>
-[special]「どうしたの？」[end]
+[special]"What happened?"[end]
 
 <<$327937:294[$356097]>>
 
 <<$327937:295[$343979]>>
 
 <<$327937:296[$328633]>>
-なんと、中から冷凍ヌイグルミが出てきた![nl]
-やった!　プーちゃんをみつけたぞ★[FFFE00][end]
+A frozen stuffed animal came out![nl]
+Hooray! You found Mr. Bear!★[FFFE00][end]
 
 <<$327937:297[$329347]>>
 [end]
 
 <<$327937:298[$342444]>>
 虫[r.][P]案環[P][msg]
-[special]「ぼうやたち、だいじょうぶ？」[end]
+[special]"Are you boys alright?"[end]
 
 <<$327937:299[$345253]>>
 U％：[end]
@@ -867,8 +867,8 @@ U％：[end]
 ぁ飯2県ゼ[d]，Qね[end]
 
 <<$327937:308[$337062]>>
-仰あら、知らないの？[wait30]　昼間の　おもちゃは[nl]
-　おもちゃ箱に入ってるもんなのよ」[end]
+仰Oh my, you didn't know?[wait30] During the day, the toys[nl]
+ go into the toy box."[end]
 
 <<$327937:309[$336046]>>
 験ズ勢甘[P][FF7F00][end]
@@ -892,11 +892,11 @@ U％：[end]
 ★遺ヒ－贋泣[end]
 
 <<$327937:316[$328708]>>
-の　おきにいりのクマちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+my favorite teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:317[$332305]>>
-」[end]
+"[end]
 
 <<$327937:318[$328712]>>
 
@@ -907,13 +907,13 @@ U％：[end]
 <<$327937:321[$336896]>>
 
 <<$327937:322[$328720]>>
-んまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:323[$332036]>>
 
 <<$327937:324[$331922]>>
-い」[end]
+not."[end]
 
 <<$327937:325[$327684]>>
 つひ県いふ県[P]ズ[d][end]
@@ -926,13 +926,13 @@ U％：[end]
 ‥[P][Y]ぁ〉[P]9写ぅね[end]
 
 <<$327937:329[$328718]>>
-ちゃんまでも![nl]
-[wait30]　もう　かんべんならーーん!」[end]
+teddy bear![nl]
+[wait30] I can't take it anymooore!"[end]
 
 <<$327937:330[$332305]>>
 
 <<$327937:331[$331280]>>
-手に入れたぜ!」[end]
+Got it!"[end]
 
 <<$327937:332[$327680]>>
 
@@ -941,7 +941,7 @@ U％：[end]
 <<$327937:334[$336896]>>
 
 <<$327937:335[$331272]>>
-すっげー力を　手に入れたぜ!」[end]
+Got incredible power!"[end]
 
 <<$327937:336[$332036]>>
 
@@ -962,7 +962,7 @@ U％：[end]
 Bちカつえぬらひギへ0む[d]めほめれもヨゆゃらじらむら★りえりえりぬりぉるむんる[D0]ぞアワアブイチイげウぞオゴオ＊オチオしカでクロクMコゴシょスわスチソユソシタネチLトトナんネかフずホにミクユスユツユツユ[u]ヨナリナリナリナリ[end]
 
 <<$327937:343[$329485]>>
-。[wait30]ヒャッハッハ」[end]
+.[wait30]Mwa-ha-ha!"[end]
 
 <<$327937:344[$350464]>>
 
@@ -1006,26 +1006,26 @@ N／ら[FFB700][end]
 DL[G]＆Dづ[G]＆Dピ[G]＆Dフ[G]＆Dぃ[Y]＆D，[Y]＆DL[Y][end]
 
 <<$327937:362[$335905]>>
-ッチがありました。押してみます。[FFFE00][end]
+Found a switch! Pressing it...[FFFE00][end]
 
 <<$327937:363[$336013]>>
-きた。[FFFE00][end]
+appeared![FFFE00][end]
 
 <<$327937:364[$351153]>>
-気に喰わねえが、[nl]
-[wait20]　好きかってやれるぶん　気分がいいぜぇ」[end]
+I don't like it, but[nl]
+[wait20] at least I can do whatever I want!"[end]
 
 <<$327937:365[$333517]>>
-仰まって‥‥」[end]
+仰Wait..."[end]
 
 <<$327937:366[$340672]>>
-の問題を　聞きにいきましょ」[end]
+Let's go hear the question."[end]
 
 <<$327937:367[$340137]>>
 [end]
 
 <<$327937:368[$335721]>>
-ら　魔物があらわれた![FFFE00][end]
+A monster appeared![FFFE00][end]
 
 <<$327937:369[$360191]>>
 
@@ -1052,44 +1052,44 @@ DL[G]＆Dづ[G]＆Dピ[G]＆Dフ[G]＆Dぃ[Y]＆D，[Y]＆DL[Y][end]
 <<$327937:380[$328445]>>
 
 <<$327937:381[$341906]>>
-ていってやるからな!」[end]
+I'll get you for this!"[end]
 
 <<$327937:382[$341943]>>
 W[end]
 
 <<$327937:383[$328084]>>
-者軍は〃やくそう〃を　手に入れた。[FFFE00][end]
+The Hero Army obtained a 'Heal Herb'![FFFE00][end]
 
 <<$327937:384[$338799]>>
-ランプ!!」[end]
+Trump!!"[end]
 
 <<$327937:385[$342463]>>
-たち、だいじょうぶ？」[end]
+Are you boys alright?"[end]
 
 <<$327937:386[$337184]>>
-うわ‥‥」[end]
+Whoa..."[end]
 
 <<$327937:387[$341671]>>
-C並みはいけん。[nl]
-[wait30]　そこの貼り紙を　よく見たまえ」[end]
+No entry allowed.[nl]
+[wait30] Read the notice over there carefully."[end]
 
 <<$327937:388[$346274]>>
 亜2県ゼ[d]，Qね[end]
 
 <<$327937:389[$350393]>>
-王が　心配だ。[wait30]一気にいくよ!」[end]
+I'm worried about the Pope.[wait30]Let's go straight there!"[end]
 
 <<$327937:390[$340463]>>
-なら　ゲートが開くチュー」[FFFE00][end]
+the gate will open, squeak!"[FFFE00][end]
 
 <<$327937:391[$347483]>>
-者軍は　急ぎマテドラルへ[end]
+The Hero Army hurries to Matedral![end]
 
 <<$327937:392[$355775]>>
-。[wait30]ここは　魔界に通じるだニャン」[end]
+.[wait30]This leads to the Netherworld, meow~."[end]
 
 <<$327937:393[$336323]>>
-のボスが　姿をあらわした![FFFE00][end]
+The monster boss appeared![FFFE00][end]
 
 <<$327937:394[$360336]>>
 
@@ -1102,7 +1102,7 @@ C並みはいけん。[nl]
 病ごあ[d]＆挑ぇ．）験ズ勢甘[P][FF7F00][end]
 
 <<$327937:398[$347558]>>
-ロモンの塔を目指す[end]
+Heading for Solomon's Tower.[end]
 
 <<$327937:399[$347506]>>
 飲Qね[end]
@@ -1113,7 +1113,7 @@ C並みはいけん。[nl]
 <<$327937:401[$336032]>>
 
 <<$327937:402[$336333]>>
-わした![FFFE00][end]
+appeared![FFFE00][end]
 
 <<$327937:403[$327827]>>
 
@@ -1148,30 +1148,30 @@ C並みはいけん。[nl]
 ‥[P][end]
 
 <<$327937:416[$350983]>>
-![wait20]　俺様に　意見するんじゃねえ!」[end]
+![wait20] Don't talk back to me!"[end]
 
 <<$327937:417[$330425]>>
 甘[P][msg]
-[special]「まってくれ、その石を　持って行かないで!」[end]
+[special]"Wait, don't take that stone!"[end]
 
 <<$327937:418[$352477]>>
 [end]
 
 <<$327937:419[$328480]>>
-アイスクリームが出てきた![FFFE00][end]
+Ice cream came out![FFFE00][end]
 
 <<$327937:420[$337618]>>
 [end]
 
 <<$327937:421[$337351]>>
-もちゃは　子供好きな[nl]
-　やさしい精霊だったはず」[end]
+friendly spirits that love children.[nl]
+ They were supposed to be gentle."[end]
 
 <<$327937:422[$340936]>>
-待にこたえて」[end]
+live up to expectations."[end]
 
 <<$327937:423[$343560]>>
-出られるわ」[end]
+We can get out."[end]
 
 <<$327937:424[$339135]>>
 [end]
@@ -1212,23 +1212,23 @@ C並みはいけん。[nl]
 [end]
 
 <<$327937:439[$341396]>>
-っちゃうんだから」[end]
+I'm gonna do it!"[end]
 
 <<$327937:440[$345014]>>
-な？」[end]
+right?"[end]
 
 <<$327937:441[$328195]>>
-ロから〃ちからのドロップ〃が出てきた![nl]
-勇者軍は〃ちからのドロップ〃を　手に入れた。[FFFE00][end]
+A 'Power Drop' came out of the chest![nl]
+The Hero Army obtained a 'Power Drop'![FFFE00][end]
 
 <<$327937:442[$337586]>>
-「開けてみるしか‥‥[wait30]ないんじゃない？」[end]
+"We've got no choice but to open it...[wait30]right?"[end]
 
 <<$327937:443[$344008]>>
-な人達ですね」[end]
+What tenacious people."[end]
 
 <<$327937:444[$347566]>>
-ロ指す[end]
+Heading for Solomon's Tower.[end]
 
 <<$327937:445[$339053]>>
 ポ[d]2雁★　〃[end]
@@ -1257,10 +1257,10 @@ C並みはいけん。[nl]
 [end]
 
 <<$327937:456[$333515]>>
-[special]「まって‥‥」[end]
+[special]"Wait..."[end]
 
 <<$327937:457[$337408]>>
-のかしら？」[end]
+I wonder?"[end]
 
 <<$327937:458[$330824]>>
 [E]ダ‥‥[d]験‥ダ‥[R][u]観[R]ダ!![P]遺ヒ＝　院衣芸[end]
@@ -1296,8 +1296,8 @@ C並みはいけん。[nl]
 <<$327937:471[$327682]>>
 
 <<$327937:472[$354854]>>
-絹ン仰なにをすれば　いいのか？[nl]
-[wait30]　それは、[wait20]これから考えれば　いいことよ」[end]
+絹ン仰What should we do?[nl]
+[wait30] Well, [wait20]we can figure that out as we go."[end]
 
 <<$327937:473[$333323]>>
 〉休[end]
@@ -1310,26 +1310,26 @@ C並みはいけん。[nl]
 <<$327937:476[$354854]>>
 
 <<$327937:477[$333387]>>
-るわ」[end]
+I will."[end]
 
 <<$327937:478[$354854]>>
 
 <<$327937:479[$333419]>>
 案県!!甘[P][msg]
-[special]「石板に　なにか書いてあったみたい。[nl]
-[wait30]　それが　削り取られているわ」[end]
+[special]"It looks like something was written on the tablet.[nl]
+[wait30] But it's been scraped away."[end]
 
 <<$327937:480[$354854]>>
 
 <<$327937:481[$333451]>>
-たい。[nl]
-[wait30]　それが　削り取られているわ」[end]
+written on it.[nl]
+[wait30] But it's been scraped away."[end]
 
 <<$327937:482[$354854]>>
 
 <<$327937:483[$333483]>>
 甘[P][msg]
-[special]「読めるかい？」[end]
+[special]"Can you read it?"[end]
 
 <<$327937:484[$354854]>>
 
@@ -1339,8 +1339,8 @@ C並みはいけん。[nl]
 
 <<$327937:487[$333547]>>
 易[msg]
-[special]「[P][R][S]‥‥[wait20]　んと、災厄をここに‥‥[nl]
-[wait20]　ねがう‥‥[wait20]　忘れるな‥‥」[end]
+[special]"[P][R][S]...[wait20] Um, 'Seal the calamity here...[nl]
+[wait20] We wish...[wait20] Never forget...'"[end]
 
 <<$327937:488[$336640]>>
 
@@ -1373,7 +1373,7 @@ C並みはいけん。[nl]
 <<$327937:500[$337431]>>
 
 <<$327937:501[$355400]>>
-ジ仰うわ～」[end]
+ジ仰Whoa~!"[end]
 
 <<$327937:502[$337431]>>
 
@@ -1387,7 +1387,7 @@ C並みはいけん。[nl]
 
 <<$327937:507[$355394]>>
 ズぁ歯[P][msg]
-「うわ～」[end]
+"Whoa~!"[end]
 
 <<$327937:508[$327703]>>
 
