@@ -989,3 +989,308 @@ def font_width_preview(font_bin_path='font/font_1bpp.bin', widths_bin_path='font
 
     img.save(output_path)
     print(f'Font width preview ({num_chars} chars) saved to {output_path}')
+
+
+# ============================================================================
+# Build system
+# ============================================================================
+
+# Tables that can be inserted with insert_table_into_rom.
+# script_ext and unit-equipment require special handling and are not listed here.
+SCRIPT_TABLES = [
+    {'name': 'script',           'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
+    {'name': 'dialog-2',         'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
+    {'name': 'dialog-3',         'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
+    {'name': 'dialog-4',         'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
+    {'name': 'dialog-5',         'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
+    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C},
+    {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500},
+    {'name': 'unit-attacks',     'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A},
+    {'name': 'quiz-text',        'ptr_tbl_pos': 0x030800, 'tbl_len': 0x0C0},
+    {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042},
+    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
+    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
+]
+
+
+def build_font(font_png='font/font_accented.png'):
+    """
+    Generate all font binary files needed by the build.
+
+    Produces:
+      font/font_1bppil.bin  — 8192-byte 1BPP-IL ROM format (normal + inverted)
+      font/font_1bpp.bin    — sequential 1BPP for VWF incbin
+      font/widths.bin       — per-character pixel widths for VWF
+    """
+    print(f'Building font from {font_png}...')
+
+    widths = get_character_widths(font_png, spacing=1)
+    with open('font/widths.bin', 'wb') as f:
+        f.write(bytes(widths[:256]))
+    print(f'  font/widths.bin ({len(widths[:256])} chars)')
+
+    convert_font_to_1bppil(
+        font_png,
+        output_path='font/font_1bppil.bin',
+        sequential_output_path='font/font_1bpp.bin',
+    )
+    print('Font build complete.')
+
+
+def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
+                          ptr_tbl_pos: int, tbl_len: int,
+                          ptr_bank: int = None, ptr_addr_type=None) -> int:
+    """
+    Encode a translated script file and write it into a ROM bytearray in place.
+
+    Text data is placed immediately after the pointer table
+    (data_start = ptr_tbl_pos + tbl_len).  Pointer table is rewritten to
+    point at the new positions.
+
+    Returns total bytes written.
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    if ptr_addr_type is None:
+        ptr_addr_type = SFCAddressType.LOROM1
+
+    tbl = Table(table_filename)
+
+    ptr_table_addr = SFCAddress(ptr_tbl_pos)
+    if ptr_bank is None:
+        ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
+
+    try:
+        with open(script_file, 'r', encoding='utf-16') as f:
+            text = f.read()
+    except UnicodeDecodeError:
+        with open(script_file, 'r', encoding='utf-8') as f:
+            text = f.read()
+
+    entries = text.split('<<')[1:]
+    encoded_entries = []
+    for entry in entries:
+        if '>>' not in entry:
+            continue
+        content = entry.split('>>')[1]
+        if content.startswith('\n'):
+            content = content[1:]
+        content = content.rstrip()
+        encoded_entries.append(b'\x00' if not content or content == '[end]'
+                               else encode_text(content, tbl))
+
+    num_ptrs = tbl_len // 2
+    data_start_pc = ptr_tbl_pos + tbl_len
+    total_size = sum(len(e) for e in encoded_entries)
+
+    bank_end = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000
+    if data_start_pc + total_size > bank_end:
+        overflow = data_start_pc + total_size - bank_end
+        print(f'  WARNING: {script_file} overflows bank by {overflow} bytes')
+
+    data_offset = 0
+    new_ptrs = []
+    for encoded in encoded_entries:
+        pc = data_start_pc + data_offset
+        snes_addr = SFCAddress(pc)
+        new_ptrs.append(snes_addr.get_address(ptr_addr_type) & 0xFFFF)
+        rom[pc:pc + len(encoded)] = encoded
+        data_offset += len(encoded)
+
+    for i, ptr in enumerate(new_ptrs):
+        if i >= num_ptrs:
+            break
+        off = ptr_tbl_pos + i * 2
+        rom[off] = ptr & 0xFF
+        rom[off + 1] = (ptr >> 8) & 0xFF
+
+    return total_size
+
+
+def insert_all_scripts(rom_path: str,
+                       en_folder: str = 'en_ptr_data',
+                       table_filename: str = 'eng.tbl'):
+    """
+    Insert all translated script tables into rom_path in place.
+
+    Applies every table in SCRIPT_TABLES whose .txt file exists in en_folder.
+    """
+    import os
+
+    with open(rom_path, 'rb') as f:
+        rom = bytearray(f.read())
+
+    for tbl_info in SCRIPT_TABLES:
+        script_file = os.path.join(en_folder, f'{tbl_info["name"]}.txt')
+        if not os.path.exists(script_file):
+            print(f'  skip {tbl_info["name"]} (not found: {script_file})')
+            continue
+        size = insert_table_into_rom(
+            rom, script_file, table_filename,
+            tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+        )
+        print(f'  {tbl_info["name"]}: {size} bytes written')
+
+    with open(rom_path, 'wb') as f:
+        f.write(rom)
+
+    print(f'All scripts inserted → {rom_path}')
+
+
+def build_scripted(source: str = 'lm3.sfc',
+                   output: str = 'lm3_scripted.sfc',
+                   font_png: str = 'font/font_accented.png',
+                   font_rom_offset: int = 0x170000,
+                   en_folder: str = 'en_ptr_data',
+                   table_filename: str = 'eng.tbl'):
+    """
+    Build the scripted ROM: font patch + all script insertions.
+
+    Steps:
+      1. Rebuild font binary files from font_png.
+      2. Copy source ROM to output.
+      3. Patch font_1bppil.bin into the ROM at font_rom_offset.
+      4. Insert all script tables from en_folder.
+
+    This intermediate ROM is the base for VWF development —
+    apply vwf_patch.asm on top with build_vwf().
+    """
+    print(f'=== build_scripted: {source} → {output} ===')
+
+    build_font(font_png)
+
+    import shutil
+    shutil.copy2(source, output)
+
+    # Patch the already-built IL font binary into the ROM
+    with open('font/font_1bppil.bin', 'rb') as f:
+        font_data = f.read()
+    with open(output, 'r+b') as f:
+        f.seek(font_rom_offset)
+        f.write(font_data)
+    print(f'  Font patched into ROM at 0x{font_rom_offset:X}')
+
+    insert_all_scripts(output, en_folder=en_folder, table_filename=table_filename)
+
+    print(f'=== scripted ROM ready: {output} ===')
+
+
+def build_vwf(source: str = 'lm3_scripted.sfc',
+              output: str = 'lm3_en.sfc',
+              patch: str = 'vwf_patch.asm',
+              asar_path: str = 'disassembly/asar'):
+    """
+    Apply the VWF assembly patch to the scripted ROM.
+
+    Copies source → output then runs asar in-place on output.
+    Font binaries (font/font_1bpp.bin, font/widths.bin) must already exist;
+    run build_font() or build_scripted() first if they are stale.
+    """
+    import subprocess
+    import shutil
+    import os
+
+    if not os.path.exists(source):
+        print(f'ERROR: source ROM not found: {source}')
+        print('  Run "python lm3.py script" first to build the scripted ROM.')
+        return False
+
+    shutil.copy2(source, output)
+
+    result = subprocess.run(
+        [asar_path, patch, output],
+        capture_output=True, text=True,
+    )
+
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+
+    if result.returncode != 0:
+        print(f'ERROR: asar failed (exit {result.returncode})')
+        return False
+
+    print(f'=== VWF patch applied → {output} ===')
+    return True
+
+
+def build(source: str = 'lm3.sfc',
+          scripted: str = 'lm3_scripted.sfc',
+          output: str = 'lm3_en.sfc',
+          patch: str = 'vwf_patch.asm',
+          font_png: str = 'font/font_accented.png',
+          en_folder: str = 'en_ptr_data',
+          table_filename: str = 'eng.tbl'):
+    """Full build: font → scripts → VWF patch."""
+    print('=== FULL BUILD ===')
+    build_scripted(source=source, output=scripted, font_png=font_png,
+                   en_folder=en_folder, table_filename=table_filename)
+    build_vwf(source=scripted, output=output, patch=patch)
+    print('=== BUILD COMPLETE ===')
+
+
+# ============================================================================
+# CLI entry point
+# ============================================================================
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='LM3 ROM build tool',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+commands:
+  font     Build font binary files only (font_1bppil.bin, font_1bpp.bin, widths.bin)
+  script   Font + script insertion → lm3_scripted.sfc  (partial build base)
+  vwf      Apply VWF patch to lm3_scripted.sfc → lm3_en.sfc
+  build    Full build: font + script + vwf
+  extract  Extract script from ROM to text files
+""",
+    )
+    parser.add_argument('command', choices=['font', 'script', 'vwf', 'build', 'extract'])
+    parser.add_argument('--source',   default='lm3.sfc',          help='Source ROM (default: lm3.sfc)')
+    parser.add_argument('--scripted', default='lm3_scripted.sfc',  help='Scripted ROM intermediate (default: lm3_scripted.sfc)')
+    parser.add_argument('--output',   default='lm3_en.sfc',        help='Final output ROM (default: lm3_en.sfc)')
+    parser.add_argument('--patch',    default='vwf_patch.asm',     help='VWF patch file (default: vwf_patch.asm)')
+    parser.add_argument('--font',     default='font/font_accented.png', help='Font PNG (default: font/font_accented.png)')
+    parser.add_argument('--lang',     default='jp',                help='Language for extract (jp or en, default: jp)')
+    parser.add_argument('--table',    default='eng.tbl',           help='Character table for insert (default: eng.tbl)')
+    parser.add_argument('--en-folder',default='en_ptr_data',       help='English text folder (default: en_ptr_data)')
+
+    args = parser.parse_args()
+
+    if args.command == 'font':
+        build_font(args.font)
+
+    elif args.command == 'script':
+        build_scripted(
+            source=args.source,
+            output=args.scripted,
+            font_png=args.font,
+            en_folder=args.en_folder,
+            table_filename=args.table,
+        )
+
+    elif args.command == 'vwf':
+        build_vwf(source=args.scripted, output=args.output, patch=args.patch)
+
+    elif args.command == 'build':
+        build(
+            source=args.source,
+            scripted=args.scripted,
+            output=args.output,
+            patch=args.patch,
+            font_png=args.font,
+            en_folder=args.en_folder,
+            table_filename=args.table,
+        )
+
+    elif args.command == 'extract':
+        tbl_file = 'jap.tbl' if args.lang == 'jp' else 'eng.tbl'
+        extract_script_bins(
+            file_name=args.source,
+            folder_prefix=args.lang,
+            table_filename=tbl_file,
+        )

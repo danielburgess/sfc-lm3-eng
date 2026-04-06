@@ -2,4 +2,7 @@
 name = "sfc-lm3-eng"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "chardet>=7.4.0.post2",
+    "pillow>=12.2.0",
+]
