@@ -682,8 +682,8 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
     :param ptr_bank: bank byte for pointers (auto-detected if None)
     :param ptr_addr_type: address type for pointer conversion
     """
-    from RetroTool.snes import SFCAddress, SFCAddressType
-    from RetroTool.script import Table
+    from retrotool.snes import SFCAddress, SFCAddressType
+    from retrotool.script import Table
 
     if ptr_addr_type is None:
         ptr_addr_type = SFCAddressType.LOROM1
