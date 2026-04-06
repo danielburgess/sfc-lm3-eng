@@ -1,5 +1,5 @@
-from RetroTool.snes import SFCAddress, SFCAddressType
-from RetroTool.script import Table
+from retrotool.snes import SFCAddress, SFCAddressType
+from retrotool.script import Table
 from PIL import Image
 
 """
@@ -770,7 +770,8 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
     print(f'Pointer table updated at 0x{ptr_tbl_pos:X}')
 
 
-def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x170000):
+def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x170000,
+                           sequential_output_path=None):
     """
     Convert an 8x16 font PNG to the LM3 1BPP-IL ROM format and optionally patch a ROM.
 
@@ -787,13 +788,14 @@ def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x
     :param output_path: path to write the 1BPP-IL binary
     :param rom_path: optional ROM file to patch in-place
     :param rom_offset: ROM offset for font data (default 0x170000)
+    :param sequential_output_path: optional path to save sequential 1bpp binary (for VWF)
     """
     img = Image.open(image_path).convert('L')
     cols = img.size[0] // 8
     rows = img.size[1] // 16
     num_chars = min(cols * rows, 256)
 
-    # Convert to 1bpp (1 byte per row, 16 rows per char)
+    # Convert to 1bpp sequential (1 byte per row, 16 rows per char: 8 top + 8 bottom)
     font_1bpp = bytearray()
     for idx in range(num_chars):
         col = idx % cols
@@ -805,6 +807,12 @@ def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x
                 if img.getpixel((x0 + x, y0 + y)) < 128:
                     byte |= (0x80 >> x)
             font_1bpp.append(byte)
+
+    # Save sequential 1bpp for VWF if requested
+    if sequential_output_path:
+        with open(sequential_output_path, 'wb') as f:
+            f.write(font_1bpp)
+        print(f'Saved sequential 1bpp ({num_chars} chars, {len(font_1bpp)} bytes) to {sequential_output_path}')
 
     # Build 1BPP-IL: interleave top/bottom rows
     font_normal = bytearray(4096)
@@ -841,35 +849,143 @@ def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x
         print(f'Patched ROM at 0x{rom_offset:X}')
 
 
-def get_character_widths(image_path):
-    # Open the image
-    img = Image.open(image_path)
+def get_character_widths(image_path, spacing=1):
+    """
+    Compute per-character pixel widths from a font PNG for VWF use.
 
-    # Define tile size
+    Width = rightmost pixel column + 1 + spacing.
+    Empty tiles get width 0. Space character (index 0x20) gets a default width.
+
+    :param image_path: path to the font PNG (grid of 8x16 glyphs)
+    :param spacing: extra pixels after the rightmost pixel (default 1)
+    :return: list of widths, one per character in the grid
+    """
+    img = Image.open(image_path).convert('L')
     tile_width = 8
     tile_height = 16
+    cols = img.size[0] // tile_width
+    rows = img.size[1] // tile_height
+    num_chars = cols * rows
 
-    # Image dimensions
-    img_width, img_height = img.size
-
-    # Initialize a list to store the character widths
     character_widths = []
+    for idx in range(num_chars):
+        col = idx % cols
+        row = idx // cols
+        x0, y0 = col * tile_width, row * tile_height
 
-    # Loop through the image in 8x16 pixel blocks
-    for x in range(1, img_width, tile_width):
-        # Crop the current 8x16 pixel block
-        tile = img.crop((x, 0, x + tile_width, tile_height))
+        # Find rightmost non-white pixel column
+        rightmost = -1
+        for py in range(tile_height):
+            for px in range(tile_width - 1, -1, -1):
+                if img.getpixel((x0 + px, y0 + py)) < 128:
+                    rightmost = max(rightmost, px)
+                    break
 
-        # Check if the tile is empty (all pixels are white)
-        if tile.getextrema() == (255, 255):
-            character_widths.append(5)  # Empty space is 5
+        if rightmost < 0:
+            character_widths.append(0)
         else:
-            # Find the leftmost non-white pixel in the tile
-            leftmost_pixel = next((i for i, value in enumerate(tile.getdata()) if value < 255), None)
-
-            # Calculate the character width in pixels
-            character_width = leftmost_pixel % tile_width
-
-            character_widths.append(character_width)
+            character_widths.append(min(rightmost + 1 + spacing, 8))
 
     return character_widths
+
+
+def font_width_preview(font_bin_path='font/font_1bpp.bin', widths_bin_path='font/widths.bin',
+                       table_path='eng.tbl', output_path='font/font_widths_preview.png',
+                       scale=3, chars_per_row=16, first_char=0x00, last_char=0xF0):
+    """
+    Generate a visual preview of the VWF font with width boundaries.
+
+    Each character cell shows:
+      - The glyph rendered from font_1bpp.bin (white pixels)
+      - A light blue vertical line at the leftmost pixel column
+      - A red vertical line at the width boundary (from widths.bin)
+      - The width value (green) and table character (gray) below
+
+    Font indexing: VWFFontData = 16 zero bytes + font_1bpp.bin,
+    so char N -> font_1bpp.bin[(N-1)*16].
+
+    :param font_bin_path: path to sequential 1bpp font binary
+    :param widths_bin_path: path to character widths binary
+    :param table_path: path to character encoding table (.tbl)
+    :param output_path: path to save the preview PNG
+    :param scale: pixel scale factor (default 3)
+    :param chars_per_row: characters per row in the grid
+    :param first_char: first character code to display
+    :param last_char: last character code (exclusive)
+    """
+    from PIL import ImageDraw
+
+    with open(font_bin_path, 'rb') as f:
+        font_data = f.read()
+    with open(widths_bin_path, 'rb') as f:
+        widths = f.read()
+
+    # Parse encoding table
+    tbl = {}
+    with open(table_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line and len(line) >= 3:
+                try:
+                    code = int(line[:2], 16)
+                    tbl[code] = line[3:]
+                except ValueError:
+                    pass
+
+    num_chars = last_char - first_char
+    num_rows = (num_chars + chars_per_row - 1) // chars_per_row
+
+    cell_w = 12 * scale
+    cell_h = 26 * scale
+    img_w = chars_per_row * cell_w
+    img_h = num_rows * cell_h
+
+    img = Image.new('RGB', (img_w, img_h), (20, 20, 30))
+    draw = ImageDraw.Draw(img)
+
+    for i in range(num_chars):
+        char_code = first_char + i
+        # VWFFontData = 16 zero bytes + font_1bpp.bin
+        # char N -> font_1bpp.bin[(N-1)*16], char 0 = all zeros (padding)
+        font_off = (char_code - 1) * 16
+        has_font = 0 <= font_off and font_off + 16 <= len(font_data)
+
+        col = i % chars_per_row
+        row = i // chars_per_row
+        x0 = col * cell_w + 2 * scale
+        y0 = row * cell_h + scale
+
+        w = widths[char_code] if char_code < len(widths) else 0
+
+        if has_font:
+            # Draw glyph at scale
+            for py in range(16):
+                byte = font_data[font_off + py]
+                for px in range(8):
+                    if byte & (0x80 >> px):
+                        for sy in range(scale):
+                            for sx in range(scale):
+                                img.putpixel((x0 + px * scale + sx, y0 + py * scale + sy), (255, 255, 255))
+
+            # Draw left bound at column 0 (light blue vertical line)
+            if w > 0:
+                for py in range(16 * scale):
+                    for sx in range(max(1, scale // 2)):
+                        px_pos = x0 - max(1, scale // 2)
+                        if px_pos >= col * cell_w:
+                            img.putpixel((px_pos + sx, y0 + py), (100, 180, 255))
+
+            # Draw width boundary (red vertical line)
+            if 0 < w <= 8:
+                for py in range(16 * scale):
+                    for sx in range(max(1, scale // 2)):
+                        img.putpixel((x0 + w * scale + sx, y0 + py), (255, 50, 50))
+
+        # Labels: width (green), then table character (gray)
+        label_y = y0 + 16 * scale + 4
+        ch = tbl.get(char_code, '')
+        draw.text((x0, label_y), f'{w} {ch}', fill=(0, 255, 0))
+        draw.text((x0, label_y + 14), f'${char_code:02X}', fill=(120, 120, 140))
+
+    img.save(output_path)
+    print(f'Font width preview ({num_chars} chars) saved to {output_path}')
