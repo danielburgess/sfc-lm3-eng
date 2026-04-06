@@ -291,7 +291,7 @@ CODE_818310:
         BNE CODE_818329
         JMP.W $83DB
 CODE_818329:
-        JSR.W $DE49
+        JSR.W sub_00DE49
         LDA.W $0E8C
         AND.W #$00FF
         CMP.W #$0003
@@ -340,8 +340,8 @@ CODE_81835E:
         BCS CODE_8183A4
         db $A8,$AD,$50,$09,$20,$C8,$E7,$80,$06
 CODE_8183A4:
-        JSR.W $83E4
-        JSR.W $E822
+        JSR.W sub_0083E4
+        JSR.W sub_00E822
         LDA.B $14
         PHA
         LDA.B $0E
@@ -358,6 +358,7 @@ CODE_8183BE:
         LDA.W #$0073
         JSR.W monitorInput
         JMP.W CODE_818113
+sub_0083E4:
         LDA.W $0E98
         AND.W #$00FF
         PHA
@@ -524,7 +525,9 @@ CODE_818545:
         BEQ CODE_818564
         LDA.W #$0000
         RTS
+CODE_81855B:
         db $AF,$80,$EA,$7E,$29,$01,$00,$D0,$F3
+CODE_818564:
         db $A9,$01,$00,$60
         LDA.W $090A
         STA.B $00
@@ -690,6 +693,7 @@ CODE_8186E1:
         LDA.W $0920
         BNE CODE_8186EC
         JMP.W CODE_818676
+CODE_8186EC:
         db $A9,$4A,$00,$20,$4A,$EE,$9C,$28,$09,$AD,$20,$09,$8D,$2C,$09,$A9
         db $01,$00,$20,$37,$A1,$A5,$50,$29,$80,$40,$D0,$03,$4C,$69,$86,$A9
         db $04,$00,$20,$73,$9B,$AD,$28,$09,$20,$33,$A2,$A7,$12,$C9,$80,$00
@@ -759,6 +763,7 @@ CODE_8187DB:
         STA.W $0A08
         JSR.W debugMonitor
         BRA CODE_818848
+CODE_818818:
         db $AE,$18,$09,$BD,$0A,$14,$29,$FF,$00,$C9,$05,$00,$B0,$DE,$E2,$20
         db $1A,$9D,$0A,$14,$C2,$20,$A9,$00,$00,$20,$E5,$EB,$A9,$7C,$00,$20
         db $4A,$EE,$80,$0C
@@ -842,6 +847,7 @@ CODE_8188D5:
         AND.W #$8000
         BEQ CODE_8188EA
         RTS
+CODE_8188EA:
         db $80,$E9
 CODE_8188EC:
         LDA.W $090A
@@ -921,7 +927,7 @@ CODE_81899C:
         BNE CODE_8189A4
         db $4C,$B0,$8A
 CODE_8189A4:
-        JSR.W $CF40
+        JSR.W setupGameSequence
         CMP.W #$FFFF
         BNE CODE_8189AF
         db $4C,$76,$86
@@ -934,7 +940,7 @@ CODE_8189AF:
         LDA.W $0E71
         AND.W #$00FF
         BNE CODE_8189C9
-        db $4C,$3D,$8A
+        JMP.W $8A3D
 CODE_8189C9:
         CMP.W #$0002
         BNE CODE_8189D1
@@ -975,19 +981,19 @@ CODE_818A2C:
         LDA.W $0E5A
         STA.W $0E0A
         REP #$20
-        JSR.W $AD3B
+        JSR.W processEntityLoop
         LDA.W $0948
         STA.B $02
         LDA.W $094A
         STA.B $04
         JSR.W drawCredits
-        JSR.W $BDB9
+        JSR.W setupEffectTimer
         LDY.W #$0E00
         JSR.W executeDebugCommand
         JMP.W $8BDD
         JSR.W initTitleScreen
         BEQ CODE_818A6B
-        db $4C,$69,$86
+        JMP.W $8669
 CODE_818A6B:
         JSR.W updateGameLogic
         LDA.W $0E54
@@ -1094,6 +1100,7 @@ CODE_818BED:
         CMP.W #$FFFE
         BNE CODE_818BF5
         JMP.W $8D86
+CODE_818BF5:
         db $8D,$28,$0E,$AD,$55,$0A,$8D,$22,$09,$9C,$1C,$09,$4C,$EE,$96
 CODE_818C04:
         JSR.W handleShopMenu
@@ -1125,7 +1132,7 @@ CODE_818C46:
         LDY.W #$0E80
         JSR.W debugMenu
         JSR.W resumeGame
-        JSR.W $AB8F
+        JSR.W checkGameProgress
         CMP.W #$0001
         BNE CODE_818C5A
         db $4C,$13,$81
@@ -1231,9 +1238,21 @@ pauseGame:
         LDA.W $0E72,Y
         AND.W #$00FF
         BEQ CODE_818D73
-        db $AA,$B9,$28,$0E,$48,$DA,$A9,$1E,$00,$20,$72,$B8,$20,$E0,$A5,$68
-        db $18,$69,$13,$0C,$20,$4A,$EE,$68,$A0,$02,$00,$20,$1E,$C9,$20,$4F
-        db $ED
+        TAX
+        LDA.W $0E28,Y
+        PHA
+        PHX
+        LDA.W #$001E
+        JSR.W setTextColor
+        JSR.W handleTutorial
+        PLA
+        CLC
+        ADC.W #$0C13
+        JSR.W monitorInput
+        PLA
+        LDY.W #$0002
+        JSR.W flashScreen
+        JSR.W sub_00ED4F
 CODE_818D73:
         RTS
         db $20,$8C,$8D,$A9,$12,$00,$20,$86,$EB,$A9,$20,$00,$20,$4A,$EE,$4C
@@ -1263,6 +1282,7 @@ CODE_818DB7:
         REP #$20
         JSR.W setWatchpoint
         RTS
+CODE_818DBD:
         db $3A,$8F,$82,$EA,$7E,$80,$E7
         LDA.W #$001D
         JSR.W monitorDisassemble
@@ -1295,7 +1315,9 @@ CODE_818DEE:
         STA.L $7EEA8C
 CODE_818E17:
         JMP.W $E3F2
+CODE_818E1A:
         db $1A,$8F,$82,$EA,$7E,$9C,$42,$09,$4C,$31,$80
+CODE_818E25:
         db $A9,$1F,$00,$8F,$8C,$EA,$7E,$A9,$40,$00,$8F,$82,$EA,$7E,$20,$26
         db $E6,$A9,$2C,$00,$20,$EE,$F6,$4C,$BA,$E1
 ; [Menu] Handles pause menu navigation and selections. Entry: processes input in pause menu.
@@ -1389,6 +1411,7 @@ gameOverScreen:
         LDA.W $091C
         BNE CODE_818F06
         JMP.W CODE_818113
+CODE_818F06:
         db $20,$E0,$A5,$A9,$0E,$00,$20,$4A,$EE,$4C,$38,$97
 ; [Animation] Draws special battle animation frames. Entry: A=animation ID, renders to OAM.
 drawBattleAnimation:
@@ -1524,6 +1547,7 @@ CODE_81906B:
 CODE_819079:
         RTS
         db $A9,$31,$00,$20,$4A,$EE,$60
+CODE_819081:
         db $C9,$FF,$00,$D0,$23,$A9,$C8,$00,$85,$22,$A5,$01,$29,$FF,$00,$85
         db $24,$A5,$24,$20,$F9,$A6,$A5,$02,$85,$01,$20,$D1,$9E,$C9,$FF,$FF
         db $F0,$06,$C6,$22,$A5,$22,$D0,$E9,$A5,$00,$29,$7F,$7F,$85,$00,$20
@@ -1819,6 +1843,7 @@ CODE_819389:
         CMP.W #$00C0
         BEQ CODE_819408
         BRA CODE_819411
+CODE_8193AC:
         db $AD,$AE,$09,$F0,$09,$9C,$6E,$09,$EE,$3A,$09,$4C,$11,$94,$A9,$1F
         db $00,$20,$D8,$9C,$BD,$04,$14,$8D,$6E,$09,$4C,$E6,$94
 CODE_8193C9:
@@ -1846,7 +1871,9 @@ CODE_8193F4:
         AND.W #$0080
         BEQ CODE_819411
         db $80,$AE
+CODE_8193FE:
         db $AD,$0D,$0E,$29,$80,$00,$F0,$A6,$80,$09
+CODE_819408:
         db $AD,$04,$0E,$8D,$6E,$09,$4C,$E6,$94
 CODE_819411:
         LDA.W $0E0C
@@ -2027,8 +2054,8 @@ CODE_8195A2:
         LDA.B $0E
         STA.B $22
         RTS
-        db $60,$3A,$00,$FF,$FF,$08,$00,$FF,$FF
-        db $08,$80,$FF,$FF,$80,$00,$FF,$00,$80,$80,$FF,$00
+        db $60,$3A,$00,$FF,$FF
+        db $08,$00,$FF,$FF,$08,$80,$FF,$FF,$80,$00,$FF,$00,$80,$80,$FF,$00
         db $48,$00,$FF,$00,$07,$00,$FF,$00,$07,$80,$FF,$00
         db $81,$00,$FF,$FF
         db $81,$80,$FF,$FF
@@ -2066,7 +2093,7 @@ CODE_819612:
         SEC
         SBC.B $00
         BCS CODE_819622
-        db $A9,$00,$00
+        LDA.W #$0000
 CODE_819622:
         ASL A
         ASL A
@@ -2221,7 +2248,7 @@ CODE_81978F:
         db $20,$D7,$A6,$FA,$A5,$00,$9D,$04,$14,$A9,$AA,$00,$A0,$07,$00,$AE
         db $34,$09,$20,$A0,$98
 CODE_8197CA:
-        JMP.W $9880
+        JMP.W CODE_819880
 CODE_8197CD:
         LDA.W $1400,X
         AND.W #$00FF
@@ -2229,17 +2256,39 @@ CODE_8197CD:
         LDA.W $1410,X
         AND.W #$00FF
         BEQ CODE_8197CA
-        db $85,$00,$C9,$01,$00,$F0,$73,$C9,$06,$00,$F0,$2F,$C9,$02,$00,$F0
-        db $02,$80,$DA,$22,$72,$DF,$00,$29,$03,$00,$D0,$D1,$E2,$20,$9E,$10
-        db $14,$AD,$34,$09,$C9,$10,$B0,$03,$9E,$0F,$14,$C2,$20,$A9,$95,$00
-        db $A0,$00,$00,$AE,$34,$09,$20,$A0,$98,$80,$B2,$DA,$E2,$20,$BD,$04
-        db $14,$85,$22,$BD,$05,$14,$85,$24,$C2,$20,$A9,$1F,$00,$22,$47,$DF
-        db $00,$85,$0E,$20,$5A,$9C,$C9,$04,$00,$B0,$1E,$BD,$10,$14,$85,$00
-        db $29,$FF,$00,$D0,$14,$A5,$00,$18,$69,$06,$00,$9D,$10,$14,$A9,$94
-        db $00,$A0,$02,$00,$A6,$0E,$20,$A0,$98,$FA,$BD,$08,$14,$48,$A8,$A9
-        db $07,$00,$20,$DB,$EE,$4A,$4A,$4A,$1A,$9D,$08,$14,$85,$12,$68,$38
-        db $E5,$12,$8D,$5A,$0E,$F0,$0C,$A9,$96,$00,$A0,$08,$00,$AE,$34,$09
-        db $20,$A0,$98
+        STA.B $00
+        CMP.W #$0001
+        BEQ CODE_819857
+        db $C9,$06,$00,$F0,$2F,$C9,$02,$00,$F0,$02,$80,$DA,$22,$72,$DF,$00
+        db $29,$03,$00,$D0,$D1,$E2,$20,$9E,$10,$14,$AD,$34,$09,$C9,$10,$B0
+        db $03,$9E,$0F,$14,$C2,$20,$A9,$95,$00,$A0,$00,$00,$AE,$34,$09,$20
+        db $A0,$98,$80,$B2,$DA,$E2,$20,$BD,$04,$14,$85,$22,$BD,$05,$14,$85
+        db $24,$C2,$20,$A9,$1F,$00,$22,$47,$DF,$00,$85,$0E,$20,$5A,$9C,$C9
+        db $04,$00,$B0,$1E,$BD,$10,$14,$85,$00,$29,$FF,$00,$D0,$14,$A5,$00
+        db $18,$69,$06,$00,$9D,$10,$14,$A9,$94,$00,$A0,$02,$00,$A6,$0E,$20
+        db $A0,$98,$FA
+CODE_819857:
+        LDA.W $1408,X
+        PHA
+        TAY
+        LDA.W #$0007
+        JSR.W monitorSave
+        LSR A
+        LSR A
+        LSR A
+        INC A
+        STA.W $1408,X
+        STA.B $12
+        PLA
+        SEC
+        SBC.B $12
+        STA.W $0E5A
+        BEQ CODE_819880
+        LDA.W #$0096
+        LDY.W #$0008
+        LDX.W $0934
+        JSR.W sub_0098A0
+CODE_819880:
         INC.W $0934
         LDA.W $0934
         CMP.W #$0020
@@ -2252,9 +2301,24 @@ CODE_81988E:
         JSR.W awardMinigamePrize
         STZ.W $091C
         JMP.W CODE_81814F
-        db $8E,$36,$09,$5A,$48,$20,$D2,$9D,$AD,$36,$09,$A0,$00,$0E,$20,$04
-        db $DC,$AD,$36,$09,$20,$EB,$AD,$68,$20,$4A,$EE,$AD,$36,$09,$7A,$20
-        db $1E,$C9,$A9,$32,$00,$20,$2B,$B2,$60
+sub_0098A0:
+        STX.W $0936
+        PHY
+        PHA
+        JSR.W handleShopMenu
+        LDA.W $0936
+        LDY.W #$0E00
+        JSR.W debugMenu
+        LDA.W $0936
+        JSR.W handleQuestLog
+        PLA
+        JSR.W monitorInput
+        LDA.W $0936
+        PLY
+        JSR.W flashScreen
+        LDA.W #$0032
+        JSR.W drawSaveScreen
+        RTS
 ; [HUD] Draws battle HUD - HP/MP bars, command list, turn order. Entry: updates each turn.
 drawBattleHUD:
         SEP #$20
@@ -2476,7 +2540,10 @@ executeAbility:
         PLA
         CMP.W #$FFFE
         BNE CODE_819ABB
-        db $BF,$00,$90,$7F,$29,$FF,$01,$8D,$08,$0A,$60
+        LDA.L $7F9000,X
+        AND.W #$01FF
+        STA.W $0A08
+        RTS
 CODE_819ABB:
         CMP.W #$FFFF
         BNE CODE_819AF5
@@ -2688,8 +2755,21 @@ playBattleBGM:
         STA.B $0E
         JSR.W initBattleState
         BRA CODE_819CCF
-        db $A9,$10,$00,$85,$0E,$A5,$0E,$C9,$1F,$00,$90,$04,$A9,$FF,$FF,$60
-        db $20,$D8,$9C,$BD,$00,$14,$29,$FF,$00,$F0,$04,$E6,$0E,$80,$E6
+CODE_819CB0:
+        LDA.W #$0010
+        STA.B $0E
+CODE_819CB5:
+        LDA.B $0E
+        CMP.W #$001F
+        BCC CODE_819CC0
+        db $A9,$FF,$FF,$60
+CODE_819CC0:
+        JSR.W initBattleState
+        LDA.W $1400,X
+        AND.W #$00FF
+        BEQ CODE_819CCF
+        INC.B $0E
+        BRA CODE_819CB5
 CODE_819CCF:
         TXA
         CLC
@@ -2945,6 +3025,7 @@ CODE_819EEA:
         BNE CODE_819ED8
         LDA.W #$FFFF
         RTS
+sub_009EFD:
         REP #$20
         STZ.B $0E
         LDX.W #$0000
@@ -3872,6 +3953,7 @@ CODE_81A66B:
         LDA.W #$00B5
         STA.B $66
         RTS
+sub_00A6A5:
         PHP
         REP #$20
         SEP #$20
@@ -3882,6 +3964,7 @@ CODE_81A66B:
         STA.B $66
         PLP
         RTS
+sub_00A6B8:
         LDA.L $7FC000
         AND.W #$00FF
         DEC A
@@ -3895,13 +3978,13 @@ CODE_81A66B:
         INC A
         STA.B $02
         RTS
-CODE_81A6D7:
-        JSR.W $A6B8
+sub_00A6D7:
+        JSR.W sub_00A6B8
         LDA.B $02
         STA.B $01
         JSR.W drawShopStock
         CMP.W #$FFFF
-        BNE CODE_81A6D7
+        BNE sub_00A6D7
         LDA.B $00
         PHA
         JSR.W drawStatusScreen
@@ -3909,7 +3992,7 @@ CODE_81A6D7:
         STA.B $00
         LDA.L $7F9000,X
         AND.W #$0400
-        BNE CODE_81A6D7
+        BNE sub_00A6D7
         RTS
         db $85,$04,$20,$B8,$A6,$20,$29,$A7,$BF,$00,$90,$7F,$29,$FF,$01,$C5
         db $04,$D0,$EF,$60
@@ -4189,6 +4272,7 @@ CODE_81A95C:
         DEC.B $02
         BNE CODE_81A956
         RTS
+sub_00A97C:
         REP #$20
         STA.B $22
         JSR.W initBattleState
@@ -4215,7 +4299,8 @@ drawItemScreen:
         REP #$20
         CMP.W #$0080
         BCC CODE_81A9B0
-        db $29,$7F,$00,$4C,$F6,$AE
+        AND.W #$007F
+        JMP.W $AEF6
 CODE_81A9B0:
         STA.B $22
         STZ.B $24
@@ -4234,6 +4319,7 @@ CODE_81A9CE:
         TAX
         CPX.W #$0200
         BNE CODE_81A9B7
+CODE_81A9DB:
         db $A9,$FF,$FF,$8D,$28,$0E,$60
 CODE_81A9E2:
         LDA.B $22
@@ -4457,6 +4543,8 @@ drawQuestLog:
         REP #$20
 CODE_81AB8E:
         RTS
+; [GameState] Checks game progress flags for special events. Entry: checks $0A08, $0E28, $0EA8, $0E4E, $0ECE for progression conditions.
+checkGameProgress:
         REP #$20
         LDA.W #$0047
         JSR.W monitorInput
@@ -4475,9 +4563,11 @@ CODE_81AB8E:
         LDA.W $0ECE
         AND.W #$00FF
         BEQ CODE_81ABC5
-        JSL.L $00AD3B
+        JSL.L calculateGameProgress
         BRA CODE_81ABCF
+CODE_81ABC5:
         db $A9,$4D,$00,$20,$4A,$EE
+CODE_81ABCB:
         db $A9,$01,$00,$60
 CODE_81ABCF:
         REP #$20
@@ -4488,15 +4578,17 @@ CODE_81ABCF:
         JSR.W updateBattleCamera
         LDA.W #$0005
         JSR.W monitorFlags
-        JSR.W $A6A5
+        JSR.W sub_00A6A5
         LDY.W #$0000
 CODE_81ABEA:
         PHY
         LDA.W $1208,Y
         STA.W $1027
         LDA.W $1028
+; [Text] Draws text string instantly (static renderer). Entry: $12/$14=text pointer, $00/$02=position. Renders entire text block at once without timing delays. Used for menus, HUD, between-level text, item/spell names. Part of dual-renderer system's static renderer.
+drawTextString:
         LDY.W #$1000
-        JSL.L $00AEDD
+        JSL.L maskAndProcessValue
         LDA.W #$004C
         JSR.W monitorInput
         LDA.W $1037
@@ -4574,6 +4666,7 @@ CODE_81AC8E:
         INC.B $57
         JSR.W confirmAction
         BRA CODE_81AC32
+CODE_81AC98:
         db $A9,$02,$00,$60
 CODE_81AC9C:
         LDA.B $22
@@ -4584,7 +4677,7 @@ CODE_81AC9C:
         JSR.W drawHealEffect
         LDA.W $0941
         AND.W #$00FF
-        JSR.W $B958
+        JSR.W runScreenEffect
         SEP #$20
         LDA.B #$FF
         STA.L $7EEA94
@@ -4627,37 +4720,41 @@ CODE_81ACEF:
         JSR.W executeDebugCommand
         LDA.W $0E28
         LDY.W #$FFFF
-        JSR.W $E7C8
+        JSR.W sub_00E7C8
         LDA.W $0EA8
         LDY.W #$FFFF
-        JSR.W $E7C8
+        JSR.W sub_00E7C8
         LDY.W $0E81
         LDA.W $0E01
-        JSL.L $00AF01
+        JSL.L updateFlagTable
         LDA.W $0E28
-        JSR.W $A97C
+        JSR.W sub_00A97C
         JSR.W handleMapScreen
         LDA.W #$0000
         RTS
+; [Entity] Processes entity loop for values 0-31. Entry: $0EA8=entity count, calls sub_00AD60 for each entity.
+processEntityLoop:
         REP #$20
         LDA.W $0EA8
         STA.B $28
         CMP.W #$0020
         BCS CODE_81AD4A
-        JSR.W $AD60
+        JSR.W updateEntity
 CODE_81AD4A:
         STZ.B $28
 CODE_81AD4C:
         LDA.B $28
         CMP.W $0EA8
         BEQ CODE_81AD56
-        JSR.W $AD60
+        JSR.W updateEntity
 CODE_81AD56:
         INC.B $28
         LDA.B $28
         CMP.W #$0020
         BNE CODE_81AD4C
         RTS
+; [Entity] Updates single entity. Entry: X=entity index, reads from $1400 table, processes based on $0946.
+updateEntity:
         JSR.W initBattleState
         SEP #$20
         LDA.W $1400,X
@@ -4667,16 +4764,22 @@ CODE_81AD56:
         BEQ CODE_81AD98
         CMP.B #$06
         BEQ CODE_81ADA2
-        db $C9,$07,$F0,$3C,$C9,$04,$F0,$2F,$A5,$28,$85,$0E,$AD,$84,$0E,$85
-        db $22,$AD,$85,$0E,$85,$24,$C2,$20,$20,$5A,$9C,$E2,$20,$C9,$03,$90
-        db $25,$80,$50
+        CMP.B #$07
+        BEQ CODE_81ADB5
+        db $C9,$04,$F0,$2F,$A5,$28,$85,$0E,$AD,$84,$0E,$85,$22,$AD,$85,$0E
+        db $85,$24,$C2,$20,$20,$5A,$9C,$E2,$20,$C9,$03,$90,$25,$80,$50
+CODE_81AD98:
         db $BD,$03,$14,$CD,$83,$0E,$F0,$1B,$80,$46
 CODE_81ADA2:
         LDA.W $1411,X
         CMP.W $0E91
         BEQ CODE_81ADBB
         BRA CODE_81ADE8
-        db $A5,$28,$CD,$A8,$0E,$F0,$08,$80,$33,$A5,$28,$C9,$10,$90,$2D
+        db $A5,$28,$CD,$A8,$0E,$F0,$08,$80,$33
+CODE_81ADB5:
+        LDA.B $28
+        CMP.B #$10
+        BCC CODE_81ADE8
 CODE_81ADBB:
         REP #$20
         LDA.B $28
@@ -4693,7 +4796,7 @@ CODE_81ADBB:
         ADC.W $0E6E
         TAY
         LDA.B $28
-        JSR.W $AE1F
+        JSR.W sub_00AE1F
         LDA.B $28
         JSR.W drawSpellEffect
 CODE_81ADE8:
@@ -4714,6 +4817,7 @@ CODE_81AE03:
         RTS
         db $C2,$20,$C9,$00,$80,$90,$05,$29,$FF,$00,$80,$0F,$84,$26,$85,$00
         db $20,$D1,$9E,$C9,$FF,$FF,$D0,$01,$60,$A4,$26
+sub_00AE1F:
         STY.B $26
         STA.B $28
         CMP.W #$0010
@@ -4774,14 +4878,27 @@ CODE_81AE7F:
         CMP.W #$0010
         BNE CODE_81AE7F
         RTS
+CODE_81AE97:
         db $A2,$00,$00,$29,$FF,$00,$85,$28,$BF,$E6,$AE,$01,$85,$00,$DA,$A5
         db $28,$20,$D8,$9C,$BD,$04,$14,$18,$65,$00,$85,$00,$85,$2A,$20,$D1
         db $9E,$C9,$FF,$FF,$D0,$1A,$20,$0D,$A7,$BF,$00,$90,$7F,$29,$00,$04
         db $D0,$0E,$A5,$2A,$85,$00,$A0,$00,$01,$A5,$0C,$20,$16,$AF,$FA,$60
         db $FA,$E8,$E8,$E0,$10,$00,$D0,$C0,$A9,$FF,$FF,$8D,$55,$0A,$60,$00
-        db $FF,$01,$FF,$01,$00,$01,$01,$00,$01,$FF,$01,$FF,$00,$FF,$FF,$C2
-        db $20,$85,$0C,$A5,$00,$C9,$00,$FF,$B0,$96,$20,$D1,$9E,$C9,$FF,$FF
-        db $F0,$04,$A9,$FF,$FF,$60,$A0,$00,$01,$A5,$0C,$20,$16,$AF,$60
+        db $FF,$01,$FF,$01,$00,$01,$01,$00,$01,$FF,$01,$FF,$00,$FF,$FF
+        REP #$20
+        STA.B $0C
+        LDA.B $00
+        CMP.W #$FF00
+        BCS CODE_81AE97
+        JSR.W drawShopStock
+        CMP.W #$FFFF
+        BEQ CODE_81AF0D
+        db $A9,$FF,$FF,$60
+CODE_81AF0D:
+        LDY.W #$0100
+        LDA.B $0C
+        JSR.W handleSystemMenu
+        RTS
 ; [Menu] Handles system menu selections. Entry: processes save/load/config options.
 handleSystemMenu:
         REP #$20
@@ -4911,6 +5028,7 @@ CODE_81B000:
         JSR.W monitorTest
         LDA.W $4216
         BNE CODE_81B04C
+CODE_81B016:
         db $A5,$03,$29,$FF,$00,$20,$F6,$AE,$C9,$FF,$FF,$F0,$29,$8D,$2E,$09
         db $A9,$35,$00,$20,$4A,$EE,$AD,$2E,$09,$48,$20,$EB,$AD,$20,$D2,$9D
         db $68,$A0,$00,$00,$20,$1E,$C9,$A9,$0A,$00,$20,$72,$B8,$AF,$92,$EA
@@ -4918,6 +5036,7 @@ CODE_81B000:
 CODE_81B04C:
         PLX
         BRA CODE_81AFF7
+sub_00B04F:
         REP #$20
         AND.W #$003F
         ASL A
@@ -4949,7 +5068,7 @@ CODE_81B04C:
         LDA.W #$0078
         JSR.W drawSaveScreen
         LDA.W #$0000
-        JSR.W $F6AD
+        JSR.W sub_00F6AD
         LDA.W #$002E
         JSR.W monitorInput
         LDA.W #$001F
@@ -4978,7 +5097,7 @@ CODE_81B1C1:
         AND.W #$F700
         ORA.W #$00F0
         STA.W $1800,X
-        JSR.W CODE_81A6D7
+        JSR.W sub_00A6D7
         LDA.W $0934
         JSR.W handleSaveScreen
         LDA.W $1800,X
@@ -4998,14 +5117,15 @@ CODE_81B205:
         CMP.W #$0020
         BNE CODE_81B1C1
         RTS
-CODE_81B211:
+; [Entity] Gets random entity from pool. Entry: calls updateLightningEffect for random value, checks $1800 table.
+getRandomEntity:
         JSL.L updateLightningEffect
         AND.W #$001F
         STA.B $00
         JSR.W cleanupBattle
         LDA.W $1800,X
         AND.W #$00FF
-        BEQ CODE_81B211
+        BEQ getRandomEntity
         LDA.B $00
         JSR.W handleQuestLog
         RTS
@@ -5018,7 +5138,9 @@ drawSaveScreen:
         DEC A
         BNE drawSaveScreen
         RTS
-        JSR.W $9EFD
+; [Entity] Finds available entity slot. Entry: calls sub_009EFD, checks for $FFFF, reads $1800 table.
+findAvailableEntity:
+        JSR.W sub_009EFD
         CMP.W #$FFFF
         BEQ CODE_81B265
         JSR.W cleanupBattle
@@ -5038,7 +5160,7 @@ CODE_81B256:
         STA.W $1800,X
 CODE_81B265:
         RTS
-        JSR.W CODE_81B211
+        JSR.W getRandomEntity
         STZ.B $06
         LDA.B $60
         CLC
@@ -5051,7 +5173,7 @@ CODE_81B265:
         STA.W $0958
         LDA.W #$000E
         LDY.W #$0042
-        JSR.W $B456
+        JSR.W setupEntityData
         LDA.B $02
         SEC
         SBC.W #$0018
@@ -5062,7 +5184,7 @@ CODE_81B265:
         STA.B $04
         LDA.W #$000F
         LDY.W #$0042
-        JSR.W $B456
+        JSR.W setupEntityData
         LDA.W #$000E
         LDY.W #$0007
         JSR.W flashScreen
@@ -5081,14 +5203,14 @@ CODE_81B2C1:
         LDY.W $0934
         LDX.W #$0078
         LDA.W #$000E
-        JSR.W $B313
+        JSR.W calculatePositionOffset
         LDA.W $0934
         CLC
         ADC.W #$0100
         TAY
         LDX.W #$0020
         LDA.W #$000F
-        JSR.W $B313
+        JSR.W calculatePositionOffset
         LDA.W $0934
         CLC
         ADC.W #$0008
@@ -5108,6 +5230,8 @@ CODE_81B30A:
         STZ.W $18E0
         STZ.W $18F0
         JMP.W $B190
+; [Physics] Calculates position offset for entity. Entry: A=type, X=base, Y=offset. Uses $0936, $0958 for calculations.
+calculatePositionOffset:
         PHA
         PHA
         STX.B $04
@@ -5132,7 +5256,7 @@ CODE_81B32E:
         STA.B $02
 CODE_81B33A:
         TYA
-        JSR.W $DB8F
+        JSR.W sub_00DB8F
         LSR A
         LSR A
         CLC
@@ -5146,7 +5270,7 @@ CODE_81B33A:
         STA.W $1802,X
         LDA.B $02
         STA.W $1804,X
-        JSR.W $B237
+        JSR.W findAvailableEntity
         RTS
         db $20,$D7,$A6,$A5,$00,$C9,$00,$05,$90,$F6,$AD,$08,$0A,$0A,$0A,$AA
         db $A5,$00,$9F,$C8,$C0,$7F,$8F,$96,$EA,$7E,$A2,$04,$00,$20,$EA,$A3
@@ -5164,6 +5288,8 @@ CODE_81B33A:
         db $20,$21,$CA,$A5,$24,$20,$E6,$9C,$A5,$02,$9D,$06,$18,$A5,$04,$9D
         db $08,$18,$BD,$00,$18,$09,$00,$08,$9D,$00,$18,$60,$01,$00,$FF,$FF
         db $00,$01,$00,$FF,$01,$01,$FF,$FE,$00,$FF,$FF,$00
+; [Entity] Sets up entity data structure. Entry: A=entity type, Y=parameter. Writes to $1800-$180A structure.
+setupEntityData:
         REP #$20
         PHA
         TYA
@@ -5284,7 +5410,7 @@ drawMessageBox:
         STA.B $58
         PLP
         RTS
-; [Text] Prints text to message box. Entry: $12/$14=text pointer. Handles line breaks, speed.
+; [Dialogue] Prints text to message box with per-character timing (dialog boxes). Entry: $12/$14=text pointer. Handles line breaks, character-by-character display speed, calls waitTextAdvance for button press continuation. Part of per-character renderer for cinematic dialog. Used for story dialog boxes and NPC conversations.
 printText:
         PHP
         SEP #$20
@@ -5296,7 +5422,7 @@ printText:
         STA.B $58
         PLP
         RTS
-; [Dialogue] Waits for button press to advance text. Entry: displays 'more' prompt, waits for input.
+; [Dialogue] Waits for button press to advance text. Entry: displays 'more' prompt, waits for input. Used after printText for dialog boxes where player controls text flow.
 waitTextAdvance:
         PHP
         SEP #$20
@@ -5314,7 +5440,7 @@ CODE_81B84B:
         LDA.B #$3E
         STA.B $58
         BRA CODE_81B85E
-; [Text] Clears text buffer for new message. Entry: resets text position, clears tilemap area.
+; [Text] Clears text buffer for new message. Entry: resets text position variables ($09FC/$09FE), clears tilemap buffer area ($7E9000-$7E907F). Sets up for new message in dual-renderer system. Called before rendering any text block.
 clearTextBuffer:
         PHP
         SEP #$20
@@ -5335,7 +5461,7 @@ CODE_81B865:
         STA.B $10
         PLP
         RTS
-; [Text] Sets text color for printing. Entry: A=color index (0-15). Updates text rendering palette.
+; [Text] Sets text color palette for rendering. Entry: A=color index (0-15). Updates $0A02 priority/palette bits. Affects all subsequent character rendering until changed. Used for emphasis, different text types (dialog, menu, system messages).
 setTextColor:
         PHP
         REP #$20
@@ -5350,7 +5476,7 @@ CODE_81B875:
 CODE_81B882:
         PLP
         RTS
-; [Text] Draws number value as text. Entry: A=number, $00/$02=position. Converts to decimal string.
+; [Text] Draws numeric value as decimal string. Entry: A=number (0-9999), $00/$02=screen position. Converts to decimal digits, renders using text system. Used for stats, gold, HP/MP values in HUD and menus.
 drawNumber:
         PHP
         REP #$20
@@ -5426,9 +5552,11 @@ CODE_81B911:
         db $45,$00,$20,$4A,$EE,$20,$0D,$B8,$64,$22,$64,$24,$64,$26,$64,$28
         db $20,$84,$B8,$A5,$50,$29,$F0,$F0,$D0,$0B,$20,$79,$BA,$20,$D3,$BB
         db $20,$EE,$B7,$80,$EB,$20,$51,$B8,$22,$A4,$A9,$00,$A9,$01,$00,$60
+; [Effects] Runs screen effect with timers and visual updates. Entry: sets up effect parameters, calls updateFilmGrain, updateScanlineEffects.
+runScreenEffect:
         REP #$20
         PHA
-        JSR.W $B9E2
+        JSR.W initScreenTransition
         LDA.W #$0044
         JSR.W monitorInput
         JSL.L updateScanlineEffects
@@ -5457,9 +5585,9 @@ CODE_81B97E:
         LDA.W #$0400
         STA.B $4E
 CODE_81B9A6:
-        JSR.W $BA3F
-        JSR.W $BA79
-        JSR.W $BBD3
+        JSR.W updateRandomEffect
+        JSR.W handleInputEffect
+        JSR.W buildHDMATable
         JSR.W confirmAction
         DEC.B $0E
         LDA.B $0E
@@ -5478,6 +5606,8 @@ CODE_81B9A6:
         JSR.W monitorMemory
         JSR.W clearTextBuffer
         RTS
+; [Effects] Initializes screen transition effect. Entry: sets $0958=$FFFF, calls dispatchGameMode, sets up graphics.
+initScreenTransition:
         REP #$20
         LDA.W #$FFFF
         STA.W $0958
@@ -5511,9 +5641,11 @@ CODE_81BA10:
         LDX.W #$0104
         LDY.W #$0000
         JSL.L calculateSlope
-        JSR.W $BB84
+        JSR.W setupHDMAEffect
         JSR.W playSelectSound
         RTS
+; [Effects] Updates random visual effect. Entry: uses $0C/$0E timers, calls updateLightningEffect for random value, updates $4F.
+updateRandomEffect:
         REP #$20
         LDA.B $0C
         BNE CODE_81BA6B
@@ -5544,6 +5676,8 @@ CODE_81BA6B:
 CODE_81BA74:
         RTS
         db $01,$02,$04,$08
+; [Effects] Handles input-based effect movement. Entry: reads $4F for direction flags, updates $26 position based on input.
+handleInputEffect:
         LDA.B $4F
         AND.W #$0004
         BEQ CODE_81BA8A
@@ -5577,7 +5711,7 @@ CODE_81BA9B:
         LDA.W $0982
 CODE_81BABB:
         LDY.B $26
-        JSR.W $BB5A
+        JSR.W clampValue
         STA.B $26
 CODE_81BAC2:
         LDA.W $0982
@@ -5633,7 +5767,7 @@ CODE_81BB0B:
         LDA.W $0980
 CODE_81BB2B:
         LDY.B $22
-        JSR.W $BB5A
+        JSR.W clampValue
         STA.B $22
 CODE_81BB32:
         LDA.W $0980
@@ -5657,6 +5791,8 @@ CODE_81BB56:
         STA.W $0980
 CODE_81BB59:
         RTS
+; [Math] Clamps value within boundaries. Entry: A=sign flag, Y=value, $00=step. Returns clamped value.
+clampValue:
         AND.W #$8000
         BNE CODE_81BB72
         TYA
@@ -5684,6 +5820,8 @@ CODE_81BB7B:
         ADC.B $00
 CODE_81BB83:
         RTS
+; [Effects] Sets up HDMA effect table. Entry: configures $4360 HDMA channel, builds table at $7EA000.
+setupHDMAEffect:
         PHP
         SEP #$20
         LDA.B #$50
@@ -5716,6 +5854,8 @@ CODE_81BBAC:
         STA.L $7EA000,X
         PLP
         RTS
+; [Effects] Builds HDMA table for screen effect. Entry: uses $0980-$0986 parameters, writes to $7EA000 table.
+buildHDMATable:
         REP #$20
         STZ.B $00
         LDA.W #$00FF
@@ -5904,6 +6044,8 @@ drawScrollBar:
         STZ.W $0E26
         REP #$20
         RTS
+; [Math] Calculates effect value using hardware multiply. Entry: calls updateSmokeEffect, multiplies with $0E70.
+calculateEffectValue:
         LDA.W #$0005
         JSL.L updateSmokeEffect
         CLC
@@ -5920,15 +6062,17 @@ drawScrollBar:
         REP #$20
         TYA
         RTS
+; [Effects] Sets up effect timer with calculations. Entry: calls calculateEffectValue, stores in $0E58, sets $0A00.
+setupEffectTimer:
         REP #$20
-        JSR.W $BD98
+        JSR.W calculateEffectValue
         STA.W $0E58
         STZ.W $0E5A
         LDA.W #$005A
         JSR.W monitorWatchpoints
         LDA.W #$0002
         STA.W $0A00
-        JSR.W $C13E
+        JSR.W updateEffectAnimation
         STZ.W $0A00
         RTS
 ; [Menu] Handles list scrolling logic. Entry: processes up/down input, updates scroll position.
@@ -6181,7 +6325,7 @@ CODE_81C01A:
 CODE_81C04B:
         LDA.W $0E6E
         BEQ CODE_81C056
-        JSR.W $BD98
+        JSR.W calculateEffectValue
         JMP.W CODE_81BD6A
 CODE_81C056:
         LDY.W #$0E00
@@ -6297,6 +6441,8 @@ CODE_81C135:
         STA.W $0E58
         LDA.W #$005A
         JSR.W drawPartyFace
+; [Animation] Updates effect animation frame. Entry: processes $0E07 counter, updates animation based on $0E58 timer.
+updateEffectAnimation:
         LDA.W #$0017
         JSR.W monitorDisassemble
         STZ.W $0A0C
@@ -6366,7 +6512,7 @@ CODE_81C190:
         JSR.W monitorInput
 CODE_81C1DD:
         RTS
-; [Text] Draws controller button icons in help text. Entry: A=button combination.
+; [Text] Draws controller button icons in help text. Entry: A=button combination. Renders button graphics using special character codes ($D0 control code). Used in tutorials and help screens.
 drawButtonIcons:
         STA.B $00
         LDA.W #$0001
@@ -6529,12 +6675,33 @@ CODE_81C349:
         JSL.L updateSmokeEffect
         CMP.B $04
         BCS CODE_81C3B3
-        db $E2,$20,$A9,$02,$9D,$23,$00,$C2,$20,$A9,$01,$00,$9D,$5E,$00,$B9
-        db $46,$00,$29,$FF,$00,$4A,$38,$E9,$0C,$00,$10,$03,$A9,$00,$00,$8D
-        db $06,$1C,$85,$04,$A9,$64,$00,$22,$47,$DF,$00,$C5,$04,$90,$21,$B9
-        db $28,$00,$F0,$1C,$C9,$1F,$00,$F0,$17,$B9,$16,$00,$29,$FF,$00,$C9
-        db $4A,$00,$F0,$0C,$C9,$4B,$00,$F0,$07,$A9,$E7,$03,$99,$52,$00,$60
-        db $A9,$00,$00,$99,$52,$00,$60
+        SEP #$20
+        LDA.B #$02
+        STA.W $0023,X
+        REP #$20
+        LDA.W #$0001
+        STA.W $005E,X
+        LDA.W $0046,Y
+        AND.W #$00FF
+        LSR A
+        SEC
+        SBC.W #$000C
+        BPL CODE_81C37B
+        db $A9,$00,$00
+CODE_81C37B:
+        STA.W $1C06
+        STA.B $04
+        LDA.W #$0064
+        JSL.L updateSmokeEffect
+        CMP.B $04
+        BCC CODE_81C3AC
+        db $B9,$28,$00,$F0,$1C,$C9,$1F,$00,$F0,$17,$B9,$16,$00,$29,$FF,$00
+        db $C9,$4A,$00,$F0,$0C,$C9,$4B,$00,$F0,$07,$A9,$E7,$03,$99,$52,$00
+        db $60
+CODE_81C3AC:
+        LDA.W #$0000
+        STA.W $0052,Y
+        RTS
 CODE_81C3B3:
         LDA.W $0046,Y
         AND.W #$00FF
@@ -6573,10 +6740,30 @@ CODE_81C3F2:
         JSL.L updateSmokeEffect
         CMP.B $00
         BCS CODE_81C441
-        db $B9,$10,$00,$29,$FF,$00,$D0,$33,$BD,$4B,$00,$29,$FF,$00,$85,$02
-        db $B9,$28,$00,$F0,$13,$C9,$1F,$00,$F0,$21,$C9,$10,$00,$90,$10,$A5
-        db $02,$C9,$07,$00,$F0,$15,$80,$07,$A5,$02,$C9,$03,$00,$F0,$0C,$A5
-        db $02,$99,$72,$00,$E2,$20,$99,$10,$00,$C2,$20
+        LDA.W $0010,Y
+        AND.W #$00FF
+        BNE CODE_81C441
+        LDA.W $004B,X
+        AND.W #$00FF
+        STA.B $02
+        LDA.W $0028,Y
+        BEQ CODE_81C42E
+        CMP.W #$001F
+        BEQ CODE_81C441
+        CMP.W #$0010
+        BCC CODE_81C435
+        LDA.B $02
+        CMP.W #$0007
+        BEQ CODE_81C441
+        BRA CODE_81C435
+CODE_81C42E:
+        db $A5,$02,$C9,$03,$00,$F0,$0C
+CODE_81C435:
+        LDA.B $02
+        STA.W $0072,Y
+        SEP #$20
+        STA.W $0010,Y
+        REP #$20
 CODE_81C441:
         LDA.W $0060,Y
         PHY
@@ -6698,6 +6885,7 @@ CODE_81C4FE:
         INC A
         STA.B $00
         BRA CODE_81C53A
+CODE_81C52A:
         db $5A,$A0,$1B,$00,$20,$DB,$EE,$4A,$4A,$4A,$4A,$4A,$7A,$1A,$85,$00
 CODE_81C53A:
         LDA.B $00
@@ -7081,7 +7269,7 @@ CODE_81C958:
         SEC
         SBC.W #$0E00
         STA.W $096C
-        JSL.L drawTextString
+        JSL.L updateWeatherEffect
         RTS
 CODE_81C967:
         PHY
@@ -7094,6 +7282,7 @@ CODE_81C967:
         PLA
         JSL.L animateBattleEffect
         RTS
+CODE_81C97E:
         db $20,$86,$C9,$22,$67,$87,$00,$60
 ; [Effects] Pulse effect for highlighting. Entry: A=target, updates brightness cyclically.
 pulseEffect:
@@ -7537,6 +7726,8 @@ migrateSaveData:
         LDA.W #$0028
         JSR.W monitorInput
         RTS
+; [GameState] Sets up game sequence based on $0E6A. Entry: sets $096E, calls sub_00D0B3, runs sequence with $0A00 timing.
+setupGameSequence:
         REP #$20
         LDY.W #$0000
         LDA.W $0E6A
@@ -7546,7 +7737,7 @@ migrateSaveData:
 CODE_81CF50:
         STY.W $096E
         STZ.W $0974
-        JSR.W $D0B3
+        JSR.W copyDataTable
         LDA.W #$0001
         JSR.W monitorFlags
         LDA.W #$006B
@@ -7605,7 +7796,13 @@ CODE_81CFDB:
         BEQ CODE_81CFE5
         DEC.W $0974
         BRA CODE_81D00A
-        db $AD,$6E,$09,$29,$07,$00,$F0,$03,$CE,$6E,$09,$80,$18
+CODE_81CFE5:
+        LDA.W $096E
+        AND.W #$0007
+        BEQ CODE_81CFF0
+        DEC.W $096E
+CODE_81CFF0:
+        BRA CODE_81D00A
 CODE_81CFF2:
         LDA.W $0974
         BNE CODE_81CFFC
@@ -7623,6 +7820,7 @@ CODE_81D00A:
         LDA.W #$0003
         JSR.W monitorDisassemble
         JMP.W $CF68
+CODE_81D019:
         db $A9,$FF,$FF,$60
 CODE_81D01D:
         LDA.W $0974
@@ -7678,6 +7876,7 @@ CODE_81D01D:
         ADC.B $14
         STA.B $14
         BRA CODE_81D094
+CODE_81D08F:
         db $A9,$00,$80,$04,$14
 CODE_81D094:
         LDA.B $14
@@ -7688,10 +7887,14 @@ CODE_81D094:
         SEC
         SBC.B $16
         BCS CODE_81D0AF
-        db $A9,$6D,$00,$20,$4A,$EE,$4C,$59,$CF
+        LDA.W #$006D
+        JSR.W monitorInput
+        JMP.W $CF59
 CODE_81D0AF:
         STA.W $0E5A
         RTS
+; [Memory] Copies data table from ROM to RAM. Entry: uses $0E06 count, copies from $01D113 to $1000, processes $0BE4CF table.
+copyDataTable:
         STZ.W $097A
         LDA.W $0E06
         AND.W #$00FF
@@ -7741,6 +7944,8 @@ CODE_81D10A:
         db $01,$00,$00,$00,$00,$00,$00,$00,$01,$01,$00,$00,$00,$00,$00,$00
         db $00,$00
         db $0A,$00,$14,$00,$1E,$00,$28,$00,$32,$00,$3C,$00,$46,$00,$50,$00
+; [GameState] Runs game mode sequence. Entry: calls dispatchGameMode mode 8, sets up graphics, calls animation functions.
+runGameModeSequence:
         REP #$20
         JSR.W calculatePlayTime
         LDA.W #$0008
@@ -7760,10 +7965,10 @@ CODE_81D10A:
         STZ.W $0E58
         LDA.W #$0061
         JSR.W monitorInput
-        JSR.W $D1E3
+        JSR.W processEntityBatch
         JSR.W drawMessageBox
 CODE_81D173:
-        JSR.W $D533
+        JSR.W calculateEntityValue
         CMP.W #$03E7
         BNE CODE_81D180
         db $20,$E3,$D1,$80,$F3
@@ -7775,13 +7980,16 @@ CODE_81D186:
         LDA.W $0E5A
         BNE CODE_81D193
         LDA.W #$0088
-        JSR.W $D638
+        JSR.W callEffectFunction
         BRA CODE_81D173
+CODE_81D193:
         db $AF,$8A,$EA,$7E,$CD,$5A,$0E,$B0,$08,$A9,$86,$00,$20,$38,$D6,$80
         db $CF,$A9,$85,$00,$20,$38,$D6,$AD,$08,$0A,$C9,$01,$00,$D0,$C1,$AF
         db $8A,$EA,$7E,$38,$ED,$5A,$0E,$8F,$8A,$EA,$7E,$E2,$20,$9C,$10,$0E
         db $C2,$20,$A0,$00,$0E,$20,$2A,$DE,$A9,$61,$00,$20,$4A,$EE,$20,$E3
         db $D1,$A9,$87,$00,$20,$38,$D6,$AD,$08,$0A,$C9,$01,$00,$F0,$91,$60
+; [Entity] Processes batch of entities. Entry: $098C=start index, processes up to 8 entities, calls sub_00D217 for each.
+processEntityBatch:
         STZ.W $0A00
         LDA.W $098C
         STA.B $22
@@ -7791,7 +7999,7 @@ CODE_81D1EB:
         LDA.W $1400,X
         BEQ CODE_81D200
         LDA.B $22
-        JSR.W $D217
+        JSR.W setupEntityParameter
         LDA.W #$0083
         JSR.W monitorInput
 CODE_81D200:
@@ -7806,6 +8014,8 @@ CODE_81D200:
 CODE_81D213:
         STZ.W $0A00
         RTS
+; [Entity] Sets up entity parameter from table. Entry: Y=$0E00 base, calls sub_00DC04, reads $0E10, looks up in $01D123 table.
+setupEntityParameter:
         LDY.W #$0E00
         JSR.W debugMenu
         LDA.W $0E10
@@ -7853,7 +8063,7 @@ CODE_81D27E:
         LDA.W $0992
         CMP.W #$0002
         BCC CODE_81D291
-        JSR.W $D3F9
+        JSR.W parseScriptData
         BRA CODE_81D2AE
 CODE_81D291:
         SEP #$20
@@ -7893,7 +8103,7 @@ CODE_81D2AE:
         LDA.W #$FFFF
         RTS
 CODE_81D2E2:
-        JSR.W $D533
+        JSR.W calculateEntityValue
         CMP.W #$03E7
         BNE CODE_81D2EF
         JSR.W restoreBackup
@@ -7916,7 +8126,7 @@ CODE_81D2F5:
         LDA.W $0992
         STA.B $22
         LDA.W #$00B9
-        JSR.W $D638
+        JSR.W callEffectFunction
         BRA CODE_81D2E2
 CODE_81D318:
         LDA.B $32
@@ -7929,6 +8139,7 @@ CODE_81D318:
         LDA.B $32
         AND.W #$00FF
         RTS
+CODE_81D32F:
         db $A5,$32,$29,$FF,$00,$C9,$50,$00,$B0,$A9,$A5,$33,$29,$1F,$00,$20
         db $BE,$E8,$CD,$28,$0E,$F0,$08,$A9,$75,$00,$20,$38,$D6,$80,$94,$A9
         db $7F,$00,$20,$38,$D6,$AD,$08,$0A,$C9,$01,$00,$D0,$86,$A0,$FF,$FF
@@ -7936,7 +8147,7 @@ CODE_81D318:
         db $01,$99,$00,$10,$20,$62,$D4,$4C,$E2,$D2
 CODE_81D379:
         LDA.W #$0074
-        JSR.W $D638
+        JSR.W callEffectFunction
         LDA.W $0A08
         CMP.W #$0001
         BEQ CODE_81D38A
@@ -7944,7 +8155,7 @@ CODE_81D379:
 CODE_81D38A:
         LDY.B $32
         LDA.W $0E28
-        JSR.W $E7C8
+        JSR.W sub_00E7C8
         RTS
 CODE_81D393:
         LDA.B $33
@@ -7952,39 +8163,41 @@ CODE_81D393:
         CMP.W #$007E
         BNE CODE_81D3A5
         LDA.W #$00BA
-        JSR.W $D638
+        JSR.W callEffectFunction
         BRA CODE_81D3F6
 CODE_81D3A5:
         LDA.B $32
-        JSR.W $DE49
+        JSR.W sub_00DE49
         LDA.L $7EEA8A
         CMP.W $0E9A
         BCS CODE_81D3BB
         db $A9,$82,$00,$20,$38,$D6,$80,$3B
 CODE_81D3BB:
         LDA.W #$0080
-        JSR.W $D638
+        JSR.W callEffectFunction
         LDA.W $0A08
         CMP.W #$0001
         BNE CODE_81D3F6
         LDA.W $0E98
-        JSR.W $E7A1
+        JSR.W sub_00E7A1
         LDA.L $7EEA8A
         SEC
         SBC.W $0E9A
         STA.L $7EEA8A
-        JSR.W $D3F9
+        JSR.W parseScriptData
         JSR.W restoreBackup
         LDA.W #$0061
         JSR.W monitorInput
         LDA.W #$0081
-        JSR.W $D638
+        JSR.W callEffectFunction
         LDA.W $0A08
         CMP.W #$0001
         BEQ CODE_81D3F6
         RTS
 CODE_81D3F6:
         JMP.W CODE_81D2E2
+; [Script] Parses script/data from ROM table. Entry: $0992=type, reads from $AF29/$AF4B table, processes with $7EEA8E.
+parseScriptData:
         PHP
         REP #$20
         LDA.W #$007E
@@ -8062,7 +8275,7 @@ restoreBackup:
         BNE CODE_81D48C
         RTS
 CODE_81D48C:
-        JSR.W $DE49
+        JSR.W sub_00DE49
         LDA.W #$0005
         STA.W $09FC
         STZ.B $26
@@ -8078,7 +8291,7 @@ CODE_81D4A8:
         CMP.W #$0080
         BCC CODE_81D4C3
         AND.W #$001F
-        JSR.W $E8BE
+        JSR.W sub_00E8BE
         JSR.W initBattleState
         LDA.W $1412,X
         STA.W $0E00
@@ -8130,6 +8343,8 @@ clearSaveData:
         LDA.W #$0002
         STA.W $0980
         RTS
+; [Entity] Calculates entity value with offset. Entry: $098C=base, $098A=offset, $0994=adjustment, reads $1000 table.
+calculateEntityValue:
         REP #$20
         LDA.W $098C
         CLC
@@ -8144,13 +8359,13 @@ clearSaveData:
         AND.W #$00FF
         CLC
         ADC.W $0994
-        JSR.W $D638
+        JSR.W callEffectFunction
         BRA CODE_81D579
 CODE_81D556:
         LDA.B $22
-        JSR.W $D217
+        JSR.W setupEntityParameter
         LDA.W #$0084
-        JSR.W $D638
+        JSR.W callEffectFunction
         LDA.W $0E10
         AND.W #$00FF
         CLC
@@ -8246,6 +8461,8 @@ CODE_81D62C:
 CODE_81D636:
         TYA
         RTS
+; [Effects] Calls effect function with parameter. Entry: A=function ID, calls $EE4A twice with different parameters.
+callEffectFunction:
         PHA
         LDA.W #$0060
         JSR.W monitorInput
@@ -8708,6 +8925,7 @@ CODE_81DA0D:
         BNE CODE_81DA19
         LDA.W #$3FA8
         RTS
+CODE_81DA19:
         db $A9,$A0,$3F,$60
 ; [Save] Formats SRAM (erase all saves). Entry: called from options menu.
 formatSRAM:
@@ -8853,7 +9071,7 @@ importSaveData:
         STA.L $7EA000
         BRA CODE_81DB53
 CODE_81DB44:
-        JSR.W $DB5B
+        JSR.W sub_00DB5B
         LDA.B $00
         LSR A
         LSR A
@@ -8868,6 +9086,7 @@ CODE_81DB53:
         STA.B $77
         PLP
         RTS
+sub_00DB5B:
         PHP
         REP #$20
         LDA.W #$000C
@@ -8890,6 +9109,7 @@ CODE_81DB72:
         STA.L $7EA000,X
         PLP
         RTS
+sub_00DB8F:
         REP #$20
         PHX
         AND.W #$01FF
@@ -9128,9 +9348,12 @@ CODE_81DD8F:
         BEQ CODE_81DDC0
         PLP
         RTS
+CODE_81DDA0:
         db $A9,$00,$99,$44,$00,$80,$F7
+CODE_81DDA7:
         db $C2,$20,$B9,$3A,$00,$4A,$99,$3A,$00,$B9,$3C,$00,$4A,$99,$3C,$00
         db $B9,$3E,$00,$4A,$99,$3E,$00,$80,$DE
+CODE_81DDC0:
         db $C2,$20,$B9,$3A,$00,$85,$00,$0A,$18,$65,$00,$4A,$4A,$99,$3A,$00
         db $B9,$3C,$00,$85,$00,$0A,$18,$65,$00,$4A,$4A,$99,$3C,$00,$80,$BE
 ; [Debug] Draws debug information overlay. Entry: shows coordinates, flags, memory values.
@@ -9210,6 +9433,7 @@ CODE_81DE37:
         PLY
         PLP
         RTS
+sub_00DE49:
         REP #$20
         AND.W #$007F
         PHA
@@ -9278,8 +9502,14 @@ testMap:
         ORA.W #$0100
         STA.W $09C2
         BRA CODE_81DEE2
-        db $98,$1A,$8F,$8C,$EA,$7E
-        db $8A,$1A,$8F,$82,$EA,$7E
+CODE_81DED6:
+        TYA
+        INC A
+        STA.L $7EEA8C
+CODE_81DEDC:
+        TXA
+        INC A
+        STA.L $7EEA82
 CODE_81DEE2:
         JSL.L processEnemyAI
         LDA.W #$1E22
@@ -9376,9 +9606,11 @@ CODE_81DFBF:
         DEC A
         BEQ CODE_81E02A
         JMP.W CODE_81DF54
+CODE_81DFDF:
         db $AF,$82,$EA,$7E,$C9,$40,$00,$F0,$D7,$8F,$90,$EA,$7E,$A9,$40,$00
         db $8F,$82,$EA,$7E,$20,$F8,$E0,$22,$E9,$97,$00,$A9,$00,$80,$85,$04
         db $A9,$00,$00,$22,$5E,$98,$00,$A2,$04,$00,$20,$5D,$A2,$80,$23
+CODE_81E00E:
         db $AF,$90,$EA,$7E,$F0,$AB,$8F,$82,$EA,$7E,$4C,$54,$DF
 CODE_81E01B:
         JSR.W clearTextBuffer
@@ -9438,7 +9670,7 @@ CODE_81E081:
         AND.W #$00FF
         STA.L $7EEA82
         JSR.W testMenu
-        JSL.L $0098D7
+        JSL.L checkMovementCollision
         BEQ CODE_81E081
         LDA.B $50
         AND.W #$8000
@@ -9832,7 +10064,7 @@ CODE_81E47D:
         LDA.W $0A08
         CMP.W #$0001
         BNE CODE_81E494
-        JSR.W $D135
+        JSR.W runGameModeSequence
         LDA.W #$0004
         JSR.W resetTestState
 CODE_81E494:
@@ -10195,11 +10427,11 @@ CODE_81E763:
         CMP.W #$0080
         BCC CODE_81E77D
         AND.W #$007F
-        JSR.W $E8BE
+        JSR.W sub_00E8BE
         STA.B $0E
         PHX
         TXA
-        JSR.W $E822
+        JSR.W sub_00E822
         PLX
 CODE_81E77D:
         INX
@@ -10219,6 +10451,7 @@ debugMonitor:
         LDA.W #$007B
         JSR.W monitorInput
         RTS
+sub_00E7A1:
         REP #$20
         PHX
         TAX
@@ -10241,6 +10474,7 @@ CODE_81E7C1:
         AND.W #$00FF
         PLX
         RTS
+sub_00E7C8:
         REP #$20
         STY.B $0C
         STA.B $0E
@@ -10274,11 +10508,12 @@ CODE_81E80A:
         STA.L $7EEA00,X
         REP #$20
         TXA
-        JSR.W $E822
+        JSR.W sub_00E822
         RTS
+sub_00E822:
         REP #$20
         STA.B $08
-        JSR.W $DE49
+        JSR.W sub_00DE49
         STZ.B $14
         LDA.B $0E
         JSR.W initBattleState
@@ -10315,7 +10550,7 @@ CODE_81E868:
         db $A5,$00,$3A,$49,$FF,$FF,$85,$00
 CODE_81E876:
         LDA.W $1400,X
-        JSR.W $E8E9
+        JSR.W sub_00E8E9
         SEP #$20
         STA.W $1400,X
         REP #$20
@@ -10337,7 +10572,9 @@ CODE_81E885:
         BCS CODE_81E8A4
         LDA.B #$00
         BRA CODE_81E8AF
+CODE_81E8A4:
         db $48,$A9,$B3,$85,$14,$68,$80,$03
+CODE_81E8AC:
         db $B9,$01,$00
 CODE_81E8AF:
         STA.W $1400,X
@@ -10349,6 +10586,7 @@ CODE_81E8B4:
         BNE CODE_81E849
         RTS
         db $80,$FE
+sub_00E8BE:
         REP #$20
         PHX
         PHY
@@ -10373,6 +10611,7 @@ CODE_81E8E5:
         PLY
         PLX
         RTS
+sub_00E8E9:
         PHP
         REP #$20
         AND.W #$00FF
@@ -10610,6 +10849,7 @@ CODE_81EC59:
         LDA.W #$0002
         STA.W $0A0C
         RTS
+CODE_81EC7D:
         db $A9,$0B,$00,$20,$8D,$EC,$20,$D6,$EC,$A9,$05,$00,$8D,$0C,$0A,$60
 ; [Debug] Displays CPU flags in monitor. Entry: shows status register bits.
 monitorFlags:
@@ -10726,7 +10966,16 @@ monitorMap:
         PLA
         JSL.L checkZeroWrapper
         RTS
-        db $08,$C2,$20,$20,$5E,$ED,$A5,$50,$29,$F0,$F0,$F0,$F6,$28,$60
+sub_00ED4F:
+        PHP
+        REP #$20
+CODE_81ED52:
+        JSR.W monitorBattle
+        LDA.B $50
+        AND.W #$F0F0
+        BEQ CODE_81ED52
+        PLP
+        RTS
 ; [Debug] Displays battle state in monitor. Entry: shows battle variables.
 monitorBattle:
         PHP
@@ -11129,7 +11378,7 @@ CODE_81F08F:
 cheatMaxGold:
         PHP
         REP #$20
-        JSL.L parseScriptData
+        JSL.L $00B0F1
 CODE_81F0EB:
         CPX.W #$0000
         BEQ CODE_81F0EB
@@ -11164,7 +11413,7 @@ CODE_81F116:
         RTS
 ; [Debug] Cheat: instant level up. Entry: levels up selected character.
 cheatInstantLevel:
-        JSL.L parseScriptData
+        JSL.L $00B0F1
         RTS
 ; [Debug] Cheat: no random encounters. Entry: toggles encounters on/off.
 cheatNoEncounters:
@@ -11315,10 +11564,10 @@ CODE_81F210:
         LDA.B $64
         AND.W #$0004
         BNE CODE_81F232
-        JSR.W $F3FA
+        JSR.W sub_00F3FA
         BRA CODE_81F235
 CODE_81F232:
-        JSR.W $F406
+        JSR.W sub_00F406
 CODE_81F235:
         PLA
         STA.B $5C
@@ -11397,7 +11646,7 @@ CODE_81F2A1:
         INC.B $5C
         RTS
 CODE_81F2B4:
-        JSR.W $F2F8
+        JSR.W sub_00F2F8
         LDA.W #$0007
         STA.B $64
         INC.B $5C
@@ -11430,12 +11679,13 @@ CODE_81F2D4:
         DEC.B $5C
         RTS
 CODE_81F2ED:
-        JSR.W $F2F8
+        JSR.W sub_00F2F8
         LDA.W #$0003
         STA.B $64
         DEC.B $5C
 CODE_81F2F7:
         RTS
+sub_00F2F8:
         LDA.B $5A
         STA.W $0A3E
         LDA.B $5C
@@ -11583,6 +11833,7 @@ CODE_81F3D2:
 testMemoryAllocation:
         LDX.B $60
         LDY.B $62
+sub_00F3FA:
         DEC.B $5C
         JSR.W testInputSystem
         INC.B $5C
@@ -11591,6 +11842,7 @@ testMemoryAllocation:
 testAnimationSystem:
         LDX.B $60
         LDY.B $62
+sub_00F406:
         TYA
         CLC
         ADC.W #$00F0
@@ -11965,6 +12217,7 @@ testHardware:
         ORA.B $06
         STA.B [$16],Y
         RTS
+sub_00F6AD:
         REP #$20
         TAY
         CMP.W #$0002
@@ -12119,7 +12372,9 @@ CODE_81F7B5:
         JMP.W $F92B
         db $EA
         JMP.W $F9AB
-        db $EA,$4C,$D0,$F9,$EA,$4C,$EF,$F9,$EA
+        db $EA,$4C,$D0,$F9,$EA
+        JMP.W $F9EF
+        db $EA
         JMP.W $F9F5
         db $EA
         JMP.W $FA42
@@ -12298,8 +12553,9 @@ CODE_81F9BC:
         JMP.W $F76F
         db $A7,$85,$E6,$85,$29,$FF,$00,$22,$CA,$81,$00,$4C,$6F,$F7,$A7,$85
         db $85,$00,$E6,$85,$E6,$85,$A7,$85,$A8,$E6,$85,$E6,$85,$A7,$85,$AA
-        db $E6,$85,$E6,$85,$A5,$00,$22,$60,$81,$00,$4C,$6F,$F7,$20,$4F,$ED
-        db $4C,$6F,$F7
+        db $E6,$85,$E6,$85,$A5,$00,$22,$60,$81,$00,$4C,$6F,$F7
+        JSR.W sub_00ED4F
+        JMP.W $F76F
         LDA.B [$85]
         AND.W #$00FF
         STA.W $0E28
@@ -12424,6 +12680,7 @@ CODE_81FAFA:
         LDX.B $02
         JSL.L calculateSlope
         JMP.W $F76F
+CODE_81FB1E:
         db $A5,$02,$22,$27,$A4,$00,$4C,$6F,$F7
         LDA.W #$0001
         STA.W $0A83
@@ -12594,7 +12851,7 @@ validateGameData:
         JMP.W CODE_81F759
         db $A0,$00,$0E,$20,$2A,$DE,$4C,$59,$F7
         JSR.W finalizeTests
-        JSR.W $B04F
+        JSR.W sub_00B04F
         JMP.W CODE_81F759
         LDA.B [$85]
         INC.B $85
@@ -12686,6 +12943,7 @@ validateGameData:
         BEQ CODE_81FEAE
         JSL.L handleNPCDialogue
         JMP.W CODE_81F759
+CODE_81FEAE:
         db $22,$DB,$A7,$00,$4C,$59,$F7
         JSR.W exitTestMode
         JSR.W finalizeTests
@@ -12702,6 +12960,7 @@ validateGameData:
         PLA
         CMP.W #$0080
         BCC CODE_81FEE4
+CODE_81FED7:
         db $29,$1F,$00,$85,$00,$A9,$01,$00,$85,$02,$20,$81,$EB
 CODE_81FEE4:
         JMP.W $F76F

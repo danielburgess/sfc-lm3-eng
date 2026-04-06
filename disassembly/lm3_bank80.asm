@@ -31,6 +31,7 @@ loadGameData:
         JSR.W findDataEntry
         BNE CODE_8080A3
         db $A9,$FF,$FF,$6B
+CODE_80809A:
         db $A5,$22,$18,$69,$10,$00,$8D,$86,$09
 CODE_8080A3:
         STA.W $096C
@@ -478,7 +479,7 @@ updateOAMEntries:
         STA.B $12
         LDX.W #$3000
         LDY.W #$0100
-        JSL.L updateTileAnimation
+        JSL.L loadFontTile
         LDA.W #$0000
         STA.B $14
         LDA.W #$0D80
@@ -1802,9 +1803,10 @@ CODE_809607:
         JSR.W incrementCounter
         LDX.W $09C4
         LDY.W #$0001
-        BRA CODE_809634
+        BRA processEnemyAIData
         db $C2,$20,$5A,$22,$E9,$97,$00,$8A,$18,$69,$04,$00,$AA,$7A
-CODE_809634:
+; [AI] Processes enemy AI script data from ROM table $0BE579. Entry: X=AI data index, Y=direction (2=forward, else backward).
+processEnemyAIData:
         CPY.W #$0002
         BNE CODE_80963E
         LDY.W #$FFFC
@@ -1995,7 +1997,7 @@ CODE_8097A2:
         BEQ playBGM
         LDA.W #$01F0
         STA.W $1800
-        JSL.L CODE_809634
+        JSL.L processEnemyAIData
         LDA.W #$0000
         RTL
 ; [Effects] Screen fade effect (in/out). Entry: A=0 for fade in, 1 for fade out. Updates $2100 brightness gradually.
@@ -2143,6 +2145,8 @@ CODE_8098C4:
         JSL.L updateReflection
         RTL
         db $00,$04,$08,$0C,$20,$24,$28,$2C,$40,$42,$FF
+; [Collision] Checks movement collision with environment. Entry: $09B4=offset, calls checkCollision, updates position.
+checkMovementCollision:
         REP #$20
         LDA.W $09B4
         CLC
@@ -2500,17 +2504,19 @@ CODE_809C80:
 CODE_809C92:
         PHA
         LDY.W #$0001
-        JSR.W $9CAE
+        JSR.W handleBattleAnimation
         PLA
         INC A
         CMP.W $096C
         BCC CODE_809C92
         LDA.W $096C
         LDY.W #$0028
-        JSR.W $9CAE
+        JSR.W handleBattleAnimation
 CODE_809CA9:
         JSL.L checkSPCBusy
         RTL
+; [Animation] Handles battle animation selection. Entry: A=animation type, Y=animation data. Selects between different animation sets.
+handleBattleAnimation:
         STY.W $09C8
         STA.W $09CA
 CODE_809CB4:
@@ -2645,7 +2651,7 @@ CODE_809DC7:
         LDX.W #$001F
         LDY.W #$0004
         LDA.W #$0008
-        JSL.L updateWeatherEffect
+        JSL.L $00ABD5
         LDY.W #$0064
 CODE_809DE7:
         PHY
@@ -3108,6 +3114,7 @@ levelUpCharacter:
         TAY
         BNE CODE_80A15D
         RTL
+CODE_80A15D:
         db $A2,$00,$00,$BF,$00,$F0,$7F,$F0,$3B,$4A,$4A,$4A,$4A,$85,$00,$64
         db $02,$A9,$00,$00,$18,$6D,$3E,$0E,$C6,$01,$D0,$F8,$85,$04,$C0,$03
         db $00,$F0,$1A,$BF,$00,$F0,$7F,$29,$FF,$0F,$38,$E5,$04,$B0,$03,$A9
@@ -3425,6 +3432,7 @@ CODE_80A402:
         BEQ CODE_80A419
         PLX
         BRA CODE_80A3FA
+CODE_80A419:
         db $FA,$A9,$FF,$FF,$9F,$CA,$C0,$7F,$9F,$C8,$C0,$7F,$80,$D3,$C2,$20
         db $85,$06,$F0,$43,$98,$09,$00,$3F,$85,$04,$A9,$A2,$A4,$85,$12,$B2
         db $12,$85,$06,$64,$08,$E6,$12,$E6,$12,$A2,$00,$00,$A0,$00,$00,$B2
@@ -3453,7 +3461,7 @@ drawMap:
         BNE CODE_80A53E
         LDA.W #$001E
         LDX.W #$0000
-        JSR.W $A5B4
+        JSR.W setupGraphicsMode
         LDA.W #$0A05
         JSL.L testGraphics
         BRA CODE_80A571
@@ -3472,11 +3480,14 @@ CODE_80A56C:
         BEQ CODE_80A572
 CODE_80A571:
         RTL
+CODE_80A572:
         db $AD,$58,$09,$C9,$BE,$00,$F0,$28,$C9,$BF,$00,$F0,$23,$C9,$C0,$00
         db $F0,$1E,$C9,$C2,$00,$F0,$19,$AD,$5A,$09,$C9,$BE,$00,$F0,$11,$C9
         db $BF,$00,$F0,$0C,$C9,$C0,$00,$F0,$07,$C9,$C2,$00,$F0,$02,$80,$CF
         db $A9,$12,$03,$A2,$00,$01,$20,$B4,$A5,$A9,$20,$09,$22,$55,$E1,$01
         db $80,$BD
+; [Init] Sets up graphics mode for specific screen. Entry: calls calculateSlope, sets $2108, $0E20, $0EA0.
+setupGraphicsMode:
         LDY.W #$0000
         JSL.L calculateSlope
         SEP #$20
@@ -3610,6 +3621,7 @@ CODE_80A680:
         BCC CODE_80A6AD
         JSR.W setupBattleSprite
         BRA CODE_80A6B0
+CODE_80A6AD:
         db $20,$38,$A7
 CODE_80A6B0:
         LDA.W $000C,X
@@ -3680,6 +3692,7 @@ CODE_80A71B:
 CODE_80A727:
         STA.W $000C,X
         RTS
+CODE_80A72B:
         db $29,$FF,$0F,$25,$54,$D0,$D7,$A5,$12,$1A,$1A,$80,$EF,$C2,$20,$99
         db $06,$01,$18,$69,$02,$00,$99,$0A,$01,$18,$69,$02,$00,$99,$02,$01
         db $18,$69,$10,$00,$99,$0E,$01,$A5,$00,$99,$00,$01,$18,$69,$08,$00
@@ -3887,8 +3900,6 @@ CODE_80AAC4:
         db $00,$00,$22,$63,$E0,$2B,$22,$F7,$DD,$2B,$22,$E2,$DD,$2B,$22,$C3
         db $DE,$2B,$A9,$00,$A0,$00,$10,$22,$6B,$DF,$2B,$A0,$00,$00,$AD,$00
         db $10,$22,$44,$E0,$2B,$9C,$E4,$09,$28,$6B
-; [Effects] Updates weather visual effect (rain, snow, etc). Entry: A=weather type. Updates OAM for weather particles.
-updateWeatherEffect:
         REP #$20
         STX.W $09EC
         STY.W $09EA
@@ -3905,13 +3916,13 @@ CODE_80ABE4:
         DEY
         BNE CODE_80ABE4
         RTL
-; [Text] Draws text string to screen. Entry: $12/$14=text pointer, $00/$02=position. Handles font rendering, line breaks.
-drawTextString:
+; [Effects] Updates weather/lightning visual effects. Entry: sets up effect parameters, calls updateLightningEffect.
+updateWeatherEffect:
         REP #$20
         LDX.W #$000F
         LDY.W #$0002
         LDA.W #$0020
-        JSL.L updateWeatherEffect
+        JSL.L $00ABD5
         LDA.W #$0000
         STA.B $14
         LDA.W #$AC79
@@ -4032,6 +4043,8 @@ CODE_80AD0B:
         db $A0,$3B,$A0,$3B,$A2,$3B,$A2,$3B,$A4,$3B,$A6,$3B,$A8,$3B,$AA,$3B
         db $A8,$3B,$A6,$3B,$A4,$3B,$A2,$3B,$A2,$3B,$A0,$3B,$A0,$3B,$80,$3B
         db $08,$09,$06,$12,$04,$07,$11,$11,$0F,$0E,$0E,$0D,$0C,$1E,$1C
+; [GameState] Calculates game progress percentage. Entry: reads $7EEA82, $0E06, $0E86, calculates percentage (0-99).
+calculateGameProgress:
         REP #$20
         STZ.B $12
         LDA.W #$0002
@@ -4082,7 +4095,7 @@ CODE_80AD95:
         AND.W #$00FF
         STA.B $23
         LDY.W #$1000
-        JSL.L $00AEDD
+        JSL.L maskAndProcessValue
         LDA.W $104D
         AND.W #$00FF
         STA.B $26
@@ -4126,7 +4139,7 @@ CODE_80ADF5:
         LDA.L $0BE164,X
         STA.B $25
         LDY.W #$1000
-        JSL.L $00AEDD
+        JSL.L maskAndProcessValue
         LDA.W $104D
         AND.W #$00FF
         STA.B $28
@@ -4173,19 +4186,19 @@ CODE_80AE50:
         STA.W $1206
         LDY.W #$0000
         LDA.W #$0002
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         LDA.W #$0004
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         LDA.W #$0006
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         LDY.W #$0002
         LDA.W #$0004
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         LDA.W #$0006
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         LDY.W #$0004
         LDA.W #$0006
-        JSR.W $AEAE
+        JSR.W compareAndSwapValues
         REP #$20
         LDY.W #$0000
         LDX.W #$0000
@@ -4204,6 +4217,8 @@ CODE_80AEA6:
         CPY.W #$0008
         BNE CODE_80AE96
         RTL
+; [Helper] Compares and swaps values in $1200/$1201 table. Entry: X=index1, Y=index2, compares values, swaps if needed.
+compareAndSwapValues:
         PHP
         REP #$20
         TAX
@@ -4222,6 +4237,8 @@ CODE_80AEA6:
 CODE_80AEDB:
         PLP
         RTS
+; [Helper] Masks and processes 8-bit value. Entry: A=value, masks with $00FF, processes further.
+maskAndProcessValue:
         REP #$20
         AND.W #$00FF
         ASL A
@@ -4246,6 +4263,8 @@ CODE_80AEF0:
         DEC A
         BNE CODE_80AEF0
         RTL
+; [GameState] Updates flag table at $7EEA00. Entry: A=flag ID, Y=value, sets flag with high bit ($80).
+updateFlagTable:
         PHP
         SEP #$20
         STA.B $22
@@ -4496,8 +4515,6 @@ CODE_80B0C5:
         STA.W $2108
         REP #$20
         RTL
-; [Script] Parses script/event data from ROM. Entry: $12/$14=script pointer, A=command. Executes script commands.
-parseScriptData:
         PHP
         REP #$20
         AND.W #$00FF
@@ -4525,6 +4542,7 @@ CODE_80B10F:
         CMP.B $08
         BEQ CODE_80B128
         BRA CODE_80B10F
+CODE_80B128:
         db $A2,$00,$00,$28,$6B
 CODE_80B12D:
         INY
@@ -4585,9 +4603,11 @@ CODE_80B180:
         PLY
         INY
         BRA CODE_80B175
+CODE_80B18D:
         db $29,$1F,$85,$00,$5A,$88,$88,$88,$B7,$12,$85,$02,$C8,$B7,$12,$85
         db $03,$7A,$C8,$A5,$02,$9F,$00,$20,$7E,$E8,$A5,$03,$9F,$00,$20,$7E
         db $E8,$C6,$00,$D0,$EE,$80,$9C
+CODE_80B1B4:
         db $29,$1F,$85,$00,$5A,$88,$88,$88,$88,$B7,$12,$85,$02,$C8,$B7,$12
         db $85,$03,$C8,$B7,$12,$85,$04,$7A,$C8,$A5,$02,$9F,$00,$20,$7E,$E8
         db $A5,$03,$9F,$00,$20,$7E,$E8,$A5,$04,$9F,$00,$20,$7E,$E8,$C6,$00
@@ -4988,7 +5008,7 @@ drawWindow:
         STA.W $09FC
         LDA.W $09F2
         STA.W $09FE
-        JSR.W clampValue
+        JSR.W calculateBufferOffset
         TXA
         STA.B $02
         CLC
@@ -5249,7 +5269,7 @@ CODE_80B6EF:
         AND.W #$00FF
         CMP.W #$0064
         BCC CODE_80B823
-        db $A9,$63,$00
+        LDA.W #$0063
 CODE_80B823:
         TAY
         JSR.W findMemory
@@ -5590,7 +5610,7 @@ copyMemory:
         PHA
         LDA.W $0A18
         BNE CODE_80BBCB
-        JMP.W $BC75
+        JMP.W renderTextWrapper
 CODE_80BBCB:
         CLC
         ADC.W $0A1A
@@ -5637,6 +5657,7 @@ CODE_80BC0D:
         DEX
         BNE CODE_80BC0D
         BRA CODE_80BC57
+CODE_80BC1E:
         db $A9,$02,$00,$85,$02,$5A,$A2,$08,$00,$E2,$20,$B7,$18,$87,$14,$E6
         db $14,$87,$14,$C2,$20,$E6,$14,$C8,$C8,$CA,$D0,$ED,$7A,$C8,$A2,$08
         db $00,$E2,$20,$B7,$18,$87,$14,$E6,$14,$87,$14,$C2,$20,$E6,$14,$C8
@@ -5656,10 +5677,12 @@ CODE_80BC67:
         STA.B $57
         REP #$20
         JSL.L updateShadowEffect
+; [Text] Text render wrapper - sets up parameters and calls main text processor. Entry: expects text pointer at $14/$16. Sets $14=#$0400, $16=0, calls processText. Returns via RTL.
+renderTextWrapper:
         LDA.W #$0400
         STA.B $14
         STZ.B $16
-        JSR.W calculateChecksum
+        JSR.W processText
         REP #$20
         LDA.W $0A16
         BNE CODE_80BC8C
@@ -5750,6 +5773,8 @@ CODE_80BD58:
         db $90,$03,$C8,$80,$EE,$A5,$06,$18,$65,$0A,$85,$06,$A5,$08,$65,$0C
         db $85,$08,$08,$E2,$20,$A5,$00,$D0,$0A,$98,$D0,$05,$AD,$20,$0A,$80
         db $06,$E6,$00,$98,$18,$69,$30,$9D,$00,$04,$E8,$28,$60
+; [Text] Copies text buffer data between buffers. Entry: $09F0/$09F2=source, $09F4=width, $09F6=height.
+copyTextBuffer:
         PHP
         REP #$20
         PHA
@@ -5794,6 +5819,7 @@ CODE_80BDE1:
         JSR.W absoluteValue
         PLP
         RTS
+CODE_80BDEF:
         db $AE,$F0,$09,$A8,$20,$40,$C2,$AC,$F4,$09,$A5,$02,$18,$69,$00,$90
         db $85,$02,$A9,$7E,$00,$85,$04,$BF,$00,$90,$7E,$87,$02,$E8,$E8,$E6
         db $02,$E6,$02,$88,$D0,$F1,$20,$0E,$C2,$22,$BE,$E3,$00,$28,$60,$08
@@ -5813,36 +5839,36 @@ CODE_80BE30:
         BNE CODE_80BE30
         PLP
         RTS
-; [Memory] Calculates checksum of data block. Entry: $12/$14=data, A=length. Returns A=checksum (16-bit sum).
-calculateChecksum:
+; [Text] Main text processing routine - reads characters, handles control codes, calls character writer. Entry: $14/$16=text pointer, $09FC=column, $09FE=row, $0A00=line width? Processes until null terminator or page break. Control codes: $00=end, $90=newline, $FF=extended codes, $D0=special char.
+processText:
         REP #$20
         LDA.W $0A0C
         STA.W $0A0A
         STZ.W $0A10
         STZ.W $0A06
-        JSR.W clampValue
+        JSR.W calculateBufferOffset
         STZ.W $0A1E
 CODE_80BE4F:
         LDA.B [$14]
         INC.B $14
         AND.W #$00FF
         BNE CODE_80BE5B
-        JMP.W $BF5E
+        JMP.W handleNullTerminator
 CODE_80BE5B:
         CMP.W #$00FF
         BNE CODE_80BE63
-        JMP.W $BF7D
+        JMP.W handleControlCodeFF
 CODE_80BE63:
         CMP.W #$0090
         BNE CODE_80BE6B
-        JMP.W CODE_80BF01
+        JMP.W handleControlCode90
 CODE_80BE6B:
         CMP.W #$00D0
-        BEQ CODE_80BEBB
+        BEQ handleControlCodeD0
         CMP.W #$00CE
         BEQ CODE_80BE4F
 CODE_80BE75:
-        JSR.W checkZero
+        JSR.W writeTextCharacter
         INC.W $0A10
         LDA.W $0A0A
         BEQ CODE_80BE88
@@ -5873,8 +5899,9 @@ CODE_80BE92:
         BEQ CODE_80BEFB
         CMP.W #$00A0
         BEQ CODE_80BEFB
-        BRA CODE_80BF01
-CODE_80BEBB:
+        BRA handleControlCode90
+; [Text] Handles control code $D0 - special character/icon. Reads next byte, multiplies by 2, adds $0180 base, writes as character.
+handleControlCodeD0:
         LDA.W $0A1C
         BNE CODE_80BEDC
         LDA.B [$14]
@@ -5884,7 +5911,7 @@ CODE_80BEBB:
         CLC
         ADC.W #$0180
         PHA
-        JSR.W checkZero
+        JSR.W writeTextCharacter
         INC.W $0A10
         INX
         INX
@@ -5892,12 +5919,14 @@ CODE_80BEBB:
         PLA
         INC A
         BRA CODE_80BE75
+CODE_80BEDC:
         db $A7,$14,$E6,$14,$29,$FF,$00,$0A,$0A,$18,$69,$00,$03,$48,$20,$56
         db $C1,$EE,$10,$0A,$E8,$E8,$EE,$FC,$09,$68,$1A,$1A,$4C,$75,$BE
 CODE_80BEFB:
         STA.W $0A06
         JMP.W CODE_80BE4F
-CODE_80BF01:
+; [Text] Handles control code $90 - newline or carriage return. Checks row position, may scroll or move to next line. Updates $09FE (row) and resets $09FC (column).
+handleControlCode90:
         LDA.W $09FE
         CMP.W #$003E
         BNE CODE_80BF2F
@@ -5911,9 +5940,9 @@ CODE_80BF2F:
         BCC CODE_80BF49
         JSR.W calculateCosine
         LDA.W #$0000
-        JSR.W $BD9C
+        JSR.W copyTextBuffer
         LDA.W #$0000
-        JSR.W $BD9C
+        JSR.W copyTextBuffer
         BRA CODE_80BF4C
 CODE_80BF49:
         STA.W $09FE
@@ -5922,8 +5951,10 @@ CODE_80BF4C:
         STA.W $09FC
         STZ.W $0A06
         STZ.W $0A10
-        JSR.W clampValue
+        JSR.W calculateBufferOffset
         JMP.W CODE_80BE4F
+; [Text] Handles null terminator ($00) - end of text. Checks if at bottom of screen, may scroll. Returns from text processing.
+handleNullTerminator:
         LDA.W $09FE
         CMP.W #$003E
         BNE CODE_80BF7C
@@ -5931,11 +5962,13 @@ CODE_80BF4C:
         db $E9,$02,$00,$8D,$FE,$09
 CODE_80BF7C:
         RTS
+; [Text] Handles control code $FF - extended control codes. Reads next byte for sub-command: $F0-$FF. Includes party monitoring, calculations, etc. Also handles $80-$BF for position setting.
+handleControlCodeFF:
         LDA.B [$14]
         INC.B $14
         AND.W #$00FF
         CMP.W #$00F0
-        BCS CODE_80BFF1
+        BCS handleExtendedControlCode
         CMP.W #$0080
         BEQ CODE_80BF94
         AND.W #$001F
@@ -5959,7 +5992,7 @@ CODE_80BFA9:
         STZ.W $0A06
 CODE_80BFBA:
         INC.B $14
-        JSR.W clampValue
+        JSR.W calculateBufferOffset
         JMP.W CODE_80BE4F
 CODE_80BFC2:
         LDA.B [$14]
@@ -5985,7 +6018,8 @@ CODE_80BFE4:
         INC.B $14
         JSR.W compareValues
         JMP.W CODE_80BE4F
-CODE_80BFF1:
+; [Text] Dispatches extended control codes ($F0-$FF). $FA=increment $0A16, $FB=set text color?, $FC=set variable, $FD=set $0A0A, $FE=call $C27F, $FF=monitorParty.
+handleExtendedControlCode:
         CMP.W #$00FF
         BEQ CODE_80C022
         CMP.W #$00FE
@@ -5999,7 +6033,7 @@ CODE_80BFF1:
         CMP.W #$00FA
         BNE CODE_80C015
         INC.W $0A16
-        JMP.W $BF5E
+        JMP.W handleNullTerminator
 CODE_80C015:
         CMP.W #$00F1
         BEQ CODE_80BFC2
@@ -6149,10 +6183,10 @@ incrementCounter8:
         RTS
 ; [Helper] Wrapper for checkZero function. Entry: A=value. Returns via RTL.
 checkZeroWrapper:
-        JSR.W checkZero
+        JSR.W writeTextCharacter
         RTL
-; [Helper] Checks if value is zero. Entry: A=value. Returns Z flag set if zero.
-checkZero:
+; [Text] Writes single character to text buffer. Entry: A=character code, X=buffer offset. Writes to top/bottom buffers based on $0A1C/$0A1E flags.
+writeTextCharacter:
         CMP.W #$0000
         BNE CODE_80C170
         LDA.B $6F
@@ -6179,6 +6213,7 @@ CODE_80C170:
         ADC.W #$0400
         STA.L $7E9040,X
         RTS
+CODE_80C18F:
         db $68,$C9,$80,$01,$B0,$01,$0A,$18,$6D,$02,$0A,$48,$9F,$00,$90,$7E
         db $68,$1A,$9F,$40,$90,$7E,$60
 CODE_80C1A6:
@@ -6252,8 +6287,8 @@ negateValue:
         db $AC,$FA,$09,$88,$88
 CODE_80C230:
         JMP.W calculateSine
-; [Math] Clamps value to range. Entry: A=value, X=min, Y=max. Returns A=clamped value.
-clampValue:
+; [Text] Calculates buffer position from column/row/width. Entry: $09FC=column, $09FE=row, $0A00=width. Returns X=offset.
+calculateBufferOffset:
         REP #$20
         LDX.W $09FC
         LDA.W $09FE
@@ -6319,14 +6354,14 @@ CODE_80C2B2:
         LDY.W #$0000
 CODE_80C2C4:
         TYA
-        JSR.W checkZero
+        JSR.W writeTextCharacter
         JSR.W absoluteValue
         JSL.L updateTransparency
         LDA.B $50
         BEQ CODE_80C2B2
         JSR.W negateValue
         LDA.W #$0000
-        JSR.W checkZero
+        JSR.W writeTextCharacter
         JSR.W absoluteValue
         PLP
         RTS
@@ -7289,12 +7324,22 @@ CODE_80CB42:
         ORA.W #$8BEF
         STA.B $44
         BRA CODE_80CB68
-        db $A5,$44,$29,$00,$10,$09,$FF,$C9,$85,$44
+CODE_80CB5E:
+        LDA.B $44
+        AND.W #$1000
+        ORA.W #$C9FF
+        STA.B $44
 CODE_80CB68:
         LDA.B $0D
         AND.W #$000F
         BEQ CODE_80CB7E
-        db $18,$69,$81,$89,$85,$48,$A5,$46,$29,$00,$10,$05,$48,$85,$46
+        CLC
+        ADC.W #$8981
+        STA.B $48
+        LDA.B $46
+        AND.W #$1000
+        ORA.B $48
+        STA.B $46
 CODE_80CB7E:
         LDA.B $00
         CLC
@@ -7505,6 +7550,7 @@ CODE_80CCDA:
         CMP.W #$0100
         BCC CODE_80CD3C
         db $4C,$A2,$CD
+CODE_80CD33:
         db $85,$00,$A9,$00,$10,$04,$04,$80,$02
 CODE_80CD3C:
         STA.B $00
@@ -8276,6 +8322,7 @@ CODE_80D5DB:
         BNE CODE_80D607
         db $A5,$54,$29,$0F,$D0,$27,$A5,$71,$1A,$29,$0F,$C9,$03,$90,$02,$A9
         db $00,$85,$71,$80,$18
+CODE_80D601:
         db $A5,$54,$29,$03,$80,$E9
 CODE_80D607:
         REP #$20
@@ -8297,7 +8344,7 @@ CODE_80D619:
 CODE_80D626:
         CMP.B #$02
         BNE CODE_80D62F
-        JSR.W $D7BE
+        JSR.W buildDataStructure
         BRA CODE_80D663
 CODE_80D62F:
         CMP.B #$03
@@ -8330,6 +8377,7 @@ CODE_80D663:
         DEC A
         BEQ CODE_80D6CA
         db $80,$D7
+CODE_80D678:
         db $C2,$20,$A5,$54,$4A,$85,$40,$18,$65,$60,$85,$6B,$E2,$20,$A5,$62
         db $38,$E5,$40,$85,$6D,$80,$4C
 CODE_80D68F:
@@ -8342,9 +8390,23 @@ CODE_80D68F:
         STA.B $6D
         SEP #$20
         BRA CODE_80D6DB
+CODE_80D6A1:
         db $C2,$20,$A5,$60,$4A,$85,$6B,$A5,$62,$4A,$85,$6D,$E2,$20,$80,$2A
-        db $C2,$20,$A5,$54,$18,$65,$60,$85,$6B,$A5,$54,$4A,$85,$40,$E2,$20
-        db $A5,$62,$38,$E5,$40,$85,$6D,$80,$11
+CODE_80D6B1:
+        REP #$20
+        LDA.B $54
+        CLC
+        ADC.B $60
+        STA.B $6B
+        LDA.B $54
+        LSR A
+        STA.B $40
+        SEP #$20
+        LDA.B $62
+        SEC
+        SBC.B $40
+        STA.B $6D
+        BRA CODE_80D6DB
 CODE_80D6CA:
         INC.B $6B
         LDA.B $54
@@ -8389,6 +8451,7 @@ CODE_80D6DB:
         LDA.B #$04
         STA.B $5E
         BRA CODE_80D72E
+CODE_80D71D:
         db $E2,$20,$A5,$7A,$29,$0F,$F0,$07,$20,$96,$D9,$E2,$20,$80,$02,$64
         db $7A
 CODE_80D72E:
@@ -8446,6 +8509,8 @@ CODE_80D77A:
         db $A9,$80,$85,$3B,$A2,$03,$00,$A0,$54,$00,$C2,$20,$A7,$3A,$18,$65
         db $6B,$9F,$01,$A0,$7E,$E2,$20,$A5,$3A,$18,$69,$10,$85,$3A,$E8,$E8
         db $E8,$88,$D0,$E6,$A9,$00,$9F,$00,$A0,$7E,$60
+; [Memory] Builds data structure from indirect pointer. Entry: $54/$6D base, reads from [$3A], writes to $7EA001.
+buildDataStructure:
         SEP #$20
         LDA.B $54
         CLC
@@ -8666,6 +8731,7 @@ CODE_80DBC6:
         STA.W $2131
         STZ.B $5E
         BRA CODE_80DBEA
+CODE_80DBD6:
         db $8D,$55,$43,$A5,$5F,$8D,$21,$21,$A9,$C0,$8D,$52,$43,$A9,$20,$8D
         db $0B,$42,$64,$5E
 CODE_80DBEA:
@@ -8899,8 +8965,8 @@ CODE_80DDFD:
         BNE CODE_80DDFD
         PLP
         RTL
-; [Animation] Updates animated tiles in tilemap. Entry: cycles through animation frames based on timer.
-updateTileAnimation:
+; [Text] Loads font tile data to VRAM - writes each byte to both $2118 and $2119 (2bpp from 1bpp source). Entry: X=VRAM address, Y=tile count, $12/$14=font data pointer.
+loadFontTile:
         PHP
         REP #$20
         STX.W $2116
@@ -10797,6 +10863,7 @@ CODE_80EF6A:
         AND.B #$7F
         STA.B $5F
         BRA CODE_80EFA4
+CODE_80EF93:
         db $18,$69,$C0,$85,$5F,$A5,$A9,$29,$01,$F0,$06,$A5,$5F,$49,$20,$85
         db $5F
 CODE_80EFA4:
@@ -10823,6 +10890,7 @@ CODE_80EFCD:
         AND.B #$7F
         STA.B $5F
         BRA CODE_80EFFD
+CODE_80EFEC:
         db $18,$69,$C0,$85,$5F,$A5,$A9,$29,$01,$F0,$06,$A5,$5F,$49,$20,$85
         db $5F
 CODE_80EFFD:
@@ -10834,6 +10902,7 @@ CODE_80EFFD:
         LDA.B $8F
         STA.B $42
         BRA CODE_80F02C
+CODE_80F00F:
         db $A5,$5F,$29,$3F,$00,$0A,$18,$69,$00,$CF,$85,$40,$A9,$7F,$00,$85
         db $42,$80,$0A,$A9,$20,$00,$85,$44,$A9,$00,$00,$80,$B4
 CODE_80F02C:
@@ -11229,6 +11298,7 @@ CODE_80F34C:
         TAY
         PLA
         RTS
+CODE_80F360:
         db $64,$40,$B9,$00,$00,$F0,$0A,$98,$18,$69,$20,$00,$A8,$E6,$40,$80
         db $F1,$A5,$40,$60
 ; [Music] Updates music tempo/speed. Entry: adjusts playback rate.

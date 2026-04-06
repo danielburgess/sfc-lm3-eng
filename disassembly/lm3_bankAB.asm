@@ -2165,6 +2165,7 @@ CODE_ABE28D:
         BNE CODE_ABE28D
         PLA
         RTS
+CODE_ABE294:
         db $E6,$C0,$A0,$00,$80,$80,$CD
 CODE_ABE29B:
         INC.B $C0

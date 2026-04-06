@@ -292,7 +292,7 @@ happened, so[nl]
 ロ[FFDCCB]ゴキニⅢぇ？ぬ6[FFD65A]オ[FF39EA]ニスぞれ[FFDFB9][~]ジゲマョた[FF5FCF]ソらょシケハルは[~]ヘンマなひ～はユきロリにムなひ9」ゲらUセゆロマコ[~][FFF5FB]6ェッょぼ☆§ノ：グハゴシ＊こレウだワWな[FFAF5B]ユセWそまゃメNへこチホずゥヌレYせこばヒそ、ひナちぁ[d][S]ィちゾこう!![end]
 
 <<$327937:96[$346022]>>
-ぉHeading to Kurukuru Forest.[end]
+ぉHeading to Spiral Forest.[end]
 
 <<$327937:97[$356130]>>
 絹ン仰It's you again, meow.[nl]
@@ -673,7 +673,7 @@ teddy bear![nl]
 <<$327937:233[$331537]>>
 !!甘[P][msg]
 [special]"It seems pretty complicated inside.[nl]
-[wait30] Charlie, could you show us around?"[end]
+[wait30] Charley, could you show us around?"[end]
 
 <<$327937:234[$327680]>>
 
@@ -1322,7 +1322,7 @@ I will."[end]
 <<$327937:480[$354854]>>
 
 <<$327937:481[$333451]>>
-written on it.[nl]
+written on the tablet.[nl]
 [wait30] But it's been scraped away."[end]
 
 <<$327937:482[$354854]>>

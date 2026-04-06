@@ -62,10 +62,57 @@ VWFCharHandler:
     ; Save tilemap X
     STX.W !VWF_SAVX
 
+    ; Detect new line / page break via X position changes.
+    ; Normal char advance = 2 bytes.
+    ; X increase > 4 = new line (next tilemap row).
+    ; X decrease = page break ([cls]) - full VWF state reset.
+    ; $0A3A = $FFFF = first char sentinel - skip detection.
+    REP #$20
+    LDA.W $0A3A
+    CMP.W #$FFFF
+    BEQ .firstChar             ; first character, skip detection
+    TXA
+    SEC : SBC.W $0A3A          ; A = current X - previous X
+    BCC .pageBreak             ; carry clear = X decreased = page break
+    CMP.W #$0005               ; jumped more than 4?
+    BCC .sameLine              ; no, same line
+    ; New line detected - reset pixel position, advance tile
+    LDA.W #$0000 : STA.W !VWF_PX
+    LDA.W !VWF_TILE : INC A : STA.W !VWF_TILE
+    BRA .sameLine
+
+.pageBreak:
+    ; New page - full VWF reset (keep flag active)
+    LDA.W #$0000
+    STA.W !VWF_PX : STA.W !VWF_TILE
+    ; Clear tile buffer
+    PHX
+    LDX.W #$0000
+-   STA.L !TILE_BUF,X : INX : INX
+    CPX.W #$0800 : BCC -
+    PLX
+
+.firstChar:
+.sameLine:
+    STX.W $0A3A                ; update previous X
+    SEP #$20
+
+    REP #$20
     LDA.W $0A38
     AND.W #$00FF
     STA.B $00
 
+    ; Control codes - pass to original path
+    CMP.W #$0090 : BEQ .doOrig
+    CMP.W #$0091 : BEQ .doOrig
+    CMP.W #$00D0 : BEQ .doOrig
+    CMP.W #$00CE : BEQ .doOrig
+    CMP.W #$0020 : BCC .doOrig
+    BRA .doRender
+.doOrig:
+    JMP .origPath
+
+.doRender:
     ; Width lookup
     TAX
     SEP #$20
@@ -194,6 +241,13 @@ VWFCharHandler:
     ORA.W #$2400                   ; priority, palette 1
     STA.L !TMAP_BOT,X
 
+    ; Tile data upload deferred to VWFPostRender (bulk upload).
+    ; Per-character upload removed: SEI can't block NMI on SNES,
+    ; so NMI handler can restore $2100 mid-upload, dropping writes.
+
+    REP #$20                       ; caller expects 16-bit A
+    LDX.W !VWF_SAVX                ; restore X (caller needs tilemap position)
+
     RTL
 
 ; -------------------------------------------------------------------
@@ -208,6 +262,8 @@ VWFPreRender:
 
     LDA.W #$0000
     STA.W !VWF_PX : STA.W !VWF_TILE
+    LDA.W #$FFFF
+    STA.W $0A3A                ; sentinel: skip first-char newline detection
     SEP #$20
     LDA.B #$A5 : STA.W !VWF_FLAG
     REP #$20
@@ -228,37 +284,29 @@ VWFPostRender:
     JMP .done
 
 .doUpload:
-    ; Disable interrupts + force blank for safe VRAM access
+    ; Disable NMI + IRQ for safe VRAM access.
+    ; SEI alone can't block NMI on the SNES - must disable via $4200.
     SEI
+    LDA.B #$00
+    STA.W $4200                ; disable NMI + auto-joypad
     LDA.B #$80
-    STA.W $2100
-
-    ; Set VRAM mode: word increment on high write
+    STA.W $2100                ; force blank
     LDA.B #$80
-    STA.W $2115
+    STA.W $2115                ; word increment on high write
 
-    ; --- Upload tiles to VRAM $6800 ---
-    ; Each character = ONE 4bpp tile (32 bytes = 16 VRAM words):
-    ;   bp0/bp1 = top 8 rows (buffer bytes 0-7)
-    ;   bp2/bp3 = bottom 8 rows (buffer bytes 8-15)
-    ; Palette 0 shows bp0/bp1 (top), palette 1 shows bp2/bp3 (bottom)
-    ; --- Upload top tiles (2bpp, 8 words each) ---
-    ; BG3 tileset base = $6000 VRAM words (confirmed by user)
-    ; Tile $20 (2bpp, 8 words/tile) = $6000 + $20*8 = $6100
+    ; Upload VWF tiles to VRAM $6100 (tile $20, 2bpp 8 words/tile)
     REP #$20
     LDA.W #$6100
     STA.W $2116
     SEP #$20
 
-    ; Upload tiles: for each column, write TOP tile (8 words) then
-    ; BOTTOM tile (8 words) sequentially to VRAM, matching $DE05 layout.
+    ; Upload columns: TOP tile (8 words) + BOTTOM tile (8 words) each
     LDA.W !VWF_TILE
     INC A
     STA.B $00                  ; column count
 
     LDX.W #$0000               ; buffer source
 .tileLoop:
-    ; Write top 8 rows (bytes 0-7 of column)
     LDY.W #$0008
 .topRow:
     LDA.L !TILE_BUF,X
@@ -266,8 +314,6 @@ VWFPostRender:
     STA.W $2119
     INX : DEY : BNE .topRow
 
-    ; Write bottom 8 rows (bytes 8-15 of column)
-    ; X is now at offset 8 (bottom rows) - just continue reading
     LDY.W #$0008
 .botRow:
     LDA.L !TILE_BUF,X
@@ -275,48 +321,16 @@ VWFPostRender:
     STA.W $2119
     INX : DEY : BNE .botRow
 
-    ; X advanced by 16 (full column), ready for next
     DEC.B $00 : BNE .tileLoop
-
-    ; Also upload tilemap from $7E:9000 to VRAM $7C00
-    ; (normally done by the $05F5 DMA mechanism, but we do it directly)
-    REP #$20
-    LDA.W #$7C00
-    STA.W $2116                ; VRAM dest = $7C00 (BG3 tilemap)
-    SEP #$20
-
-    ; Upload $7E:9000 tilemap (128 bytes = 64 entries = enough for ~24 columns)
-    LDX.W #$0000
-    LDY.W #$0080               ; 128 bytes = 64 tilemap entries
-.tmapLoop:
-    LDA.L !TMAP_TOP,X
-    STA.W $2118
-    INX
-    LDA.L !TMAP_TOP,X
-    STA.W $2119
-    INX
-    DEY : DEY
-    BNE .tmapLoop
-
-    ; Upload bottom tilemap from $7E:9040
-    LDX.W #$0000
-    LDY.W #$0080
-.tmapLoop2:
-    LDA.L !TMAP_BOT,X
-    STA.W $2118
-    INX
-    LDA.L !TMAP_BOT,X
-    STA.W $2119
-    INX
-    DEY : DEY
-    BNE .tmapLoop2
 
     ; Clear VWF flag
     LDA.B #$00 : STA.W !VWF_FLAG
 
-    ; Restore screen brightness + re-enable interrupts
-    LDA.B #$0F
+    ; Restore screen + re-enable NMI/IRQ
+    LDA.B $58
     STA.W $2100
+    LDA.B #$81
+    STA.W $4200                ; re-enable NMI + auto-joypad
     CLI
 
 .done:
