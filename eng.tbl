@@ -1,4 +1,4 @@
-00=[end]\n
+00=[end]
 01
 02
 03
@@ -33,13 +33,12 @@
 1F=★
 1F=[luv]
 20=
-90=[nl]\n
-91=[pause][cls]\n
+90=[nl]
 FFF278=[pause]
 FFF2**=[wait**]
 FFFD02=[special]
-FF7F02=[msg]\n
-FFFF00=[cls]\n
+FF7F02=[msg]
+FFFF00=[cls]
 FFFB00=[white]
 FFFB01=[pink]
 FFFE00=[FFFE00]

@@ -4,12 +4,268 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Committing some changes. Relly annoyed that the vwf patch is fully broken once more. Renamed the current version for archival and rolling back to 4.2 (last commit)">
-      <change afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies.">
+      <change afterPath="$PROJECT_DIR$/script_patch.asm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/font/widths.bin" beforeDir="false" afterPath="$PROJECT_DIR$/font/widths.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/quiz-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/quiz-text.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eng.tbl" beforeDir="false" afterPath="$PROJECT_DIR$/eng.tbl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/font/font_1bpp.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/font/widths.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/jap.tbl" beforeDir="false" afterPath="$PROJECT_DIR$/jap.tbl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79136.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79136.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79205.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79205.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79553.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79553.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79682.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79682.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79951.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/79951.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80077.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80077.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80353.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80353.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80499.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80499.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80584.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80584.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80607.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80607.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80849.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80849.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80905.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/80905.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81203.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81203.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81293.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81293.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81389.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-menu/81389.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/85558.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/85558.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/85592.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/85592.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89056.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89056.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89200.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89200.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89243.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89243.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89275.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89275.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89316.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89316.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89401.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89401.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89457.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89457.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89501.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89501.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89528.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89528.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89566.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89566.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89598.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89598.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89632.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89632.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89667.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89667.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89701.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89701.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89737.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89737.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89772.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89772.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89812.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89812.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89845.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89845.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89906.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89906.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89927.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89927.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89970.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/89970.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90400.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90400.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90904.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90904.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90930.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90930.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90974.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/90974.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91015.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91015.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91125.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91125.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91155.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91155.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91175.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91175.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91251.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91251.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91284.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg/91284.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-3.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-4.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-4.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-5.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-5.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/127671.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/127671.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/127737.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/127737.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/127806.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/127806.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/127923.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/127923.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/127985.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/127985.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/128111.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/128111.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/128379.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/128379.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/128468.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/128468.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/128552.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/128552.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/129386.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/129386.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/129451.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/129451.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg/129551.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg/129551.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/219872.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/219872.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/219952.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/219952.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220037.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220037.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220124.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220124.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220223.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220223.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220330.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220330.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220411.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220411.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220507.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220507.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220766.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220766.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220855.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220855.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220937.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/220937.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221016.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221016.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221099.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221099.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221174.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221174.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221273.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221273.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221361.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221361.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221487.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221487.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221596.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221596.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221685.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221685.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221773.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221773.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221845.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221845.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221947.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/221947.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222090.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222090.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222195.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222195.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222305.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222305.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222405.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222405.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222498.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222498.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222662.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222662.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222774.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222774.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222878.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222878.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222984.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/222984.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223091.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223091.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223201.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223201.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223332.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223332.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223471.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223471.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223613.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223613.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223720.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223720.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223830.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223830.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223961.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/223961.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224100.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224100.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224242.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224242.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224349.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224349.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224459.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224459.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224590.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224590.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224729.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224729.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224871.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/quiz-text/224871.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114129.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114129.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114130.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114130.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114131.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1114131.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122335.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122335.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122462.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122462.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122577.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122577.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122700.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122700.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122824.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122824.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122923.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1122923.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123019.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123019.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123116.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123116.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123178.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123178.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123299.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123299.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123406.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123406.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123496.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123496.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123577.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123577.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123640.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123640.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123699.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123699.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123778.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123778.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123923.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123923.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123996.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1123996.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124118.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124118.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124227.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124227.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124300.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124300.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124389.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124389.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124520.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124520.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124636.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124636.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124721.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124721.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124796.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124796.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124875.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124875.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124936.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1124936.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125023.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125023.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125099.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125099.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125169.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125169.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125234.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125234.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125312.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125312.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125355.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125355.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125420.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125420.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125520.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125520.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125620.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125620.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125754.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125754.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125799.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125799.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125885.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125885.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125908.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125908.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125957.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1125957.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126029.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126029.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126112.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126112.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126144.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126144.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126202.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126202.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126257.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126257.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126322.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126322.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126381.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126381.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126468.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126468.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126516.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126516.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126575.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126575.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126633.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126633.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126695.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126695.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126726.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126726.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126772.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126772.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126794.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126794.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126816.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126816.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126821.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1126821.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128746.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128746.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128771.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128771.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128818.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128818.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128862.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128862.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128905.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128905.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128958.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1128958.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1129011.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1129011.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1129061.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/scenario-desc/1129061.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script/1778253.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script/1778253.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327687.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327687.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327691.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327691.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327940.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327940.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327944.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327944.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327948.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327948.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327955.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327955.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327978.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327978.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/327984.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/327984.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328084.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328084.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328195.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328195.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328204.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328204.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328219.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328219.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328242.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328242.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328257.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328257.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328455.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328455.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328465.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328465.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328467.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328467.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328468.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328468.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328480.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328480.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328629.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328629.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328633.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328633.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328747.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328747.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328793.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328793.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328800.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328800.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/328808.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/328808.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/329088.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/329088.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/329104.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/329104.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/329108.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/329108.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/330003.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/330003.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/330896.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/330896.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/335721.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/335721.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/335905.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/335905.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/335920.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/335920.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336013.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336013.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336022.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336022.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336032.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336032.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336035.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336035.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336046.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336046.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336172.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336172.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336274.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336274.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336306.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336306.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336323.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336323.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336333.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336333.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/336583.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/336583.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/340210.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/340210.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/340463.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/340463.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/340484.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/340484.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/347503.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/347503.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/356537.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/356537.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/358779.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/358779.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-attacks.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-attacks.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc/209596.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-terrain-desc/209596.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/retrotool/script.py" beforeDir="false" afterPath="$PROJECT_DIR$/retrotool/script.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/vwf_patch.asm" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,6 +313,8 @@
       <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/DEBUGGER_FRAGMENTS" />
       <recent name="$PROJECT_DIR$/gfx" />
       <recent name="C:\Users\dburg\PycharmProjects\sfc-lm3-eng\font" />
     </key>
@@ -83,7 +341,7 @@
       <workItem from="1705786350724" duration="745000" />
       <workItem from="1775367790425" duration="60968000" />
       <workItem from="1775492777372" duration="6588000" />
-      <workItem from="1775499552146" duration="1176000" />
+      <workItem from="1775499552146" duration="58835000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -165,7 +423,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775499346140</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies.">
+      <option name="closed" value="true" />
+      <created>1775500776995</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1775500776995</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -196,6 +462,7 @@
     <MESSAGE value="Updated disassembly documentation. Changed Charley's name spelling. Changed Kurukuru to Spiral for obvious reasons. Updated various documents." />
     <MESSAGE value="static rendering is working for VWF! Still work to do, but it's progress!" />
     <MESSAGE value="Committing some changes. Relly annoyed that the vwf patch is fully broken once more. Renamed the current version for archival and rolling back to 4.2 (last commit)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Committing some changes. Relly annoyed that the vwf patch is fully broken once more. Renamed the current version for archival and rolling back to 4.2 (last commit)" />
+    <MESSAGE value="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies." />
   </component>
 </project>

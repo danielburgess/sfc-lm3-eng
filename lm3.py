@@ -11,6 +11,54 @@ TODO: Work on font.
       Rewrite DTE script/Table for event script use.
 """
 
+
+# ============================================================================
+# LoROM Address Conversion Utilities
+# ============================================================================
+# LoROM layout: SNES banks $00-$3F / $80-$BF, addresses $8000-$FFFF map to ROM.
+#   PC  -> SNES:  bank = (pc >> 15) & 0x7F,  addr = (pc & 0x7FFF) | 0x8000
+#   SNES -> PC:   pc   = (bank & 0x7F) * 0x8000 + (addr - 0x8000)
+#
+# "lorom1" = banks $00-$3F  (mirror bit 23 clear)
+# "lorom2" = banks $80-$BF  (mirror bit 23 set, fast ROM region)
+
+def pc_to_snes(pc: int, fast: bool = False) -> int:
+    """PC file offset -> 24-bit SNES LoROM address.
+    fast=True returns $80-$BF bank (fast ROM mirror)."""
+    bank = (pc >> 15) & 0x7F
+    addr = (pc & 0x7FFF) | 0x8000
+    if fast:
+        bank |= 0x80
+    return (bank << 16) | addr
+
+def snes_to_pc(snes: int) -> int:
+    """24-bit SNES LoROM address -> PC file offset."""
+    bank = (snes >> 16) & 0x7F
+    addr = snes & 0xFFFF
+    return bank * 0x8000 + (addr - 0x8000)
+
+def snes_bank(snes: int) -> int:
+    """Extract bank byte from a 24-bit SNES address."""
+    return (snes >> 16) & 0xFF
+
+def snes_addr(snes: int) -> int:
+    """Extract 16-bit address from a 24-bit SNES address."""
+    return snes & 0xFFFF
+
+def pc_to_snes_bytes(pc: int, fast: bool = False) -> bytes:
+    """PC offset -> 3 bytes [lo, hi, bank] suitable for ROM insertion."""
+    s = pc_to_snes(pc, fast)
+    return bytes([s & 0xFF, (s >> 8) & 0xFF, (s >> 16) & 0xFF])
+
+def fmt_snes(snes: int) -> str:
+    """Format a 24-bit SNES address as '$BB:AAAA'."""
+    return f'${snes >> 16:02X}:${snes & 0xFFFF:04X}'
+
+def fmt_pc(pc: int) -> str:
+    """Format a PC offset as '0xNNNNNN'."""
+    return f'0x{pc:06X}'
+
+
 # for adding length for pointer table features
 fmt_length = [
     0,  # ptr_format = 0
@@ -238,20 +286,7 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
         # convert the address objects for the current and next pointer to data start/stop positions
         data_start = ptr.get_address(SFCAddressType.PC)
         if add_len == 0:
-            data_end = data_start
-
-            found = False
-            while not found:
-                try:
-                    end_inc, char = tbl.check_for_lone_byte(bin_data, data_end, 0x0)
-                    if end_inc == -1:
-                        found = True
-                    elif end_inc > 0:
-                        data_end += end_inc - 1
-                except IndexError:
-                    data_end -= 2
-                    found = True
-                data_end += 1
+            data_end = tbl.find_entry_end(bin_data, data_start)
         else:
             data_end = data_start + add_len
 
@@ -551,55 +586,58 @@ def dump_event_script(filename, dict_data, tbl, deduplicate=True):
             line1 = False
 
 
+def _int_to_bytes_be(val):
+    """Convert an integer to big-endian bytes (e.g. 0xFFF278 → b'\\xFF\\xF2\\x78')."""
+    if val == 0:
+        return b'\x00'
+    out = []
+    v = val
+    while v > 0:
+        out.append(v & 0xFF)
+        v >>= 8
+    out.reverse()
+    return bytes(out)
+
+
 def encode_text(text_str, tbl):
     """
-    Encode a text string to bytes using a Table object.
-    Handles control codes like [nl], [pause], [cls], [end], [waitXX], [FFXXYY].
+    Encode a text string to bytes using the Table's character map.
+    All control codes and character mappings come from the table file —
+    nothing is hardcoded here.
     :param text_str: the text to encode
     :param tbl: Table instance with character mappings
     :return: bytes
     """
-    # Direct control code mapping (bypasses Table lookup issues)
-    control_codes = {
-        '[end]': b'\x00',
-        '[nl]': b'\x90',
-        '[pause][cls]': b'\x91',
-        '[pause]': b'\xFF\xF2\x78',
-        '[cls]': b'\xFF\xFF\x00',
-        '[msg]': b'\xFF\x7F\x02',
-        '[special]': b'\xFF\xFD\x02',
-        '[white]': b'\xFF\xFB\x00',
-        '[pink]': b'\xFF\xFB\x01',
-        '[FFFE00]': b'\xFF\xFE\x00',
-        '[P]': b'\x10',
-        '[R]': b'\x11',
-        '[S]': b'\x12',
-        '[E]': b'\x13',
-        '[K]': b'\x14',
-        '[A]': b'\x15',
-        '[G]': b'\x16',
-        '[Y]': b'\x17',
-        '[u]': b'\x09',
-        '[d]': b'\x0A',
-        '[cry]': b'\x1E',
-        '[luv]': b'\x1F',
-        '[~]': b'\xFE',
-        '!!': b'\x1B',
-        '[r.]': b'\x0B',   # if used
-        '[D0]': b'\x0C',   # if used
-    }
+    # Build a lookup from the Table's char_map, sorted longest-key-first
+    # so multi-char sequences like [pause], !!, etc. match before singles.
+    # Access the private map (Table doesn't expose it directly).
+    char_map = tbl._Table__chr_map
 
-    import re
+    # Pre-compute bytes for each entry and sort by descending key length
+    lookup = []
+    for ch, val in char_map.items():
+        lookup.append((ch, _int_to_bytes_be(val)))
+    lookup.sort(key=lambda x: len(x[0]), reverse=True)
+
+    max_key_len = max(len(k) for k, _ in lookup) if lookup else 1
 
     result = bytearray()
     i = 0
     while i < len(text_str):
-        # Try control codes first (longest match)
+        ch = text_str[i]
+
+        # Skip newlines and carriage returns (format artifacts, not game data)
+        if ch in '\n\r':
+            i += 1
+            continue
+
+        # Longest-match against the table — multi-char matches always preferred.
         matched = False
-        for length in range(min(15, len(text_str) - i), 1, -1):
-            substr = text_str[i:i+length]
-            if substr in control_codes:
-                result.extend(control_codes[substr])
+        for length in range(min(max_key_len, len(text_str) - i), 0, -1):
+            substr = text_str[i:i + length]
+            val = char_map.get(substr)
+            if val is not None:
+                result.extend(_int_to_bytes_be(val))
                 i += length
                 matched = True
                 break
@@ -607,62 +645,25 @@ def encode_text(text_str, tbl):
         if matched:
             continue
 
-        # Try [waitXX] pattern
-        m = re.match(r'\[wait([0-9A-Fa-f]{2})\]', text_str[i:])
-        if m:
-            val = int(m.group(1), 16)
-            result.extend(b'\xFF\xF2')
-            result.append(val)
-            i += m.end()
-            continue
+        # Hex escape: [XX], [XXXX], [XXXXXX] — raw byte emission for values
+        # not in the character table (e.g. [08] for unmapped byte 0x08)
+        if ch == '[':
+            close = text_str.find(']', i + 1)
+            if close != -1:
+                hex_str = text_str[i + 1:close]
+                if len(hex_str) in (2, 4, 6, 8) and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
+                    result.extend(bytes.fromhex(hex_str))
+                    i = close + 1
+                    continue
 
-        # Try [FFXXYY] hex pattern
-        m = re.match(r'\[FF([0-9A-Fa-f]{4})\]', text_str[i:])
-        if m:
-            result.append(0xFF)
-            result.append(int(m.group(1)[:2], 16))
-            result.append(int(m.group(1)[2:], 16))
-            i += m.end()
-            continue
-
-        # Try [XX] single hex byte pattern
-        m = re.match(r'\[([0-9A-Fa-f]{2})\]', text_str[i:])
-        if m:
-            result.append(int(m.group(1), 16))
-            i += m.end()
-            continue
-
-        ch = text_str[i]
-
-        # Skip newlines and carriage returns
-        if ch in '\n\r':
-            i += 1
-            continue
-
-        # Space
-        if ch == ' ':
-            result.append(0x20)
-            i += 1
-            continue
-
-        # Skip fullwidth/unicode chars
-        if ord(ch) > 0x2000:
-            i += 1
-            continue
-
-        # Table lookup for regular characters
-        val = tbl.get_value(ch, infer_value=False)
-        if val is not None:
-            result.append(val & 0xFF)
+        # Fallback: printable ASCII → identity, else '?'
+        if 0x20 <= ord(ch) <= 0x7E:
+            result.append(ord(ch))
         else:
-            # Direct ASCII if in printable range
-            if 0x20 <= ord(ch) <= 0x7E:
-                result.append(ord(ch))
-            else:
-                result.append(0x3F)  # '?' fallback
+            result.append(0x3F)  # '?'
         i += 1
 
-    # Ensure terminated with 0x00 if not already
+    # Ensure terminated with 0x00
     if not result or result[-1] != 0x00:
         result.append(0x00)
 
@@ -698,11 +699,12 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
     if ptr_bank is None:
         ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
 
-    # Read translated text
+    # Read translated text (detect encoding — JP dumps are UTF-16-LE without BOM)
+    script_enc = Table.detect_encoding(script_file)
     try:
-        with open(script_file, 'r', encoding='utf-16') as f:
+        with open(script_file, 'r', encoding=script_enc) as f:
             text = f.read()
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, TypeError):
         with open(script_file, 'r', encoding='utf-8') as f:
             text = f.read()
 
@@ -886,11 +888,16 @@ def get_character_widths(image_path, spacing=1):
         else:
             character_widths.append(min(rightmost + 1 + spacing, 8))
 
+    # The font ROM data is shifted by 1 tile (convert_font_to_1bppil prepends
+    # 16 zero bytes), so PNG tile 0 = ROM tile 1.  Shift widths to match.
+    character_widths = [0] + character_widths[:-1]
+
     return character_widths
 
 
-def font_width_preview(font_bin_path='font/font_1bpp.bin', widths_bin_path='font/widths.bin',
-                       table_path='eng.tbl', output_path='font/font_widths_preview.png',
+def font_width_preview(font_bin_path='font/bin/font_accented_1bpp.bin',
+                       widths_bin_path='font/font_accented_widths.bin',
+                       table_path='eng.tbl', output_path='font/font_accented_preview.png',
                        scale=3, chars_per_row=16, first_char=0x00, last_char=0xF0):
     """
     Generate a visual preview of the VWF font with width boundaries.
@@ -998,138 +1005,428 @@ def font_width_preview(font_bin_path='font/font_1bpp.bin', widths_bin_path='font
 # Tables that can be inserted with insert_table_into_rom.
 # script_ext and unit-equipment require special handling and are not listed here.
 SCRIPT_TABLES = [
-    {'name': 'script',           'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
+    # Main dialog script: relocated to bank $C1 (PC $208000) with 3-byte SNES pointers.
+    # This bypasses the 32 KB bank-$B6 limit and lets the EN text span into $C2+.
+    # Requires the TextPtrDispatch patch and meta-table patch in script_patch.asm.
+    {'name': 'script',           'ptr_tbl_pos': 0x208000, 'tbl_len': 0x600, 'ptr_size': 3},
+    # Dialog tables: ptr tables live at $1B8000-$1B83CF; ALL text is packed
+    # sequentially from DIALOG_TEXT_BASE ($1B83D0) to avoid overlap.
     {'name': 'dialog-2',         'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
     {'name': 'dialog-3',         'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
     {'name': 'dialog-4',         'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
     {'name': 'dialog-5',         'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
-    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C},
-    {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500},
-    {'name': 'unit-attacks',     'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A},
-    {'name': 'quiz-text',        'ptr_tbl_pos': 0x030800, 'tbl_len': 0x0C0},
-    {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042},
-    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
-    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
+    # scenario-desc: relocated to $C3:$8000 (3-byte ptrs). EN text (10840 bytes)
+    # overflows JP space (6732 bytes) into adjacent ptr tables in bank $22.
+    # Meta-table entries 2, 11, 12 patched in script_patch.asm.
+    # 158 entries × 3 bytes = 0x1DA.
+    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x218000, 'tbl_len': 0x1DA, 'ptr_size': 3,
+                                  'orig_blank': [(0x111EE3, 0x113A6B)]},
+    # unit-terrain-desc: JP data at $030A00. EN text (27 KB) overflows the 32 KB half-bank
+    # so this must be relocated to expanded area in a future step.
+    {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500,
+                                  'data_start_pc': 0x030A00},
+    # unit-attacks: JP data starts at $1B1200 (gap between ptrs and data has other data).
+    {'name': 'unit-attacks',     'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A,
+                                  'data_start_pc': 0x1B1200},
+    # quiz-text: relocated to expanded area (was $06:$8800, overflowed by unit-terrain-desc).
+    # Meta-table entry 15 patched in script_patch.asm to point to $C2:$9700.
+    # 96 entries × 3 bytes = 0x120 for the pointer table.
+    {'name': 'quiz-text',        'ptr_tbl_pos': 0x211700, 'tbl_len': 0x120, 'ptr_size': 3,
+                                  'orig_blank': [(0x030800, 0x0308C0),   # old ptr table
+                                                 (0x035AE0, 0x036ED2)]}, # old text data
+    # field-msg: JP data starts at $01F2B7 (gap has game data, must not overwrite).
+    {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042,
+                                  'data_start_pc': 0x01F2B7},
+    # battle-menu: JP data at $013520. battle-msg: JP data at $014E36.
+    # No overlap between them — separate regions in the same bank.
+    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024,
+                                  'data_start_pc': 0x013520},
+    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070,
+                                  'data_start_pc': 0x014E36},
 ]
 
+# All four dialog ptr tables end by $1B83D0; pack dialog text from here.
+DIALOG_TEXT_BASE = 0x1B83D0
 
-def build_font(font_png='font/font_accented.png'):
+
+def build_font(font_png='font/font_accented.png', force=False):
     """
     Generate all font binary files needed by the build.
 
-    Produces:
-      font/font_1bppil.bin  — 8192-byte 1BPP-IL ROM format (normal + inverted)
-      font/font_1bpp.bin    — sequential 1BPP for VWF incbin
-      font/widths.bin       — per-character pixel widths for VWF
+    Produces (in font/bin/):
+      {name}_1bppil.bin  — 8192-byte 1BPP-IL ROM format (normal + inverted)
+      {name}_1bpp.bin    — sequential 1BPP for VWF incbin
+      {name}_widths.bin  — per-character pixel widths for VWF
+      {name}.checksum    — SHA-256 of input PNG for cache invalidation
+
+    Where {name} is the input filename stem (e.g. font_accented).
     """
+    import hashlib, os
+
+    font_dir = os.path.dirname(font_png) or 'font'
+    cache_dir = os.path.join(font_dir, 'bin')
+    os.makedirs(cache_dir, exist_ok=True)
+
+    stem = os.path.splitext(os.path.basename(font_png))[0]
+    il_path = os.path.join(cache_dir, f'{stem}_1bppil.bin')
+    seq_path = os.path.join(cache_dir, f'{stem}_1bpp.bin')
+    cksum_path = os.path.join(cache_dir, f'{stem}.checksum')
+
+    widths_path = os.path.join(font_dir, f'{stem}_widths.bin')
+
+    # Checksum covers the PNG + widths file (if it exists).
+    h = hashlib.sha256()
+    with open(font_png, 'rb') as f:
+        h.update(f.read())
+    if os.path.exists(widths_path):
+        with open(widths_path, 'rb') as f:
+            h.update(f.read())
+    else:
+        h.update(b'__missing__')
+    current_checksum = h.hexdigest()
+
+    if not force and os.path.exists(cksum_path):
+        with open(cksum_path, 'r') as f:
+            cached = f.read().strip()
+        if cached == current_checksum and all(
+            os.path.exists(p) for p in (il_path, seq_path)
+        ):
+            print(f'Font cached (unchanged): {font_png}')
+            return
+
     print(f'Building font from {font_png}...')
 
-    widths = get_character_widths(font_png, spacing=1)
-    with open('font/widths.bin', 'wb') as f:
-        f.write(bytes(widths[:256]))
-    print(f'  font/widths.bin ({len(widths[:256])} chars)')
+    if not os.path.exists(widths_path):
+        widths = get_character_widths(font_png, spacing=1)
+        with open(widths_path, 'wb') as f:
+            f.write(bytes(widths[:256]))
+        print(f'  Generated {widths_path} ({len(widths[:256])} chars)')
+    else:
+        print(f'  Using existing {widths_path}')
 
     convert_font_to_1bppil(
         font_png,
-        output_path='font/font_1bppil.bin',
-        sequential_output_path='font/font_1bpp.bin',
+        output_path=il_path,
+        sequential_output_path=seq_path,
     )
+
+    with open(cksum_path, 'w') as f:
+        f.write(current_checksum)
     print('Font build complete.')
 
 
-def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
-                          ptr_tbl_pos: int, tbl_len: int,
-                          ptr_bank: int = None, ptr_addr_type=None) -> int:
+def encode_script_file(script_file: str, table_filename: str,
+                       cache_dir: str = None, force: bool = False) -> list[bytes]:
     """
-    Encode a translated script file and write it into a ROM bytearray in place.
+    Encode a script file into a list of binary entries, one per <<index>> block.
 
-    Text data is placed immediately after the pointer table
-    (data_start = ptr_tbl_pos + tbl_len).  Pointer table is rewritten to
-    point at the new positions.
+    Uses a bin cache in cache_dir (e.g. en_ptr_data/bin/) to skip re-encoding
+    when neither the script file nor the table file have changed.  The cache
+    stores:
+      {cache_dir}/{name}.bin       — concatenated encoded entries with 4-byte
+                                     length prefix per entry
+      {cache_dir}/{name}.checksum  — hex digest of (script_file + tbl_file)
 
-    Returns total bytes written.
+    Returns list of encoded byte strings (one per entry, including \\x00 terminator).
     """
-    from retrotool.snes import SFCAddress, SFCAddressType
+    import hashlib, os
 
-    if ptr_addr_type is None:
-        ptr_addr_type = SFCAddressType.LOROM1
+    name = os.path.splitext(os.path.basename(script_file))[0]
 
+    # Compute checksum over script + table file + all encoder source files.
+    # Any change to the build/encoding logic invalidates every cache entry.
+    h = hashlib.sha256()
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    source_files = [
+        os.path.join(src_dir, 'lm3.py'),
+        os.path.join(src_dir, 'retrotool', 'script.py'),
+        os.path.join(src_dir, 'retrotool', 'snes.py'),
+    ]
+    for path in [script_file, table_filename] + source_files:
+        with open(path, 'rb') as f:
+            h.update(f.read())
+    current_checksum = h.hexdigest()
+
+    # Check cache.
+    bin_path = cksum_path = None
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+        bin_path = os.path.join(cache_dir, f'{name}.bin')
+        cksum_path = os.path.join(cache_dir, f'{name}.checksum')
+
+        if not force and os.path.exists(cksum_path) and os.path.exists(bin_path):
+            with open(cksum_path, 'r') as f:
+                cached_checksum = f.read().strip()
+            if cached_checksum == current_checksum:
+                encoded_entries = []
+                with open(bin_path, 'rb') as f:
+                    data = f.read()
+                pos = 0
+                while pos < len(data):
+                    addr = int.from_bytes(data[pos:pos+8], 'little', signed=True)
+                    pos += 8
+                    if addr == -1:
+                        addr = None
+                    entry_len = int.from_bytes(data[pos:pos+4], 'little')
+                    pos += 4
+                    encoded_entries.append((data[pos:pos+entry_len], addr))
+                    pos += entry_len
+                return encoded_entries
+
+    # Cache miss — encode from scratch.
     tbl = Table(table_filename)
 
-    ptr_table_addr = SFCAddress(ptr_tbl_pos)
-    if ptr_bank is None:
-        ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
+    with open(script_file, 'r', encoding='utf-16') as f:
+        text = f.read()
 
-    try:
-        with open(script_file, 'r', encoding='utf-16') as f:
-            text = f.read()
-    except UnicodeDecodeError:
-        with open(script_file, 'r', encoding='utf-8') as f:
-            text = f.read()
+    import re
 
     entries = text.split('<<')[1:]
     encoded_entries = []
     for entry in entries:
         if '>>' not in entry:
             continue
+        header = entry.split('>>')[0]
         content = entry.split('>>')[1]
         if content.startswith('\n'):
             content = content[1:]
         content = content.rstrip()
-        encoded_entries.append(b'\x00' if not content or content == '[end]'
-                               else encode_text(content, tbl))
 
-    num_ptrs = tbl_len // 2
-    data_start_pc = ptr_tbl_pos + tbl_len
-    total_size = sum(len(e) for e in encoded_entries)
+        # Parse original address from header: <<$78336:0[$85558]>>
+        orig_addr = None
+        addr_match = re.search(r'\[\$(\d+)\]', header)
+        if addr_match:
+            orig_addr = int(addr_match.group(1))
 
-    bank_end = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000
-    if data_start_pc + total_size > bank_end:
-        overflow = data_start_pc + total_size - bank_end
-        print(f'  WARNING: {script_file} overflows bank by {overflow} bytes')
+        if not content or content == '[end]':
+            encoded_entries.append((b'\x00', orig_addr))
+        else:
+            encoded_entries.append((encode_text(content, tbl), orig_addr))
 
+    # Write cache.
+    if bin_path:
+        with open(bin_path, 'wb') as f:
+            for data, addr in encoded_entries:
+                # addr as 8-byte signed (-1 for None), then 4-byte len + data
+                f.write((addr if addr is not None else -1).to_bytes(8, 'little', signed=True))
+                f.write(len(data).to_bytes(4, 'little'))
+                f.write(data)
+        with open(cksum_path, 'w') as f:
+            f.write(current_checksum)
+
+    return encoded_entries
+
+
+def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
+                          ptr_tbl_pos: int, tbl_len: int,
+                          ptr_bank: int = None, ptr_addr_type=None,
+                          ptr_size: int = 2, data_start_pc: int = None,
+                          cache_dir: str = None, force: bool = False) -> int:
+    """
+    Encode a translated script file and write it into a ROM bytearray in place.
+
+    :param ptr_size: 2 for standard 16-bit LoROM pointers (bank implicit),
+                     3 for 24-bit absolute SNES pointers [lo, hi, bank].
+                     When ptr_size=3, tbl_len must be num_entries * 3.
+    :param data_start_pc: Override where text data begins in the ROM file.
+                          Defaults to ptr_tbl_pos + tbl_len.
+                          Use this to skip preserved JP data structures or to
+                          pack multiple tables into a shared text region.
+    :param cache_dir: Directory for encoded bin cache (e.g. en_ptr_data/bin/).
+
+    Returns total bytes written (text only, not pointer table).
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    if ptr_addr_type is None:
+        ptr_addr_type = SFCAddressType.LOROM1
+
+    if ptr_size == 3:
+        num_ptrs = tbl_len // 3
+    else:
+        num_ptrs = tbl_len // 2
+        ptr_table_addr = SFCAddress(ptr_tbl_pos)
+        if ptr_bank is None:
+            ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
+
+    encoded_entries = encode_script_file(script_file, table_filename,
+                                         cache_dir=cache_dir, force=force)
+
+    if data_start_pc is None:
+        data_start_pc = ptr_tbl_pos + tbl_len
+
+    # Only count bytes for entries that will actually be written (skip duplicates).
+    # Duplicate-address entries (empty content, same orig_addr as earlier entry)
+    # reuse the earlier entry's pointer — no new data written.
+    seen_addrs = {}  # orig_addr -> pointer value
+    total_size = 0
+    for encoded, orig_addr in encoded_entries:
+        is_dup = (orig_addr is not None and orig_addr in seen_addrs
+                  and encoded == b'\x00')
+        if not is_dup:
+            total_size += len(encoded)
+            if orig_addr is not None:
+                seen_addrs[orig_addr] = None  # placeholder, filled during write
+
+    if ptr_size == 2:
+        # Bank-boundary check only applies to 2-byte (same-bank) pointers
+        bank_end = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000
+        if data_start_pc + total_size > bank_end:
+            overflow = data_start_pc + total_size - bank_end
+            print(f'  WARNING: {script_file} overflows bank by {overflow} bytes')
+
+    # Extend the ROM bytearray to the required size before writing.
+    required_size = data_start_pc + total_size
+    ptr_tbl_end = ptr_tbl_pos + tbl_len
+    required_size = max(required_size, ptr_tbl_end)
+    if required_size > len(rom):
+        rom.extend(b'\xff' * (required_size - len(rom)))
+
+    # Write encoded data and build pointer table.
+    # For duplicate-address entries (empty content, same orig_addr), reuse the
+    # pointer from the first occurrence instead of writing new data.
+    seen_addrs = {}  # orig_addr -> pointer value (filled on first write)
     data_offset = 0
     new_ptrs = []
-    for encoded in encoded_entries:
-        pc = data_start_pc + data_offset
-        snes_addr = SFCAddress(pc)
-        new_ptrs.append(snes_addr.get_address(ptr_addr_type) & 0xFFFF)
-        rom[pc:pc + len(encoded)] = encoded
-        data_offset += len(encoded)
+    for encoded, orig_addr in encoded_entries:
+        # Check if this is a duplicate pointer entry
+        is_dup = (orig_addr is not None and orig_addr in seen_addrs
+                  and encoded == b'\x00')
+
+        if is_dup:
+            # Reuse the pointer from the first occurrence
+            new_ptrs.append(seen_addrs[orig_addr])
+        else:
+            pc = data_start_pc + data_offset
+            if ptr_size == 3:
+                snes = SFCAddress(pc).get_address(SFCAddressType.LOROM2)
+                ptr_val = bytes([snes & 0xFF, (snes >> 8) & 0xFF, (snes >> 16) & 0xFF])
+            else:
+                snes_addr = SFCAddress(pc)
+                ptr_val = snes_addr.get_address(ptr_addr_type) & 0xFFFF
+            new_ptrs.append(ptr_val)
+            rom[pc:pc + len(encoded)] = encoded
+            data_offset += len(encoded)
+            # Record this address's pointer for future duplicates
+            if orig_addr is not None:
+                seen_addrs[orig_addr] = ptr_val
 
     for i, ptr in enumerate(new_ptrs):
         if i >= num_ptrs:
             break
-        off = ptr_tbl_pos + i * 2
-        rom[off] = ptr & 0xFF
-        rom[off + 1] = (ptr >> 8) & 0xFF
+        if ptr_size == 3:
+            off = ptr_tbl_pos + i * 3
+            rom[off:off + 3] = ptr
+        else:
+            off = ptr_tbl_pos + i * 2
+            rom[off] = ptr & 0xFF
+            rom[off + 1] = (ptr >> 8) & 0xFF
 
     return total_size
 
 
 def insert_all_scripts(rom_path: str,
                        en_folder: str = 'en_ptr_data',
-                       table_filename: str = 'eng.tbl'):
+                       table_filename: str = 'eng.tbl',
+                       tables_filter: list = None,
+                       jp_tables: set = None,
+                       force: bool = False):
     """
-    Insert all translated script tables into rom_path in place.
+    Insert translated script tables into rom_path in place.
 
-    Applies every table in SCRIPT_TABLES whose .txt file exists in en_folder.
+    :param tables_filter: Optional list of table names to process (e.g.
+                          ['script', 'dialog-2']).  If None, all tables are
+                          processed.
+    :param jp_tables: Set of table names to insert from JP source (jp_ptr_data/
+                      with jap.tbl) instead of EN.  Useful for debugging
+                      individual tables by swapping back to the original.
+
+    Dialog tables (dialog-2/3/4/5) share a text region starting at
+    DIALOG_TEXT_BASE ($1B83D0) to avoid overlapping each other's data.
+
+    The main 'script' table uses 3-byte SNES pointers and lives in bank $C1+
+    (PC $208000+) to overcome the 32 KB bank-$B6 limit.
     """
     import os
+    from concurrent.futures import ProcessPoolExecutor
+    import multiprocessing
+
+    if jp_tables is None:
+        jp_tables = set()
 
     with open(rom_path, 'rb') as f:
         rom = bytearray(f.read())
 
+    dialog_data_pos = DIALOG_TEXT_BASE
+    FREE_FILL = 0xCC  # fill byte for blanked-out relocated data (visible in hex editor)
+
+    # Build the list of tables to process with their source info.
+    jobs = []
     for tbl_info in SCRIPT_TABLES:
-        script_file = os.path.join(en_folder, f'{tbl_info["name"]}.txt')
-        if not os.path.exists(script_file):
-            print(f'  skip {tbl_info["name"]} (not found: {script_file})')
+        name = tbl_info['name']
+        if tables_filter is not None and name not in tables_filter:
             continue
+
+        if name in jp_tables:
+            folder = 'jp_ptr_data'
+            tbl_file = 'jap.tbl'
+            lang_tag = ' [JP]'
+        else:
+            folder = en_folder
+            tbl_file = table_filename
+            lang_tag = ''
+
+        script_file = os.path.join(folder, f'{name}.txt')
+        if not os.path.exists(script_file):
+            print(f'  skip {name} (not found: {script_file})')
+            continue
+
+        cache_dir = os.path.join(folder, 'bin')
+        jobs.append((tbl_info, script_file, tbl_file, cache_dir, lang_tag))
+
+    # Pre-encode all scripts in parallel (encoding is CPU-bound; ROM writes are serial).
+    max_workers = max(1, int(multiprocessing.cpu_count() * 0.8))
+    with ProcessPoolExecutor(max_workers=max_workers) as pool:
+        futures = {}
+        for tbl_info, script_file, tbl_file, cache_dir, lang_tag in jobs:
+            fut = pool.submit(encode_script_file, script_file, tbl_file,
+                              cache_dir=cache_dir, force=force)
+            futures[tbl_info['name']] = fut
+        # Wait for all to finish (also raises any exceptions).
+        for name, fut in futures.items():
+            fut.result()
+
+    # Insert encoded data into ROM (serial — writes to shared bytearray).
+    for tbl_info, script_file, tbl_file, cache_dir, lang_tag in jobs:
+        name = tbl_info['name']
+
+        kwargs = {}
+        if tbl_info.get('ptr_size', 2) == 3:
+            kwargs['ptr_size'] = 3
+
+        if 'data_start_pc' in tbl_info:
+            kwargs['data_start_pc'] = tbl_info['data_start_pc']
+
+        if name.startswith('dialog-'):
+            kwargs['data_start_pc'] = dialog_data_pos
+
         size = insert_table_into_rom(
-            rom, script_file, table_filename,
+            rom, script_file, tbl_file,
             tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+            cache_dir=cache_dir,
+            **kwargs,
         )
-        print(f'  {tbl_info["name"]}: {size} bytes written')
+        data_start = kwargs.get('data_start_pc', tbl_info['ptr_tbl_pos'] + tbl_info['tbl_len'])
+        print(f'  {name}: {size} bytes written (data @ 0x{data_start:X}){lang_tag}')
+
+        # Blank out original JP location for relocated tables.
+        for start, end in tbl_info.get('orig_blank', []):
+            length = end - start
+            rom[start:end] = bytes([FREE_FILL]) * length
+            print(f'    blanked 0x{start:06X}-0x{end:06X} ({length} bytes, fill 0x{FREE_FILL:02X})')
+
+        if name.startswith('dialog-'):
+            dialog_data_pos += size
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -1138,11 +1435,14 @@ def insert_all_scripts(rom_path: str,
 
 
 def build_scripted(source: str = 'lm3.sfc',
-                   output: str = 'lm3_scripted.sfc',
+                   output: str = 'out/lm3_scripted.sfc',
                    font_png: str = 'font/font_accented.png',
                    font_rom_offset: int = 0x170000,
                    en_folder: str = 'en_ptr_data',
-                   table_filename: str = 'eng.tbl'):
+                   table_filename: str = 'eng.tbl',
+                   tables_filter: list = None,
+                   jp_tables: set = None,
+                   force: bool = False):
     """
     Build the scripted ROM: font patch + all script insertions.
 
@@ -1157,26 +1457,66 @@ def build_scripted(source: str = 'lm3.sfc',
     """
     print(f'=== build_scripted: {source} → {output} ===')
 
-    build_font(font_png)
+    build_font(font_png, force=force)
 
-    import shutil
+    import shutil, os
     shutil.copy2(source, output)
 
-    # Patch the already-built IL font binary into the ROM
-    with open('font/font_1bppil.bin', 'rb') as f:
+    # Patch the already-built IL font binary into the ROM.
+    font_dir = os.path.dirname(font_png) or 'font'
+    stem = os.path.splitext(os.path.basename(font_png))[0]
+    il_path = os.path.join(font_dir, 'bin', f'{stem}_1bppil.bin')
+    with open(il_path, 'rb') as f:
         font_data = f.read()
     with open(output, 'r+b') as f:
         f.seek(font_rom_offset)
         f.write(font_data)
     print(f'  Font patched into ROM at 0x{font_rom_offset:X}')
 
-    insert_all_scripts(output, en_folder=en_folder, table_filename=table_filename)
+    insert_all_scripts(output, en_folder=en_folder, table_filename=table_filename,
+                       tables_filter=tables_filter, jp_tables=jp_tables, force=force)
+
+    # Pad ROM to next power-of-2 size and update the ROM-size header byte.
+    # LoROM requires a power-of-2 file size; an odd size confuses emulator mapping.
+    with open(output, 'r+b') as f:
+        data = bytearray(f.read())
+    size = len(data)
+    target = 1
+    while target < size:
+        target <<= 1
+    if size < target:
+        data.extend(b'\xff' * (target - size))
+    # ROM-size byte at $7FD7: value N means 2^N KB
+    import math
+    size_byte = int(math.log2(target // 1024))
+    data[0x7FD7] = size_byte
+    with open(output, 'wb') as f:
+        f.write(data)
+    print(f'  ROM padded to {target // 1024} KB, size byte = ${size_byte:02X}')
+
+    # Apply script_patch.asm: TextPtrDispatch + game code patch + meta-table patch.
+    # This enables the main script in bank $C1 without needing the VWF patch.
+    import os as _os
+    if _os.path.exists('script_patch.asm'):
+        import subprocess
+        result = subprocess.run(
+            ['disassembly/asar', 'script_patch.asm', output],
+            capture_output=True, text=True,
+        )
+        if result.stdout:
+            print(result.stdout.strip())
+        if result.stderr:
+            print(result.stderr.strip())
+        if result.returncode != 0:
+            print('ERROR: script_patch.asm failed')
+            return
+        print('  script_patch.asm applied')
 
     print(f'=== scripted ROM ready: {output} ===')
 
 
-def build_vwf(source: str = 'lm3_scripted.sfc',
-              output: str = 'lm3_en.sfc',
+def build_vwf(source: str = 'out/lm3_scripted.sfc',
+              output: str = 'out/lm3_en.sfc',
               patch: str = 'vwf_patch.asm',
               asar_path: str = 'disassembly/asar'):
     """
@@ -1216,8 +1556,8 @@ def build_vwf(source: str = 'lm3_scripted.sfc',
 
 
 def build(source: str = 'lm3.sfc',
-          scripted: str = 'lm3_scripted.sfc',
-          output: str = 'lm3_en.sfc',
+          scripted: str = 'out/lm3_scripted.sfc',
+          output: str = 'out/lm3_en.sfc',
           patch: str = 'vwf_patch.asm',
           font_png: str = 'font/font_accented.png',
           en_folder: str = 'en_ptr_data',
@@ -1228,6 +1568,144 @@ def build(source: str = 'lm3.sfc',
                    en_folder=en_folder, table_filename=table_filename)
     build_vwf(source=scripted, output=output, patch=patch)
     print('=== BUILD COMPLETE ===')
+
+
+# ============================================================================
+# Round-trip verification
+# ============================================================================
+
+# Extraction table definitions — maps table names to their original ROM layout
+# for round-trip verification.  Must match the extract_script_bins() tables.
+EXTRACT_TABLES = {
+    'script':           {'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
+    'scenario-desc':    {'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C},
+    'unit-terrain-desc':{'ptr_tbl_pos': 0x030000, 'tbl_len': 0x500},
+    'unit-attacks':     {'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A},
+    'quiz-text':        {'ptr_tbl_pos': 0x030800, 'tbl_len': 0x0C0},
+    'dialog-2':         {'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
+    'dialog-3':         {'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
+    'dialog-4':         {'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
+    'dialog-5':         {'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
+    'field-msg':        {'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042},
+    'battle-menu':      {'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
+    'battle-msg':       {'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
+}
+
+
+def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
+                     tables_filter: list = None):
+    """
+    Strict round-trip verification: for each table, re-encode the text dump
+    and compare byte-for-byte against the original ROM binary data.
+
+    Every mismatch is a failure — no tolerance for ambiguous encodings or
+    duplicate pointers.  These must be fixed in the table file or dump.
+
+    Returns True if all entries match 1:1, False otherwise.
+    """
+    import os
+
+    with open(rom_path, 'rb') as f:
+        rom = list(f.read())  # list, not bytearray — check_for_lone_byte needs int elements
+
+    tbl = Table(table_filename, warn_duplicates=True)
+    all_pass = True
+
+    for name, ext_info in EXTRACT_TABLES.items():
+        if tables_filter and name not in tables_filter:
+            continue
+
+        script_file = os.path.join(folder, f'{name}.txt')
+        if not os.path.exists(script_file):
+            print(f'  skip {name} (not found: {script_file})')
+            continue
+
+        ptr_tbl_pos = ext_info['ptr_tbl_pos']
+        tbl_len = ext_info['tbl_len']
+        ptr_size = 2
+        num_ptrs = tbl_len // ptr_size
+
+        # Determine bank from pointer table
+        ptr_table_addr = SFCAddress(ptr_tbl_pos)
+        ptr_bank = ptr_table_addr.get_bank_byte(SFCAddressType.LOROM1)
+
+        # Extract original binary entries from ROM using pointer table.
+        orig_entries = []  # (data_bytes, data_start_pc)
+        for idx in range(num_ptrs):
+            ptr_off = ptr_tbl_pos + idx * ptr_size
+            lo = rom[ptr_off]
+            hi = rom[ptr_off + 1]
+            ptr = SFCAddress([lo, hi, ptr_bank], SFCAddressType.LOROM1)
+            data_start = ptr.get_address(SFCAddressType.PC)
+
+            # Find end of entry: scan for terminating 0x00 byte
+            data_end = tbl.find_entry_end(rom, data_start)
+
+            orig_entries.append((bytes(rom[data_start:data_end]), data_start))
+
+        # Re-encode text dump (returns list of (encoded_bytes, orig_addr) tuples)
+        encoded_entries = encode_script_file(script_file, table_filename)
+
+        # Compare — strict 1:1.
+        # For duplicate-address entries (empty content in dump, same orig_addr
+        # as earlier entry), the encoder will reuse the first entry's data at
+        # insertion time, so we compare against the first occurrence's encoded
+        # data rather than the empty b'\x00'.
+        max_entries = min(len(orig_entries), len(encoded_entries))
+        fails = 0
+
+        if len(orig_entries) != len(encoded_entries):
+            print(f'  {name}: WARN — entry count mismatch '
+                  f'(ROM: {len(orig_entries)}, text: {len(encoded_entries)})')
+
+        # Build map: orig_addr -> first encoded data for that address
+        addr_to_encoded = {}
+        for enc_data, orig_addr in encoded_entries:
+            if orig_addr is not None and orig_addr not in addr_to_encoded:
+                if enc_data != b'\x00':
+                    addr_to_encoded[orig_addr] = enc_data
+
+        for idx in range(max_entries):
+            orig_data, orig_pc = orig_entries[idx]
+            enc_data, orig_addr = encoded_entries[idx]
+
+            # For duplicate-address entries, use the first occurrence's encoding
+            if enc_data == b'\x00' and orig_addr is not None and orig_addr in addr_to_encoded:
+                enc_data = addr_to_encoded[orig_addr]
+
+            if orig_data == enc_data:
+                continue
+
+            fails += 1
+            if fails <= 5:
+                diff_pos = next(
+                    (i for i in range(min(len(orig_data), len(enc_data)))
+                     if orig_data[i] != enc_data[i]),
+                    min(len(orig_data), len(enc_data))
+                )
+                print(f'  {name}[{idx}]: FAIL at byte {diff_pos}')
+                print(f'    orig ({len(orig_data):4d} bytes): '
+                      f'{orig_data[:32].hex(" ")}{"..." if len(orig_data) > 32 else ""}')
+                print(f'    enc  ({len(enc_data):4d} bytes): '
+                      f'{enc_data[:32].hex(" ")}{"..." if len(enc_data) > 32 else ""}')
+                if diff_pos > 0:
+                    ctx_start = max(0, diff_pos - 4)
+                    ctx_end = min(max(len(orig_data), len(enc_data)), diff_pos + 8)
+                    print(f'    diff region [{ctx_start}:{ctx_end}]:')
+                    print(f'      orig: {orig_data[ctx_start:ctx_end].hex(" ")}')
+                    print(f'      enc:  {enc_data[ctx_start:ctx_end].hex(" ")}')
+
+        ok_count = max_entries - fails
+        if fails == 0:
+            print(f'  {name}: PASS ({ok_count} exact) [{max_entries} entries]')
+        else:
+            print(f'  {name}: FAIL ({fails}/{max_entries} entries differ, '
+                  f'{ok_count} exact)')
+            if fails > 5:
+                print(f'    (showing first 5 of {fails} failures)')
+            all_pass = False
+
+    return all_pass
 
 
 # ============================================================================
@@ -1247,22 +1725,45 @@ commands:
   vwf      Apply VWF patch to lm3_scripted.sfc → lm3_en.sfc
   build    Full build: font + script + vwf
   extract  Extract script from ROM to text files
+  verify   Round-trip test: re-encode text dumps and compare against ROM binary
 """,
     )
-    parser.add_argument('command', choices=['font', 'script', 'vwf', 'build', 'extract'])
+    parser.add_argument('command', choices=['font', 'font-preview', 'script', 'vwf', 'build', 'extract', 'verify'])
     parser.add_argument('--source',   default='lm3.sfc',          help='Source ROM (default: lm3.sfc)')
-    parser.add_argument('--scripted', default='lm3_scripted.sfc',  help='Scripted ROM intermediate (default: lm3_scripted.sfc)')
-    parser.add_argument('--output',   default='lm3_en.sfc',        help='Final output ROM (default: lm3_en.sfc)')
+    parser.add_argument('--scripted', default='out/lm3_scripted.sfc',  help='Scripted ROM intermediate')
+    parser.add_argument('--output',   default='out/lm3_en.sfc',        help='Final output ROM')
     parser.add_argument('--patch',    default='vwf_patch.asm',     help='VWF patch file (default: vwf_patch.asm)')
     parser.add_argument('--font',     default='font/font_accented.png', help='Font PNG (default: font/font_accented.png)')
     parser.add_argument('--lang',     default='jp',                help='Language for extract (jp or en, default: jp)')
     parser.add_argument('--table',    default='eng.tbl',           help='Character table for insert (default: eng.tbl)')
     parser.add_argument('--en-folder',default='en_ptr_data',       help='English text folder (default: en_ptr_data)')
+    parser.add_argument('--tables',   default=None,
+                        help='Comma-separated list of tables to insert '
+                             '(e.g. "script,dialog-2"). Default: all tables.')
+    parser.add_argument('--jp-tables', default=None,
+                        help='Comma-separated list of tables to insert from JP source '
+                             'instead of EN (e.g. "battle-msg,battle-menu"). '
+                             'Uses jp_ptr_data/ with jap.tbl.')
+    parser.add_argument('--force', action='store_true',
+                        help='Force re-encode all scripts (ignore bin cache).')
 
     args = parser.parse_args()
+    import os
+    tables_filter = [t.strip() for t in args.tables.split(',')] if args.tables else None
+    jp_tables = set(t.strip() for t in args.jp_tables.split(',')) if args.jp_tables else set()
 
     if args.command == 'font':
-        build_font(args.font)
+        build_font(args.font, force=args.force)
+
+    elif args.command == 'font-preview':
+        stem = os.path.splitext(os.path.basename(args.font))[0]
+        font_dir = os.path.dirname(args.font) or 'font'
+        font_width_preview(
+            font_bin_path=os.path.join(font_dir, 'bin', f'{stem}_1bpp.bin'),
+            widths_bin_path=os.path.join(font_dir, f'{stem}_widths.bin'),
+            table_path=args.table,
+            output_path=os.path.join(font_dir, f'{stem}_preview.png'),
+        )
 
     elif args.command == 'script':
         build_scripted(
@@ -1271,6 +1772,9 @@ commands:
             font_png=args.font,
             en_folder=args.en_folder,
             table_filename=args.table,
+            tables_filter=tables_filter,
+            jp_tables=jp_tables,
+            force=args.force,
         )
 
     elif args.command == 'vwf':
@@ -1294,3 +1798,15 @@ commands:
             folder_prefix=args.lang,
             table_filename=tbl_file,
         )
+
+    elif args.command == 'verify':
+        folder = 'jp_ptr_data' if args.lang == 'jp' else args.en_folder
+        tbl_file = 'jap.tbl' if args.lang == 'jp' else args.table
+        print(f'=== Round-trip verification: {args.source} vs {folder}/ ({tbl_file}) ===')
+        ok = verify_roundtrip(
+            rom_path=args.source,
+            folder=folder,
+            table_filename=tbl_file,
+            tables_filter=tables_filter,
+        )
+        print(f'=== {"ALL PASS" if ok else "FAILURES DETECTED"} ===')

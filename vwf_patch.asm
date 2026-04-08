@@ -404,14 +404,17 @@ VWFPostRender:
     RTL
 
 ; ============================================================================
-; Data
+; Data — placed at $C09000, safely after VWFPostRender and before TextPtrDispatch
+; ($C09000 + 256 widths + 16 zeros + ~3840 font bytes ≈ $C09FFF < $C0A000)
 ; ============================================================================
+org $C09000
+
 VWFWidthTable:
-    incbin "font/widths.bin"
+    incbin "font/font_accented_widths.bin"
 
 VWFFontData:
     db $00,$00,$00,$00,$00,$00,$00,$00
     db $00,$00,$00,$00,$00,$00,$00,$00
-    incbin "font/font_1bpp.bin"
+    incbin "font/bin/font_accented_1bpp.bin"
 
 print "VWF v4.2 end: $", pc

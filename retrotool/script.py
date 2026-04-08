@@ -1,10 +1,12 @@
 
 
 class Table:
-    def __init__(self, table_file):
+    def __init__(self, table_file, warn_duplicates=False):
         """
         Load and interpret the table file, set up class variables
         :param table_file: the path to the table file
+        :param warn_duplicates: if True, print warnings for characters with
+                                multiple byte encodings (round-trip hazard)
         """
         enc, val_map, char_map, err_count, cnt = self._load_table(table_file)
         self.__val_map = val_map
@@ -13,6 +15,8 @@ class Table:
         self.__parsed_lines = cnt
         self.__file_name = table_file
         self.__encoding = enc
+        if warn_duplicates:
+            self._check_duplicates()
 
     def _load_table(self, table_file, enc=None):
         """
@@ -28,6 +32,8 @@ class Table:
         cnt = 1
         with open(table_file, encoding=enc) as to:
             line = to.readline()
+            if line and line[0] == '\ufeff':
+                line = line[1:]  # strip BOM
             while line:
                 try:
                     # split the line using the '=' sign, ignore all else including
@@ -79,6 +85,22 @@ class Table:
             val_map[dec_val] = in_ch
         if in_ch not in char_map.keys():
             char_map[in_ch] = dec_val
+
+    def _check_duplicates(self):
+        """Warn about characters with multiple byte encodings."""
+        from collections import defaultdict
+        char_to_vals = defaultdict(list)
+        for val, ch in self.__val_map.items():
+            char_to_vals[ch].append(val)
+        dupes = {ch: sorted(vals) for ch, vals in char_to_vals.items()
+                 if len(vals) > 1}
+        if dupes:
+            print(f'WARNING: {self.__file_name} has {len(dupes)} characters '
+                  f'with duplicate encodings (round-trip mismatch risk):')
+            for ch, vals in sorted(dupes.items(), key=lambda x: x[1][0]):
+                hex_vals = ', '.join(f'${v:04X}' for v in vals)
+                used = self.__chr_map.get(ch)
+                print(f'  {repr(ch):8s}: {hex_vals}  (encoder uses ${used:04X})')
 
     @property
     def encoding(self):
@@ -263,6 +285,42 @@ class Table:
 
         return 0, None
 
+    def find_entry_end(self, bin_data, start, max_bytes=3):
+        """
+        Find the end of a text entry by decoding left-to-right with the table.
+        When a byte starts a multi-byte entry (e.g. FF -> 3 bytes), the entry
+        size is determined by the table and all bytes are consumed. A $00 is
+        only a terminator when it appears as a standalone single-byte value.
+        :param bin_data: full ROM data (list of ints)
+        :param start: index to begin scanning
+        :param max_bytes: max multi-byte entry size
+        :return: index one past the terminating $00 (i.e. data = bin_data[start:result])
+        """
+        i = start
+        while i < len(bin_data):
+            # Try longest match first (left-to-right decode)
+            matched = False
+            for size in range(max_bytes, 1, -1):
+                if i + size > len(bin_data):
+                    continue
+                window = list(bin_data[i:i + size])
+                val = self.bytes_to_val(window, True)
+                # Only match if the value's byte size equals the window size
+                # (prevents e.g. [00,92] → val $92 consuming 2 bytes for a 1-byte value)
+                if self.byte_size(val) != size:
+                    continue
+                if self.get_chars(val, False) is not None:
+                    i += size
+                    matched = True
+                    break
+            if not matched:
+                # Single byte: if it's the terminator value, stop
+                if bin_data[i] == 0x00:
+                    return i + 1
+                i += 1
+
+        return i
+
     @staticmethod
     def detect_encoding(file_path, lines=80):
         """
@@ -276,6 +334,41 @@ class Table:
             raw_data = b''.join([f.readline() for _ in range(lines)])
         return chardet.detect(raw_data)['encoding']
 
+    @staticmethod
+    def _is_binary_block(decoded_str, raw_data=None):
+        """Check if decoded output looks like binary data (mostly control codes).
+        Two checks: (1) decoded output is mostly bracketed control codes,
+        (2) raw data has interior $00 bytes (null bytes before the terminator)."""
+        # Check 1: decoded output ratio
+        in_bracket = 0
+        out_bracket = 0
+        inside = False
+        for ch in decoded_str:
+            if ch == '[':
+                inside = True
+            elif ch == ']':
+                inside = False
+                in_bracket += 1
+            elif inside:
+                pass
+            else:
+                out_bracket += 1
+        total = in_bracket + out_bracket
+        if total > 0 and in_bracket > out_bracket:
+            return True
+        # Check 2: interior $00 bytes in raw data
+        if raw_data and len(raw_data) > 1:
+            interior = raw_data[:-1] if raw_data[-1] == 0 else raw_data
+            zero_count = sum(1 for b in interior if b == 0)
+            if zero_count > 0 and zero_count >= len(interior) * 0.15:
+                return True
+        return False
+
+    @staticmethod
+    def hex_dump(bin_data):
+        """Output all bytes as hex escapes: [04][00][B3]..."""
+        return ''.join(f'[{b:02X}]' for b in bin_data)
+
     def dump_script(self, filename: str, dict_data: list, deduplicate=True):
         """
         Dump the script using a table from a list of mapped data (id, addr, data)
@@ -285,17 +378,24 @@ class Table:
         """
         line1 = True
         nl = "\n"
-        with open(filename, 'w', encoding=self.encoding) as of:
+        with open(filename, 'w', encoding='utf-16') as of:
             dumped_addrs = []
             for data in dict_data:
                 of.write(f"{'' if line1 else nl}<<{data.get('id')}>>{nl}")
                 addr = data.get('addr', None)
+                should_write = True
                 if deduplicate and addr is not None:
-                    if addr not in dumped_addrs:
+                    if addr in dumped_addrs:
+                        should_write = False
+                    else:
                         dumped_addrs.append(addr)
-                        of.write(self.interpret_binary_data(data['data']))
-                else:
-                    of.write(self.interpret_binary_data(data['data']))
+                if should_write:
+                    raw = data['data']
+                    decoded = self.interpret_binary_data(raw)
+                    if self._is_binary_block(decoded, raw):
+                        of.write(self.hex_dump(raw))
+                    else:
+                        of.write(decoded)
                 line1 = False
 
     @staticmethod
