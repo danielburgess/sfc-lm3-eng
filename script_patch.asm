@@ -126,16 +126,19 @@ org $828030
 ; ============================================================================
 
 ; --- Redirect original functions to expanded versions in kanji area ---
-; copyUnitFirstName: replace 20-byte body with JSL + RTS + NOP padding
+; copyUnitFirstName ($80:B90F): 22 bytes ($B90F-$B924, ends with BRA to shared tail)
+; Callers: JSR $B90F at $80:B8F4, $80:B909
 org $80B90F
     JSL.L ExpandedCopyFirstName   ; 4 bytes
     RTS                           ; 1 byte
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP                     ; 2 bytes padding (covers BRA at $B923-$B924)
 
-; copyUnitSurname + shared tail: replace 31-byte body with JSL + RTS + NOP padding
-org $80B923
+; copyUnitSurname ($80:B925) + shared copy tail ($B939-$B949): 37 bytes total
+; Caller: JSR $B925 at $80:B8FE
+org $80B925
     JSL.L ExpandedCopySurname     ; 4 bytes
     RTS                           ; 1 byte
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
@@ -143,7 +146,8 @@ org $80B923
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
     NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP                           ; 1 byte padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP                     ; 2 bytes padding (total: 37 bytes)
 
 ; --- New expanded functions in kanji glyph area (safe — font relocated to $170000) ---
 org $04803E
