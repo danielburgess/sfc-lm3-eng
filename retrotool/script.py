@@ -217,28 +217,31 @@ class Table:
                 if exclude_count > 0:
                     bin_data = bin_data[:len(bin_data)-exclude_count]
 
-        while i <= len(bin_data) + 1:
+        while i < len(bin_data):
             len_check = max_bytes
             char = None
             found_char = False
             while len_check > 0:
                 end_check = i + len_check
+                if end_check > len(bin_data):
+                    len_check -= 1
+                    continue
                 val = self.bytes_to_val(bin_data[i: end_check], True)
                 char = self.get_chars(val, False)
                 if char:
                     found_char = True
-                    i += (len_check - 1)
-                    len_check = 0
+                    i += len_check
+                    break
                 else:
                     len_check -= 1
 
             if not found_char:
                 char = self.get_chars(bin_data[i], True)
+                i += 1
             if char is None:
-                print(f"ERROR - Unable to resolve byte ({hex(bin_data[i])})???")
+                print(f"ERROR - Unable to resolve byte ({hex(bin_data[i - 1])})???")
             else:
                 final_string += char
-            i += 1
         return final_string
 
     def has_char(self, bin_data):
@@ -285,7 +288,7 @@ class Table:
 
         return 0, None
 
-    def find_entry_end(self, bin_data, start, max_bytes=3):
+    def find_entry_end(self, bin_data, start, max_bytes=3, max_addr=None):
         """
         Find the end of a text entry by decoding left-to-right with the table.
         When a byte starts a multi-byte entry (e.g. FF -> 3 bytes), the entry
@@ -294,10 +297,14 @@ class Table:
         :param bin_data: full ROM data (list of ints)
         :param start: index to begin scanning
         :param max_bytes: max multi-byte entry size
+        :param max_addr: optional upper bound address (next entry's start);
+                         scanning stops if position reaches or exceeds this
         :return: index one past the terminating $00 (i.e. data = bin_data[start:result])
         """
         i = start
         while i < len(bin_data):
+            if max_addr is not None and i >= max_addr:
+                return i
             # Try longest match first (left-to-right decode)
             matched = False
             for size in range(max_bytes, 1, -1):

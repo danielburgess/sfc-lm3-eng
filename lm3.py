@@ -270,6 +270,16 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
     pointer_list = ptr_data['ptr_list'] if ptr_data else []
     bin_list = ptr_data['bin_list'] if ptr_data else []
 
+    # Pre-compute all pointer targets for bounding entries
+    all_data_starts = []
+    for i in range(ptr_tbl_loc, ptr_tbl_loc + ptr_tbl_len, ptr_bytes + ptr_format):
+        add_len = fmt_length[ptr_format]
+        ptr_end = (i + add_len) + ptr_bytes
+        this_ptr_data = bin_data[(i + add_len): ptr_end]
+        ptr = SFCAddress([this_ptr_data[0], this_ptr_data[1], ptr_bank], ptr_addr_type)
+        all_data_starts.append(ptr.get_address(SFCAddressType.PC))
+    sorted_unique_addrs = sorted(set(all_data_starts))
+
     ptr_index = 0
     for i in range(ptr_tbl_loc, ptr_tbl_loc + ptr_tbl_len, ptr_bytes + ptr_format):
 
@@ -286,7 +296,10 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
         # convert the address objects for the current and next pointer to data start/stop positions
         data_start = ptr.get_address(SFCAddressType.PC)
         if add_len == 0:
-            data_end = tbl.find_entry_end(bin_data, data_start)
+            # Use next unique pointer address as upper bound to prevent over-scanning
+            addr_idx = sorted_unique_addrs.index(data_start) if data_start in sorted_unique_addrs else -1
+            max_addr = sorted_unique_addrs[addr_idx + 1] if addr_idx >= 0 and addr_idx + 1 < len(sorted_unique_addrs) else None
+            data_end = tbl.find_entry_end(bin_data, data_start, max_addr=max_addr)
         else:
             data_end = data_start + add_len
 
@@ -571,8 +584,7 @@ def dump_event_script(filename, dict_data, tbl, deduplicate=True):
     """
     line1 = True
     nl = "\n"
-    enc = tbl.encoding if tbl else 'utf-8'
-    with open(filename, 'w', encoding=enc) as of:
+    with open(filename, 'w', encoding='utf-16') as of:
         dumped_addrs = []
         for data in dict_data:
             of.write(f"{'' if line1 else nl}<<{data.get('id')}>>{nl}")
@@ -662,10 +674,6 @@ def encode_text(text_str, tbl):
         else:
             result.append(0x3F)  # '?'
         i += 1
-
-    # Ensure terminated with 0x00
-    if not result or result[-1] != 0x00:
-        result.append(0x00)
 
     return bytes(result)
 
@@ -1629,17 +1637,25 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
         ptr_table_addr = SFCAddress(ptr_tbl_pos)
         ptr_bank = ptr_table_addr.get_bank_byte(SFCAddressType.LOROM1)
 
-        # Extract original binary entries from ROM using pointer table.
-        orig_entries = []  # (data_bytes, data_start_pc)
+        # Pre-compute all pointer targets for bounding entries
+        all_starts = []
         for idx in range(num_ptrs):
             ptr_off = ptr_tbl_pos + idx * ptr_size
             lo = rom[ptr_off]
             hi = rom[ptr_off + 1]
             ptr = SFCAddress([lo, hi, ptr_bank], SFCAddressType.LOROM1)
-            data_start = ptr.get_address(SFCAddressType.PC)
+            all_starts.append(ptr.get_address(SFCAddressType.PC))
+        sorted_unique_addrs = sorted(set(all_starts))
 
-            # Find end of entry: scan for terminating 0x00 byte
-            data_end = tbl.find_entry_end(rom, data_start)
+        # Extract original binary entries from ROM using pointer table.
+        orig_entries = []  # (data_bytes, data_start_pc)
+        for idx in range(num_ptrs):
+            data_start = all_starts[idx]
+
+            # Use next unique pointer address as upper bound
+            addr_idx = sorted_unique_addrs.index(data_start) if data_start in sorted_unique_addrs else -1
+            max_addr = sorted_unique_addrs[addr_idx + 1] if addr_idx >= 0 and addr_idx + 1 < len(sorted_unique_addrs) else None
+            data_end = tbl.find_entry_end(rom, data_start, max_addr=max_addr)
 
             orig_entries.append((bytes(rom[data_start:data_end]), data_start))
 
