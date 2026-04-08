@@ -79,7 +79,7 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'ptr_tbl_pos': 0x50101,
             'tbl_len': 0x400,
             'table_name': 'script_ext',
-            'event_script': True
+            'event_script': False
         },
         {   # Scenario description
             'ptr_tbl_pos': 0x111EE3,
@@ -132,7 +132,7 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             ],
             'table_name': 'unit-equipment'
         },
-        {   # supplementary character dialog (Charlie, Momo, etc.)
+        {   # supplementary character dialog (Charley, Momo, etc.)
             'ptr_tbl_pos': 0x1B8000,
             'tbl_len': 0x188,
             'table_name': 'dialog-2'
@@ -611,19 +611,126 @@ def _int_to_bytes_be(val):
     return bytes(out)
 
 
-def encode_text(text_str, tbl):
+def hexify_text(text, jp_tbl, en_tbl):
+    """
+    Convert untranslated Japanese characters in text to hex byte placeholders.
+    Characters mapped in jap.tbl but NOT in eng.tbl are converted to [XX] format.
+    Bracket escapes like [end], [FF7F01], [FFC000] are preserved as-is.
+    :param text: the text string
+    :param jp_tbl: Table instance for jap.tbl
+    :param en_tbl: Table instance for eng.tbl
+    :return: converted text string
+    """
+    jp_map = jp_tbl._Table__chr_map
+    en_map = en_tbl._Table__chr_map
+
+    result = []
+    i = 0
+    while i < len(text):
+        ch = text[i]
+
+        # Preserve bracket escapes as-is
+        if ch == '[':
+            close = text.find(']', i + 1)
+            if close != -1:
+                result.append(text[i:close + 1])
+                i = close + 1
+                continue
+
+        # Preserve entry headers <<...>>
+        if ch == '<' and i + 1 < len(text) and text[i + 1] == '<':
+            close = text.find('>>', i + 2)
+            if close != -1:
+                result.append(text[i:close + 2])
+                i = close + 2
+                continue
+
+        # Preserve ASCII, newlines, and characters in eng.tbl
+        if ch in '\n\r' or (0x20 <= ord(ch) <= 0x7E) or ch in en_map:
+            result.append(ch)
+            i += 1
+            continue
+
+        # Try longest match in jap.tbl (multi-char entries like !! or (ぇ))
+        matched = False
+        for length in range(3, 0, -1):
+            substr = text[i:i + length]
+            val = jp_map.get(substr)
+            if val is not None:
+                hex_str = _int_to_bytes_be(val).hex().upper()
+                if len(hex_str) % 2:
+                    hex_str = '0' + hex_str
+                result.append(f'[{hex_str}]')
+                i += length
+                matched = True
+                break
+
+        if not matched:
+            # Unknown character — emit as Unicode escape
+            result.append(f'[?{ord(ch):04X}]')
+            i += 1
+
+    return ''.join(result)
+
+
+def hexify_en_files(en_folder, jp_table_path='jap.tbl', en_table_path='eng.tbl',
+                    tables_filter=None):
+    """
+    Convert remaining Japanese text in English dump files to hex byte placeholders.
+    :param en_folder: path to English text files
+    :param jp_table_path: Japanese table file
+    :param en_table_path: English table file
+    :param tables_filter: optional list of table names to process
+    """
+    import os
+    jp_tbl = Table(jp_table_path)
+    en_tbl = Table(en_table_path)
+
+    # Process all .txt files in the folder
+    txt_files = sorted(f for f in os.listdir(en_folder) if f.endswith('.txt'))
+    for txt_file in txt_files:
+        name = txt_file[:-4]  # strip .txt
+        if tables_filter and name not in tables_filter:
+            continue
+        txt_path = os.path.join(en_folder, txt_file)
+
+        # Try UTF-16 first, fall back to detected encoding
+        try:
+            with open(txt_path, encoding='utf-16') as f:
+                content = f.read()
+            enc = 'utf-16'
+        except (UnicodeDecodeError, UnicodeError):
+            enc = Table.detect_encoding(txt_path)
+            with open(txt_path, encoding=enc) as f:
+                content = f.read()
+
+        converted = hexify_text(content, jp_tbl, en_tbl)
+
+        if converted != content:
+            with open(txt_path, 'w', encoding=enc) as f:
+                f.write(converted)
+            print(f'  {name}: converted Japanese text to hex placeholders')
+        else:
+            print(f'  {name}: no changes needed')
+
+
+def encode_text(text_str, tbl, fallback_tbl=None):
     """
     Encode a text string to bytes using the Table's character map.
     All control codes and character mappings come from the table file —
     nothing is hardcoded here.
     :param text_str: the text to encode
-    :param tbl: Table instance with character mappings
+    :param tbl: Table instance with character mappings (primary, e.g. eng.tbl)
+    :param fallback_tbl: optional fallback Table (e.g. jap.tbl) for characters
+                         not in the primary table — used to pass through
+                         untranslated Japanese text as raw bytes
     :return: bytes
     """
     # Build a lookup from the Table's char_map, sorted longest-key-first
     # so multi-char sequences like [pause], !!, etc. match before singles.
     # Access the private map (Table doesn't expose it directly).
     char_map = tbl._Table__chr_map
+    fb_map = fallback_tbl._Table__chr_map if fallback_tbl else {}
 
     # Pre-compute bytes for each entry and sort by descending key length
     lookup = []
@@ -632,6 +739,9 @@ def encode_text(text_str, tbl):
     lookup.sort(key=lambda x: len(x[0]), reverse=True)
 
     max_key_len = max(len(k) for k, _ in lookup) if lookup else 1
+
+    # Also compute max key length for fallback table
+    fb_max_key_len = max((len(k) for k in fb_map), default=1) if fb_map else 1
 
     result = bytearray()
     i = 0
@@ -643,7 +753,7 @@ def encode_text(text_str, tbl):
             i += 1
             continue
 
-        # Longest-match against the table — multi-char matches always preferred.
+        # Longest-match against the primary table — multi-char matches always preferred.
         matched = False
         for length in range(min(max_key_len, len(text_str) - i), 0, -1):
             substr = text_str[i:i + length]
@@ -668,6 +778,20 @@ def encode_text(text_str, tbl):
                     i = close + 1
                     continue
 
+        # Fallback table: look up untranslated characters (e.g. Japanese)
+        if fb_map:
+            fb_matched = False
+            for length in range(min(fb_max_key_len, len(text_str) - i), 0, -1):
+                substr = text_str[i:i + length]
+                val = fb_map.get(substr)
+                if val is not None:
+                    result.extend(_int_to_bytes_be(val))
+                    i += length
+                    fb_matched = True
+                    break
+            if fb_matched:
+                continue
+
         # Fallback: printable ASCII → identity, else '?'
         if 0x20 <= ord(ch) <= 0x7E:
             result.append(ord(ch))
@@ -679,7 +803,8 @@ def encode_text(text_str, tbl):
 
 
 def insert_script(input_filename, output_filename, script_file, table_filename,
-                  ptr_tbl_pos, tbl_len, ptr_bank=None, ptr_addr_type=None):
+                  ptr_tbl_pos, tbl_len, ptr_bank=None, ptr_addr_type=None,
+                  fallback_table=None):
     """
     Insert translated text back into the ROM by encoding text and updating pointers.
     :param input_filename: source ROM
@@ -701,6 +826,7 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
         rom = bytearray(f.read())
 
     tbl = Table(table_filename)
+    fb_tbl = Table(fallback_table) if fallback_table else None
 
     # Determine bank from pointer table position
     ptr_table_addr = SFCAddress(ptr_tbl_pos)
@@ -732,7 +858,7 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
         if not content or content == '[end]':
             encoded_entries.append(b'\x00')
         else:
-            encoded = encode_text(content, tbl)
+            encoded = encode_text(content, tbl, fallback_tbl=fb_tbl)
             encoded_entries.append(encoded)
 
     # Calculate data placement
@@ -1124,7 +1250,8 @@ def build_font(font_png='font/font_accented.png', force=False):
 
 
 def encode_script_file(script_file: str, table_filename: str,
-                       cache_dir: str = None, force: bool = False) -> list[bytes]:
+                       cache_dir: str = None, force: bool = False,
+                       fallback_table: str = None) -> list[bytes]:
     """
     Encode a script file into a list of binary entries, one per <<index>> block.
 
@@ -1183,6 +1310,7 @@ def encode_script_file(script_file: str, table_filename: str,
 
     # Cache miss — encode from scratch.
     tbl = Table(table_filename)
+    fb_tbl = Table(fallback_table) if fallback_table else None
 
     with open(script_file, 'r', encoding='utf-16') as f:
         text = f.read()
@@ -1209,7 +1337,7 @@ def encode_script_file(script_file: str, table_filename: str,
         if not content or content == '[end]':
             encoded_entries.append((b'\x00', orig_addr))
         else:
-            encoded_entries.append((encode_text(content, tbl), orig_addr))
+            encoded_entries.append((encode_text(content, tbl, fallback_tbl=fb_tbl), orig_addr))
 
     # Write cache.
     if bin_path:
@@ -1229,7 +1357,8 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
                           ptr_tbl_pos: int, tbl_len: int,
                           ptr_bank: int = None, ptr_addr_type=None,
                           ptr_size: int = 2, data_start_pc: int = None,
-                          cache_dir: str = None, force: bool = False) -> int:
+                          cache_dir: str = None, force: bool = False,
+                          fallback_table: str = None) -> int:
     """
     Encode a translated script file and write it into a ROM bytearray in place.
 
@@ -1258,7 +1387,8 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
             ptr_bank = ptr_table_addr.get_bank_byte(ptr_addr_type)
 
     encoded_entries = encode_script_file(script_file, table_filename,
-                                         cache_dir=cache_dir, force=force)
+                                         cache_dir=cache_dir, force=force,
+                                         fallback_table=fallback_table)
 
     if data_start_pc is None:
         data_start_pc = ptr_tbl_pos + tbl_len
@@ -1390,22 +1520,28 @@ def insert_all_scripts(rom_path: str,
             continue
 
         cache_dir = os.path.join(folder, 'bin')
-        jobs.append((tbl_info, script_file, tbl_file, cache_dir, lang_tag))
+        # When encoding with eng.tbl, use jap.tbl as fallback for untranslated chars
+        fb_tbl = 'jap.tbl' if tbl_file != 'jap.tbl' else None
+        jobs.append((tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl))
 
     # Pre-encode all scripts in parallel (encoding is CPU-bound; ROM writes are serial).
+    print(f'Encoding {len(jobs)} script table(s)...')
     max_workers = max(1, int(multiprocessing.cpu_count() * 0.8))
     with ProcessPoolExecutor(max_workers=max_workers) as pool:
         futures = {}
-        for tbl_info, script_file, tbl_file, cache_dir, lang_tag in jobs:
+        for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
             fut = pool.submit(encode_script_file, script_file, tbl_file,
-                              cache_dir=cache_dir, force=force)
+                              cache_dir=cache_dir, force=force,
+                              fallback_table=fb_tbl)
             futures[tbl_info['name']] = fut
         # Wait for all to finish (also raises any exceptions).
         for name, fut in futures.items():
             fut.result()
+            print(f'  encoded: {name}')
 
     # Insert encoded data into ROM (serial — writes to shared bytearray).
-    for tbl_info, script_file, tbl_file, cache_dir, lang_tag in jobs:
+    print('Inserting into ROM...')
+    for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
         name = tbl_info['name']
 
         kwargs = {}
@@ -1422,6 +1558,7 @@ def insert_all_scripts(rom_path: str,
             rom, script_file, tbl_file,
             tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
             cache_dir=cache_dir,
+            fallback_table=fb_tbl,
             **kwargs,
         )
         data_start = kwargs.get('data_start_pc', tbl_info['ptr_tbl_pos'] + tbl_info['tbl_len'])
@@ -1724,6 +1861,104 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
     return all_pass
 
 
+def jptest_orig(rom_path: str, output_path: str, jp_folder: str = 'jp_ptr_data',
+                table_filename: str = 'jap.tbl', tables_filter: list = None):
+    """
+    Re-insert JP scripts at original ROM locations by writing each entry back
+    at its original address (from the dump header). This preserves the non-contiguous
+    layout of tables like battle-msg where game data is interleaved between entries.
+    """
+    import os, shutil, re
+
+    shutil.copy2(rom_path, output_path)
+
+    with open(output_path, 'rb') as f:
+        rom = bytearray(f.read())
+
+    tbl = Table(table_filename)
+
+    for name, ext_info in EXTRACT_TABLES.items():
+        if tables_filter and name not in tables_filter:
+            continue
+
+        script_file = os.path.join(jp_folder, f'{name}.txt')
+        if not os.path.exists(script_file):
+            print(f'  skip {name} (not found)')
+            continue
+
+        ptr_tbl_pos = ext_info['ptr_tbl_pos']
+        tbl_len = ext_info['tbl_len']
+        num_ptrs = tbl_len // 2
+
+        ptr_table_addr = SFCAddress(ptr_tbl_pos)
+        ptr_bank = ptr_table_addr.get_bank_byte(SFCAddressType.LOROM1)
+
+        # Read and encode entries
+        with open(script_file, 'r', encoding='utf-16') as f:
+            text = f.read()
+
+        entries = text.split('<<')[1:]
+        total_bytes = 0
+        ptr_idx = 0
+        seen_addrs = {}  # orig_addr -> SNES pointer value
+
+        for entry in entries:
+            if '>>' not in entry:
+                continue
+            header = entry.split('>>')[0]
+            content = entry.split('>>')[1]
+            if content.startswith('\n'):
+                content = content[1:]
+            content = content.rstrip()
+
+            # Parse original address from header: <<$78336:0[$85558]>>
+            addr_match = re.search(r'\[\$(\d+)\]', header)
+            if not addr_match:
+                continue
+            orig_pc = int(addr_match.group(1))
+
+            # Check for duplicate address (no content in dump)
+            if not content and orig_pc in seen_addrs:
+                # Reuse pointer from first occurrence
+                if ptr_idx < num_ptrs:
+                    ptr_val = seen_addrs[orig_pc]
+                    off = ptr_tbl_pos + ptr_idx * 2
+                    rom[off] = ptr_val & 0xFF
+                    rom[off + 1] = (ptr_val >> 8) & 0xFF
+                ptr_idx += 1
+                continue
+
+            # Encode the entry
+            if not content or content == '[end]':
+                encoded = b'\x00'
+            else:
+                encoded = encode_text(content, tbl)
+
+            # Write data at the original address
+            rom[orig_pc:orig_pc + len(encoded)] = encoded
+            total_bytes += len(encoded)
+
+            # Write pointer
+            snes_addr = SFCAddress(orig_pc)
+            ptr_val = snes_addr.get_address(SFCAddressType.LOROM1) & 0xFFFF
+            if ptr_idx < num_ptrs:
+                off = ptr_tbl_pos + ptr_idx * 2
+                rom[off] = ptr_val & 0xFF
+                rom[off + 1] = (ptr_val >> 8) & 0xFF
+
+            seen_addrs[orig_pc] = ptr_val
+            ptr_idx += 1
+
+        print(f'  {name}: {total_bytes} bytes written in-place ({ptr_idx} entries)')
+
+    with open(output_path, 'wb') as f:
+        f.write(rom)
+
+    print(f'JP scripts re-inserted at original locations → {output_path}')
+
+
+
+
 # ============================================================================
 # CLI entry point
 # ============================================================================
@@ -1742,9 +1977,12 @@ commands:
   build    Full build: font + script + vwf
   extract  Extract script from ROM to text files
   verify   Round-trip test: re-encode text dumps and compare against ROM binary
+  hexify   Convert untranslated Japanese in en_ptr_data to [XX] hex placeholders
+  jptest   Re-insert JP scripts into expanded ROM layout (round-trip insertion test)
+  jptest-orig  Re-insert JP scripts at original ROM locations (data integrity test)
 """,
     )
-    parser.add_argument('command', choices=['font', 'font-preview', 'script', 'vwf', 'build', 'extract', 'verify'])
+    parser.add_argument('command', choices=['font', 'font-preview', 'script', 'vwf', 'build', 'extract', 'verify', 'hexify', 'jptest', 'jptest-orig'])
     parser.add_argument('--source',   default='lm3.sfc',          help='Source ROM (default: lm3.sfc)')
     parser.add_argument('--scripted', default='out/lm3_scripted.sfc',  help='Scripted ROM intermediate')
     parser.add_argument('--output',   default='out/lm3_en.sfc',        help='Final output ROM')
@@ -1826,3 +2064,37 @@ commands:
             tables_filter=tables_filter,
         )
         print(f'=== {"ALL PASS" if ok else "FAILURES DETECTED"} ===')
+
+    elif args.command == 'hexify':
+        print(f'=== Converting Japanese text to hex in {args.en_folder}/ ===')
+        hexify_en_files(
+            en_folder=args.en_folder,
+            tables_filter=tables_filter,
+        )
+
+    elif args.command == 'jptest':
+        output = args.output.replace('_en.sfc', '_jptest.sfc') if '_en' in args.output else 'out/lm3_jptest.sfc'
+        all_table_names = set(t['name'] for t in SCRIPT_TABLES)
+        if tables_filter:
+            all_table_names = all_table_names & set(tables_filter)
+        print(f'=== jptest: re-inserting JP scripts into expanded layout ===')
+        print(f'  source: {args.source} → {output}')
+        build_scripted(
+            source=args.source,
+            output=output,
+            font_png=args.font,
+            table_filename='jap.tbl',
+            tables_filter=tables_filter,
+            jp_tables=all_table_names,
+            force=args.force,
+        )
+
+    elif args.command == 'jptest-orig':
+        output = 'out/lm3_jptest_orig.sfc'
+        print(f'=== jptest-orig: re-inserting JP scripts at original locations ===')
+        print(f'  source: {args.source} → {output}')
+        jptest_orig(
+            rom_path=args.source,
+            output_path=output,
+            tables_filter=tables_filter,
+        )
