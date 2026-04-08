@@ -4,12 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Round-trip verification now passing for original data.">
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.bin" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.checksum" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="New text blocks have been identified for translation.">
+      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-classes.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-items.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-names.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/equipment-expansion-plan.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-classes.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-classes.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-items.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-items.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-names.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-names.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/field-menu.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-menu.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/field-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-text.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/script_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/script_patch.asm" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,30 +44,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/mnt/crucial/projects/sfc-lm3-eng&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/en_ptr_data",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/en_ptr_data" />
+      <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -85,7 +98,7 @@
       <workItem from="1705786350724" duration="745000" />
       <workItem from="1775367790425" duration="60968000" />
       <workItem from="1775492777372" duration="6588000" />
-      <workItem from="1775499552146" duration="69125000" />
+      <workItem from="1775499552146" duration="89597000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -191,7 +204,23 @@
       <option name="project" value="LOCAL" />
       <updated>1775625895570</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional.">
+      <option name="closed" value="true" />
+      <created>1775630113855</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1775630113855</updated>
+    </task>
+    <task id="LOCAL-00015" summary="New text blocks have been identified for translation.">
+      <option name="closed" value="true" />
+      <created>1775635954439</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1775635954439</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -225,6 +254,8 @@
     <MESSAGE value="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies." />
     <MESSAGE value="Big changes for script dumping and insertion. Still some bugs, but we'll figure it out." />
     <MESSAGE value="Round-trip verification now passing for original data." />
-    <option name="LAST_COMMIT_MESSAGE" value="Round-trip verification now passing for original data." />
+    <MESSAGE value="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional." />
+    <MESSAGE value="New text blocks have been identified for translation." />
+    <option name="LAST_COMMIT_MESSAGE" value="New text blocks have been identified for translation." />
   </component>
 </project>

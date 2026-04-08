@@ -112,7 +112,7 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
                 'output': True
             },
         ],
-        {
+        {   # unit equipment names (weapon + armor fields within 32-byte stat records)
             'data_pos': 0x10050,
             'data_len': 0x1FFE,
             'block_len': 0x20,
@@ -131,6 +131,48 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
                 },
             ],
             'table_name': 'unit-equipment'
+        },
+        {   # playable unit names (8 bytes each, $20-padded)
+            'data_pos': 0x012050,
+            'data_len': 0x490,   # 146 entries × 8 bytes
+            'block_len': 0x8,
+            'block_eval': [
+                {
+                    'label': 'name',
+                    'start': 0x0,
+                    'len': 0x8,
+                    'fill': 0x20
+                },
+            ],
+            'table_name': 'unit-names'
+        },
+        {   # unit class/type names (12 bytes within 40-byte stat records)
+            'data_pos': 0x05C200,
+            'data_len': 0x5A0,   # 36 entries × 40 bytes
+            'block_len': 0x28,
+            'block_eval': [
+                {
+                    'label': 'class',
+                    'start': 0xC,
+                    'len': 0xC,
+                    'fill': 0x00
+                },
+            ],
+            'table_name': 'unit-classes'
+        },
+        {   # item/accessory names (9 bytes within 24-byte stat records)
+            'data_pos': 0x0124E0,
+            'data_len': 0xC00,   # 128 entries × 24 bytes
+            'block_len': 0x18,
+            'block_eval': [
+                {
+                    'label': 'item',
+                    'start': 0x0,
+                    'len': 0x9,
+                    'fill': 0x20
+                },
+            ],
+            'table_name': 'unit-items'
         },
         {   # supplementary character dialog (Charley, Momo, etc.)
             'ptr_tbl_pos': 0x1B8000,
@@ -398,9 +440,15 @@ def data_extract(input_filename: str, table_name: str, out_folder: str, data_pos
                     e_start = e.get('start', 0)
                     e_end = e_start + e.get('len', 0)
 
+                    field_data = data[e_start:e_end]
+                    fill = e.get('fill', None)
+                    if fill is not None:
+                        # Strip trailing fill bytes so the decoder sees clean text
+                        while field_data and field_data[-1] == fill:
+                            field_data = field_data[:-1]
                     bin_list.append({'id': f'{this_id}.{e.get("label", e_start)}',
                                      'addr': data_start + e_start,
-                                     'data': data[e_start:e_end], 'trim': e.get('fill', None)})
+                                     'data': field_data, 'trim': fill})
             else:
                 bin_list.append({'id': this_id, 'addr': data_start, 'data': data, 'trim': None})
 
@@ -1206,6 +1254,39 @@ SCRIPT_TABLES = [
 # All four dialog ptr tables end by $1B83D0; pack dialog text from here.
 DIALOG_TEXT_BASE = 0x1B83D0
 
+# Fixed-length tables: text fields embedded in stat/data records.
+# These are written in-place (no pointer table) — encoded text is padded/truncated
+# to fit the fixed field width and patched directly into the ROM record.
+FIXED_TABLES = [
+    {   'name': 'unit-names',
+        'data_pos': 0x220000,     # relocated to bank $C4:8000 (expanded ROM)
+        'entries': 146,
+        'block_len': 0x10,        # 16 bytes per entry (was 8)
+        'fields': [{'label': 'name', 'start': 0x0, 'len': 0x10, 'fill': 0x20}],
+    },
+    {   'name': 'unit-classes',
+        'data_pos': 0x05C200,
+        'entries': 36,
+        'block_len': 0x28,
+        'fields': [{'label': 'class', 'start': 0xC, 'len': 0xC, 'fill': 0x00}],
+    },
+    {   'name': 'unit-items',
+        'data_pos': 0x0124E0,
+        'entries': 128,
+        'block_len': 0x18,
+        'fields': [{'label': 'item', 'start': 0x0, 'len': 0x9, 'fill': 0x20}],
+    },
+    {   'name': 'unit-equipment',
+        'data_pos': 0x010050,
+        'entries': 256,
+        'block_len': 0x20,
+        'fields': [
+            {'label': 'weapon', 'start': 0x0, 'len': 0x9, 'fill': 0x20},
+            {'label': 'armor',  'start': 0xC, 'len': 0x9, 'fill': 0x20},
+        ],
+    },
+]
+
 
 def build_font(font_png='font/font_accented.png', force=False):
     """
@@ -1487,6 +1568,115 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
     return total_size
 
 
+def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
+                       tbl_info: dict, fallback_table: str = None):
+    """
+    Insert translated text into fixed-length fields within ROM data records.
+
+    Reads the script file, matches each entry to its field by index+label,
+    encodes the text, pads/truncates to the fixed field width, and patches
+    it directly into the ROM at the correct offset within each record.
+
+    Returns the number of fields written.
+    """
+    import re
+
+    tbl = Table(table_filename)
+    fb_tbl = Table(fallback_table) if fallback_table else None
+
+    with open(script_file, 'r', encoding='utf-16') as f:
+        text = f.read()
+
+    data_pos = tbl_info['data_pos']
+    block_len = tbl_info['block_len']
+    entries = tbl_info['entries']
+    fields = tbl_info['fields']
+
+    # Build a lookup: (index, label) -> field config
+    field_by_label = {f['label']: f for f in fields}
+
+    # Parse the script file into (index, label, content) tuples
+    parsed = []
+    for entry in text.split('<<')[1:]:
+        if '>>' not in entry:
+            continue
+        header = entry.split('>>')[0]
+        content = entry.split('>>')[1]
+        if content.startswith('\n'):
+            content = content[1:]
+        content = content.rstrip()
+
+        # Header format: $73808:5.name or $377344:0.class
+        m = re.match(r'\$\d+:(\d+)\.(\w+)', header)
+        if not m:
+            continue
+        idx = int(m.group(1))
+        label = m.group(2)
+        parsed.append((idx, label, content))
+
+    # Ensure the ROM is large enough for the table data.
+    required_end = data_pos + entries * block_len
+    if required_end > len(rom):
+        rom.extend(b'\xff' * (required_end - len(rom)))
+
+    written = 0
+    for idx, label, content in parsed:
+        if idx >= entries:
+            print(f'  WARNING: {script_file} entry {idx} exceeds table size ({entries})')
+            continue
+        field = field_by_label.get(label)
+        if field is None:
+            print(f'  WARNING: {script_file} unknown field label "{label}"')
+            continue
+
+        field_len = field['len']
+        fill = field['fill']
+
+        # Encode the text
+        encoded = encode_text(content, tbl, fallback_tbl=fb_tbl)
+
+        if len(encoded) > field_len:
+            print(f'  WARNING: {tbl_info["name"]}:{idx}.{label} '
+                  f'encoded to {len(encoded)} bytes, truncating to {field_len}')
+            encoded = encoded[:field_len]
+
+        # Pad to field length
+        padded = encoded + bytes([fill]) * (field_len - len(encoded))
+
+        # Write into ROM
+        rom_offset = data_pos + idx * block_len + field['start']
+        rom[rom_offset:rom_offset + field_len] = padded
+        written += 1
+
+    return written
+
+
+def insert_all_fixed(rom: bytearray,
+                     en_folder: str = 'en_ptr_data',
+                     table_filename: str = 'eng.tbl',
+                     tables_filter: list = None,
+                     force: bool = False):
+    """
+    Insert all fixed-length translated text tables into the ROM bytearray.
+    """
+    import os
+
+    for tbl_info in FIXED_TABLES:
+        name = tbl_info['name']
+        if tables_filter is not None and name not in tables_filter:
+            continue
+
+        script_file = os.path.join(en_folder, f'{name}.txt')
+        if not os.path.exists(script_file):
+            print(f'  skip {name} (not found: {script_file})')
+            continue
+
+        fb_tbl = 'jap.tbl' if table_filename != 'jap.tbl' else None
+        written = insert_fixed_table(rom, script_file, table_filename,
+                                     tbl_info, fallback_table=fb_tbl)
+        print(f'  {name}: {written} fields written')
+
+
 def insert_all_scripts(rom_path: str,
                        en_folder: str = 'en_ptr_data',
                        table_filename: str = 'eng.tbl',
@@ -1644,6 +1834,14 @@ def build_scripted(source: str = 'lm3.sfc',
 
     insert_all_scripts(output, en_folder=en_folder, table_filename=table_filename,
                        tables_filter=tables_filter, jp_tables=jp_tables, force=force)
+
+    # Insert fixed-length tables (unit names, classes, items, equipment).
+    with open(output, 'rb') as f:
+        rom = bytearray(f.read())
+    insert_all_fixed(rom, en_folder=en_folder, table_filename=table_filename,
+                     tables_filter=tables_filter, force=force)
+    with open(output, 'wb') as f:
+        f.write(rom)
 
     # Pad ROM to next power-of-2 size and update the ROM-size header byte.
     # LoROM requires a power-of-2 file size; an odd size confuses emulator mapping.

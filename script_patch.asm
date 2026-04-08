@@ -108,3 +108,79 @@ org $82802C
     db $B1, $80, $C3, $00   ; entry 11: was 59 9F 22 00 (idx 59 = byte 0xB1)
 org $828030
     db $89, $81, $C3, $00   ; entry 12: was E9 9F 22 00 (idx 131 = byte 0x189)
+
+; ============================================================================
+; Unit Name Expansion — relocate 8-byte names to 16-byte entries in bank $C4.
+; ============================================================================
+; Original unit name table: $02:A050, 146 entries × 8 bytes, $20-padded.
+;   Entries 0–72 = first names, entries 73–145 = surnames.
+; Two copy functions read from this table:
+;   copyUnitFirstName ($00:B90F): 3×ASL (×8), base $02:A050
+;   copyUnitSurname   ($00:B923): 3×ASL (×8), base $02:A298 ($A050 + 73*8)
+; Both share a copy loop that stops at $20 (space padding).
+;
+; Expanded table: $C4:8000, 146 entries × 16 bytes, $20-padded.
+;   First names: base $C4:8000
+;   Surnames:    base $C4:8490 ($8000 + 73*16)
+; Multiply changed from ×8 (3×ASL) to ×16 (4×ASL).
+; ============================================================================
+
+; --- Redirect original functions to expanded versions in kanji area ---
+; copyUnitFirstName: replace 20-byte body with JSL + RTS + NOP padding
+org $80B90F
+    JSL.L ExpandedCopyFirstName   ; 4 bytes
+    RTS                           ; 1 byte
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+
+; copyUnitSurname + shared tail: replace 31-byte body with JSL + RTS + NOP padding
+org $80B923
+    JSL.L ExpandedCopySurname     ; 4 bytes
+    RTS                           ; 1 byte
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
+    NOP                           ; 1 byte padding
+
+; --- New expanded functions in kanji glyph area (safe — font relocated to $170000) ---
+org $04803E
+
+ExpandedCopyFirstName:
+    PHY
+    REP #$20
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A  ; ×16
+    TAY
+    LDA.W #$00C4                    ; bank $C4
+    STA.B $02
+    LDA.W #$8000                    ; first name base
+    STA.B $00
+    BRA ExpandedCopyLoop
+
+ExpandedCopySurname:
+    PHY
+    REP #$20
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A  ; ×16
+    TAY
+    LDA.W #$00C4                    ; bank $C4
+    STA.B $02
+    LDA.W #$8490                    ; surname base ($8000 + 73*16)
+    STA.B $00
+
+ExpandedCopyLoop:
+    SEP #$20
+ExpandedCopyByte:
+    LDA.B [$00],Y
+    INY
+    CMP.B #$20                      ; stop at space padding
+    BEQ ExpandedCopyDone
+    STA.W $0400,X
+    INX
+    BRA ExpandedCopyByte
+ExpandedCopyDone:
+    PLY
+    RTL
