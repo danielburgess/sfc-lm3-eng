@@ -157,6 +157,16 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'tbl_len': 0xC0,
             'table_name': 'quiz-text'
         },
+        {   # field menu/shop/town text
+            'ptr_tbl_pos': 0x01BBB4,
+            'tbl_len': 0xEE,
+            'table_name': 'field-menu'
+        },
+        {   # field text (scenario/event descriptions)
+            'ptr_tbl_pos': 0x01BCA4,
+            'tbl_len': 0x5C,
+            'table_name': 'field-text'
+        },
         {   # field NPC messages
             'ptr_tbl_pos': 0x01BD00,
             'tbl_len': 0x42,
@@ -166,6 +176,11 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'ptr_tbl_pos': 0x013100,
             'tbl_len': 0x24,
             'table_name': 'battle-menu'
+        },
+        {   # battle text (equip, items, save/load, scenario select, etc.)
+            'ptr_tbl_pos': 0x013124,
+            'tbl_len': 0xDC,
+            'table_name': 'battle-text'
         },
         {   # battle messages (spell/item use, status effects)
             'ptr_tbl_pos': 0x013200,
@@ -1168,13 +1183,22 @@ SCRIPT_TABLES = [
     {'name': 'quiz-text',        'ptr_tbl_pos': 0x211700, 'tbl_len': 0x120, 'ptr_size': 3,
                                   'orig_blank': [(0x030800, 0x0308C0),   # old ptr table
                                                  (0x035AE0, 0x036ED2)]}, # old text data
-    # field-msg: JP data starts at $01F2B7 (gap has game data, must not overwrite).
+    # field region: three contiguous pointer sub-tables at $03:BBB4-BD41.
+    # Data regions are sequential: field-menu ($01C0F1+), field-text ($01E348+),
+    # field-msg ($01F2B7+). A $0000 separator sits between field-menu and field-text.
+    {'name': 'field-menu',       'ptr_tbl_pos': 0x01BBB4, 'tbl_len': 0x0EE,
+                                  'data_start_pc': 0x01C0F1},
+    {'name': 'field-text',       'ptr_tbl_pos': 0x01BCA4, 'tbl_len': 0x05C,
+                                  'data_start_pc': 0x01E348},
     {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042,
                                   'data_start_pc': 0x01F2B7},
-    # battle-menu: JP data at $013520. battle-msg: JP data at $014E36.
-    # No overlap between them — separate regions in the same bank.
+    # battle region: three contiguous pointer sub-tables at $02:B100-B271 (184 entries + FFFF).
+    # All share the same text data region ($013270-$0164xx). No interleaved game data —
+    # the "gaps" between battle-msg entries are text from the battle-text sub-table.
     {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024,
                                   'data_start_pc': 0x013520},
+    {'name': 'battle-text',      'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC,
+                                  'data_start_pc': 0x013270},
     {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070,
                                   'data_start_pc': 0x014E36},
 ]
@@ -1731,8 +1755,11 @@ EXTRACT_TABLES = {
     'dialog-3':         {'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
     'dialog-4':         {'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
     'dialog-5':         {'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
+    'field-menu':       {'ptr_tbl_pos': 0x01BBB4, 'tbl_len': 0x0EE},
+    'field-text':       {'ptr_tbl_pos': 0x01BCA4, 'tbl_len': 0x05C},
     'field-msg':        {'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042},
     'battle-menu':      {'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
+    'battle-text':      {'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
     'battle-msg':       {'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
 }
 
