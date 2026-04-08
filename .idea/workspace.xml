@@ -4,25 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="New text blocks have been identified for translation.">
-      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-classes.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-items.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/en_ptr_data/unit-names.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/equipment-expansion-plan.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-classes.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-classes.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-items.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-items.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-names.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jp_ptr_data/unit-names.txt" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-menu.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-menu.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/field-menu.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-menu.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/field-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-text.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-equipment.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/script_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/script_patch.asm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/field-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.checksum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,7 +85,7 @@
       <workItem from="1705786350724" duration="745000" />
       <workItem from="1775367790425" duration="60968000" />
       <workItem from="1775492777372" duration="6588000" />
-      <workItem from="1775499552146" duration="89597000" />
+      <workItem from="1775499552146" duration="93002000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -220,7 +207,23 @@
       <option name="project" value="LOCAL" />
       <updated>1775635954439</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL">
+      <option name="closed" value="true" />
+      <created>1775676717572</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1775676717572</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding.">
+      <option name="closed" value="true" />
+      <created>1775678687590</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1775678687590</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -256,6 +259,8 @@
     <MESSAGE value="Round-trip verification now passing for original data." />
     <MESSAGE value="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional." />
     <MESSAGE value="New text blocks have been identified for translation." />
-    <option name="LAST_COMMIT_MESSAGE" value="New text blocks have been identified for translation." />
+    <MESSAGE value="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL" />
+    <MESSAGE value="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding." />
+    <option name="LAST_COMMIT_MESSAGE" value="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding." />
   </component>
 </project>
