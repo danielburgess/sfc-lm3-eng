@@ -4,5 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "chardet>=7.4.0.post2",
+    "mempalace>=3.0.0",
     "pillow>=12.2.0",
+    "pip>=26.0.1",
 ]

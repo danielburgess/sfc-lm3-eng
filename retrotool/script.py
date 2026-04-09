@@ -8,9 +8,10 @@ class Table:
         :param warn_duplicates: if True, print warnings for characters with
                                 multiple byte encodings (round-trip hazard)
         """
-        enc, val_map, char_map, err_count, cnt = self._load_table(table_file)
+        enc, val_map, char_map, ctrl_lengths, err_count, cnt = self._load_table(table_file)
         self.__val_map = val_map
         self.__chr_map = char_map
+        self.__ctrl_lengths = ctrl_lengths
         self.__errors = err_count
         self.__parsed_lines = cnt
         self.__file_name = table_file
@@ -28,6 +29,7 @@ class Table:
         enc = enc if enc is not None else self.detect_encoding(table_file)
         val_map = {}
         char_map = {}
+        ctrl_lengths = {}
         err_count = 0
         cnt = 1
         with open(table_file, encoding=enc) as to:
@@ -36,39 +38,61 @@ class Table:
                 line = line[1:]  # strip BOM
             while line:
                 try:
-                    # split the line using the '=' sign, ignore all else including
-                    line_data = line.split('=')
-                    if len(line_data) == 2:
-                        # value first, character second
-                        val = line_data[0]
-                        ch = line_data[1]
+                    stripped = line.strip()
+                    # Skip comment lines (starting with ;)
+                    if stripped.startswith(';') or stripped == '':
+                        line = to.readline()
+                        cnt += 1
+                        continue
+                    # @ctrl directive: @ctrl XX=N defines control code FF XX
+                    # with total byte length N (including the FF prefix).
+                    # Supports wildcards: @ctrl XX**=N applies to all FF XX yy.
+                    if stripped.startswith('@ctrl '):
+                        parts = stripped[6:].split('=')
+                        if len(parts) == 2:
+                            pattern = parts[0].strip()
+                            length = int(parts[1].strip())
+                            if '**' in pattern:
+                                # Wildcard: @ctrl 81**=5 → FF 81 xx is 5 bytes
+                                prefix = int(pattern.replace('**', ''), 16)
+                                for d in range(256):
+                                    ctrl_lengths[prefix * 256 + d] = length
+                            else:
+                                ctrl_lengths[int(pattern, 16)] = length
+                    else:
+                        # split the line using the '=' sign, ignore all else including
+                        line_data = line.split('=')
+                        if len(line_data) == 2:
+                            # value first, character second
+                            val = line_data[0]
+                            ch = line_data[1]
 
-                        # character will have new line codes removed unless the backslash-escape '\\' is used
-                        ch = ch.replace('\n', '').replace('\r', '').replace('\\n', '\n')
+                            # character will have new line codes removed unless the backslash-escape '\\' is used
+                            ch = ch.replace('\n', '').replace('\r', '').replace('\\n', '\n')
 
-                        # supports variable filling for table files
-                        if self.exists(val, '**'):
-                            # fill the table with equivalent values for a byte range
-                            for d in range(0, 256):
-                                prep_ch = ch.replace('**', self.hex(d))
-                                prep_val = val.replace('**', self.hex(d))
-                                if self.exists(val, '%%'):
-                                    for e in range(0, 256):
-                                        ch_val = prep_ch.replace('%%', self.hex(e))
-                                        val_val = prep_val.replace('%%', self.hex(e))
+                            # supports variable filling for table files
+                            if self.exists(val, '**'):
+                                # fill the table with equivalent values for a byte range
+                                for d in range(0, 256):
+                                    prep_ch = ch.replace('**', self.hex(d))
+                                    prep_val = val.replace('**', self.hex(d))
+                                    if self.exists(val, '%%'):
+                                        for e in range(0, 256):
+                                            ch_val = prep_ch.replace('%%', self.hex(e))
+                                            val_val = prep_val.replace('%%', self.hex(e))
 
-                                        self._set_maps(val_val, ch_val, val_map, char_map)
-                                else:
-                                    self._set_maps(prep_val, prep_ch, val_map, char_map)
-                        else:
-                            self._set_maps(val, ch, val_map, char_map)
+                                            self._set_maps(val_val, ch_val, val_map, char_map)
+                                    else:
+                                        self._set_maps(prep_val, prep_ch, val_map, char_map)
+                            else:
+                                self._set_maps(val, ch, val_map, char_map)
                 except Exception as ex:
                     print(f"ERROR: {repr(ex)}")
                     err_count += 1
                 # read next line and increment line count
                 line = to.readline()
                 cnt += 1
-        return enc, val_map, char_map, err_count, cnt
+        return enc, val_map, char_map, ctrl_lengths, err_count, cnt
 
     @staticmethod
     def _set_maps(in_val, in_ch, val_map, char_map):
@@ -105,6 +129,13 @@ class Table:
     @property
     def encoding(self):
         return self.__encoding
+
+    @property
+    def ctrl_lengths(self):
+        """Control code byte lengths parsed from @ctrl directives in the .tbl file.
+        Keys are the command byte(s) after the FF prefix; values are total byte
+        lengths including the FF byte itself."""
+        return self.__ctrl_lengths
 
     @staticmethod
     def exists(str_val: str, search: str):
@@ -202,6 +233,7 @@ class Table:
     def interpret_binary_data(self, bin_data, max_bytes=3, trim_bytes=None):
         final_string = ''
         i = 0
+        ctrl = self.__ctrl_lengths
 
         # can trim certain expected bytes from the end of each output string
         if trim_bytes is not None:
@@ -218,6 +250,22 @@ class Table:
                     bin_data = bin_data[:len(bin_data)-exclude_count]
 
         while i < len(bin_data):
+            # FF control codes: use @ctrl lengths to emit the entire code
+            # as a single hex bracket when longer than 3 bytes, preventing
+            # parameter bytes (including 0x00) from being misinterpreted.
+            if bin_data[i] == 0xFF and i + 1 < len(bin_data) and ctrl:
+                cmd = bin_data[i + 1]
+                ctrl_len = ctrl.get(cmd, 3)
+                if ctrl_len > 3 and i + ctrl_len <= len(bin_data):
+                    # Emit as a single hex bracket: [FF9C520E00BA]
+                    code_bytes = bin_data[i:i + ctrl_len]
+                    hex_str = ''.join(f'{b:02X}' for b in code_bytes)
+                    final_string += f'[{hex_str}]'
+                    i += ctrl_len
+                    continue
+                # For 2-3 byte codes, fall through to normal table lookup
+                # which handles named codes like [cls], [msg], etc.
+
             len_check = max_bytes
             char = None
             found_char = False
@@ -291,9 +339,10 @@ class Table:
     def find_entry_end(self, bin_data, start, max_bytes=3, max_addr=None):
         """
         Find the end of a text entry by decoding left-to-right with the table.
-        When a byte starts a multi-byte entry (e.g. FF -> 3 bytes), the entry
-        size is determined by the table and all bytes are consumed. A $00 is
-        only a terminator when it appears as a standalone single-byte value.
+        FF control codes are consumed using @ctrl lengths from the .tbl file so
+        that parameter bytes (including $00) are never mistaken for the null
+        terminator.  A $00 is only a terminator when it appears as a standalone
+        byte outside any control code sequence.
         :param bin_data: full ROM data (list of ints)
         :param start: index to begin scanning
         :param max_bytes: max multi-byte entry size
@@ -301,16 +350,30 @@ class Table:
                          scanning stops if position reaches or exceeds this
         :return: index one past the terminating $00 (i.e. data = bin_data[start:result])
         """
+        ctrl = self.__ctrl_lengths
         i = start
         while i < len(bin_data):
             if max_addr is not None and i >= max_addr:
                 return i
-            # Try longest match first (left-to-right decode)
+
+            # FF control code — use the @ctrl lengths from the .tbl file
+            if bin_data[i] == 0xFF and i + 1 < len(bin_data):
+                cmd = bin_data[i + 1]
+                ctrl_len = ctrl.get(cmd, 3)  # default 3 for unknown FF xx
+                i += ctrl_len
+                continue
+
+            # Try longest table match first (left-to-right decode)
             matched = False
             for size in range(max_bytes, 1, -1):
                 if i + size > len(bin_data):
                     continue
                 window = list(bin_data[i:i + size])
+                # Reject match if its last byte is FF — that FF is more likely
+                # the start of a control code (e.g. table entry 02FF stealing
+                # an FF that belongs to FF 80 00).
+                if size > 1 and window[-1] == 0xFF:
+                    continue
                 val = self.bytes_to_val(window, True)
                 # Only match if the value's byte size equals the window size
                 # (prevents e.g. [00,92] → val $92 consuming 2 bytes for a 1-byte value)

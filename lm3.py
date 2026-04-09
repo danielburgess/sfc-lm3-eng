@@ -817,29 +817,50 @@ def encode_text(text_str, tbl, fallback_tbl=None):
             continue
 
         # Longest-match against the primary table — multi-char matches always preferred.
+        # For '[', try multi-char table entries first, then hex escape [XX]/[XXXX]/etc.,
+        # and only fall back to single-char '[' match as last resort.
         matched = False
-        for length in range(min(max_key_len, len(text_str) - i), 0, -1):
-            substr = text_str[i:i + length]
-            val = char_map.get(substr)
-            if val is not None:
-                result.extend(_int_to_bytes_be(val))
-                i += length
-                matched = True
-                break
+        if ch == '[':
+            # First: try multi-char table matches (length >= 2) for named sequences
+            # like [FF7F01], [nl], [end], etc.
+            for length in range(min(max_key_len, len(text_str) - i), 1, -1):
+                substr = text_str[i:i + length]
+                val = char_map.get(substr)
+                if val is not None:
+                    result.extend(_int_to_bytes_be(val))
+                    i += length
+                    matched = True
+                    break
+
+            # Second: try hex escape [XX], [XXXX], [XXXXXX], [XXXXXXXX]
+            if not matched:
+                close = text_str.find(']', i + 1)
+                if close != -1:
+                    hex_str = text_str[i + 1:close]
+                    if len(hex_str) >= 2 and len(hex_str) % 2 == 0 and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
+                        result.extend(bytes.fromhex(hex_str))
+                        i = close + 1
+                        matched = True
+
+            # Third: single-char '[' from table (e.g. display bracket character)
+            if not matched:
+                val = char_map.get('[')
+                if val is not None:
+                    result.extend(_int_to_bytes_be(val))
+                    i += 1
+                    matched = True
+        else:
+            for length in range(min(max_key_len, len(text_str) - i), 0, -1):
+                substr = text_str[i:i + length]
+                val = char_map.get(substr)
+                if val is not None:
+                    result.extend(_int_to_bytes_be(val))
+                    i += length
+                    matched = True
+                    break
 
         if matched:
             continue
-
-        # Hex escape: [XX], [XXXX], [XXXXXX] — raw byte emission for values
-        # not in the character table (e.g. [08] for unmapped byte 0x08)
-        if ch == '[':
-            close = text_str.find(']', i + 1)
-            if close != -1:
-                hex_str = text_str[i + 1:close]
-                if len(hex_str) in (2, 4, 6, 8) and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
-                    result.extend(bytes.fromhex(hex_str))
-                    i = close + 1
-                    continue
 
         # Fallback table: look up untranslated characters (e.g. Japanese)
         if fb_map:
@@ -916,8 +937,8 @@ def insert_script(input_filename, output_filename, script_file, table_filename,
         # But remove leading newline (artifact of format)
         if content.startswith('\n'):
             content = content[1:]
-        # Remove trailing whitespace after [end]
-        content = content.rstrip()
+        # Strip trailing newlines/tabs but NOT game characters like \u3000
+        content = content.rstrip('\n\r\t ')
         if not content or content == '[end]':
             encoded_entries.append(b'\x00')
         else:
@@ -1240,15 +1261,19 @@ SCRIPT_TABLES = [
                                   'data_start_pc': 0x01E348},
     {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042,
                                   'data_start_pc': 0x01F2B7},
-    # battle region: three contiguous pointer sub-tables at $02:B100-B271 (184 entries + FFFF).
-    # All share the same text data region ($013270-$0164xx). No interleaved game data —
-    # the "gaps" between battle-msg entries are text from the battle-text sub-table.
-    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024,
-                                  'data_start_pc': 0x013520},
-    {'name': 'battle-text',      'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC,
-                                  'data_start_pc': 0x013270},
-    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070,
-                                  'data_start_pc': 0x014E36},
+    # battle region: relocated to bank $C5 (PC $228000) with 3-byte SNES pointers.
+    # Meta-table entry 0's full 200-entry pointer table is unified at $C5:$8000.
+    # Sub 0-15: raw JP strings (copied by copy_entry0_raw_strings before insertion).
+    # Sub 16-33: battle-menu, Sub 34-143: battle-text, Sub 144-199: battle-msg.
+    # Pointer table: 200 × 3 = 0x258 bytes.  Data chains after raw strings.
+    # orig_blank on battle-menu covers the entire old entry 0 region (ptrs + data).
+    {'name': 'battle-menu',      'ptr_tbl_pos': 0x228030, 'tbl_len': 0x036, 'ptr_size': 3,
+                                  'group': 'battle-c5',
+                                  'orig_blank': [(0x0130E0, 0x016576)]},
+    {'name': 'battle-text',      'ptr_tbl_pos': 0x228066, 'tbl_len': 0x14A, 'ptr_size': 3,
+                                  'group': 'battle-c5'},
+    {'name': 'battle-msg',       'ptr_tbl_pos': 0x2281B0, 'tbl_len': 0x0A8, 'ptr_size': 3,
+                                  'group': 'battle-c5'},
 ]
 
 # All four dialog ptr tables end by $1B83D0; pack dialog text from here.
@@ -1431,7 +1456,7 @@ def encode_script_file(script_file: str, table_filename: str,
         content = entry.split('>>')[1]
         if content.startswith('\n'):
             content = content[1:]
-        content = content.rstrip()
+        content = content.rstrip('\n\r\t ')
 
         # Parse original address from header: <<$78336:0[$85558]>>
         orig_addr = None
@@ -1568,8 +1593,92 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
     return total_size
 
 
+def copy_entry0_raw_strings(rom: bytearray, table) -> int:
+    """
+    Copy meta-table entry 0's 16 raw JP strings (sub 0-15) from their
+    original bank $02 location into the $C5 data area, building 3-byte
+    pointers at $C5:$8000 for each.
+
+    These strings contain JP control codes and ASCII text for the file-info
+    screen, SRAM check, and battle UI labels.  They are not in any text dump
+    and must be copied byte-for-byte from the original ROM.
+
+    Must be called BEFORE battle table insertion (which chains after).
+
+    Returns the PC address of the next free byte after the copied strings.
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    # Original entry 0 pointer table: 2-byte ptrs, bank $02
+    SRC_PTR_TBL = 0x0130E0
+    SRC_BANK = 0x02
+    NUM_RAW = 16
+
+    # Destination: bank $C5
+    DST_PTR_TBL = 0x228000   # 200-entry 3-byte ptr table
+    DST_DATA_START = 0x228258  # after 200 × 3 = 0x258 bytes of pointers
+
+    # Read original 2-byte pointers for sub 0-15, plus sub 16 as upper boundary.
+    src_pcs = []
+    for i in range(NUM_RAW + 1):
+        off = SRC_PTR_TBL + i * 2
+        snes_addr = rom[off] | (rom[off + 1] << 8) | (SRC_BANK << 16)
+        pc = SFCAddress(snes_addr, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
+        src_pcs.append(pc)
+
+    # Determine byte ranges for each unique data block.
+    # Entry 0's strings are scattered — some point into the battle data region,
+    # others into a separate area.  Use null-terminator scanning to find each
+    # string's actual length instead of relying on pointer ordering.
+    data_pos = DST_DATA_START
+
+    # Ensure ROM is large enough for destination
+    est_max = DST_DATA_START + 2048  # generous estimate
+    if est_max > len(rom):
+        rom.extend(b'\xff' * (est_max - len(rom)))
+
+    # Copy each unique source address once, map duplicates to same dest ptr.
+    src_to_dst_ptr = {}  # src_pc -> 3-byte SNES pointer bytes
+
+    for i in range(NUM_RAW):
+        src_pc = src_pcs[i]
+
+        if src_pc in src_to_dst_ptr:
+            # Duplicate pointer — reuse already-copied data
+            ptr_bytes = src_to_dst_ptr[src_pc]
+        else:
+            # Use find_entry_end to properly skip FF control code parameters
+            # that contain 0x00 bytes (a naive null scan truncates these).
+            end = table.find_entry_end(rom, src_pc, max_bytes=3)
+            raw_data = bytes(rom[src_pc:end])
+
+            # Ensure space
+            if data_pos + len(raw_data) > len(rom):
+                rom.extend(b'\xff' * (data_pos + len(raw_data) - len(rom)))
+
+            # Write raw string data to $C5
+            rom[data_pos:data_pos + len(raw_data)] = raw_data
+
+            # Build 3-byte SNES pointer
+            snes = SFCAddress(data_pos).get_address(SFCAddressType.LOROM2)
+            ptr_bytes = bytes([snes & 0xFF, (snes >> 8) & 0xFF, (snes >> 16) & 0xFF])
+            src_to_dst_ptr[src_pc] = ptr_bytes
+
+            data_pos += len(raw_data)
+
+        # Write 3-byte pointer for this sub-index
+        ptr_off = DST_PTR_TBL + i * 3
+        rom[ptr_off:ptr_off + 3] = ptr_bytes
+
+    total_raw = data_pos - DST_DATA_START
+    print(f'  entry-0 raw strings: {total_raw} bytes copied to $C5 (sub 0-15)')
+
+    return data_pos
+
+
 def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
-                       tbl_info: dict, fallback_table: str = None):
+                       tbl_info: dict, fallback_table: str = None,
+                       cache_dir: str = None, force: bool = False):
     """
     Insert translated text into fixed-length fields within ROM data records.
 
@@ -1577,10 +1686,62 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
     encodes the text, pads/truncates to the fixed field width, and patches
     it directly into the ROM at the correct offset within each record.
 
+    Caches encoded patches as:
+      {cache_dir}/{name}.bin       — packed (offset:4, len:4, data) patches
+      {cache_dir}/{name}.checksum  — SHA-256 of inputs
+
     Returns the number of fields written.
     """
-    import re
+    import re, hashlib, os
 
+    name = tbl_info['name']
+
+    # Compute checksum over script + table file + source files.
+    h = hashlib.sha256()
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    source_files = [
+        os.path.join(src_dir, 'lm3.py'),
+        os.path.join(src_dir, 'retrotool', 'script.py'),
+        os.path.join(src_dir, 'retrotool', 'snes.py'),
+    ]
+    for path in [script_file, table_filename] + source_files:
+        with open(path, 'rb') as f:
+            h.update(f.read())
+    if fallback_table:
+        with open(fallback_table, 'rb') as f:
+            h.update(f.read())
+    current_checksum = h.hexdigest()
+
+    # Check cache.
+    bin_path = cksum_path = None
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+        bin_path = os.path.join(cache_dir, f'{name}.bin')
+        cksum_path = os.path.join(cache_dir, f'{name}.checksum')
+
+        if not force and os.path.exists(cksum_path) and os.path.exists(bin_path):
+            with open(cksum_path, 'r') as f:
+                cached_checksum = f.read().strip()
+            if cached_checksum == current_checksum:
+                # Cache hit — replay patches directly into ROM.
+                with open(bin_path, 'rb') as f:
+                    data = f.read()
+                pos = 0
+                written = 0
+                while pos < len(data):
+                    rom_offset = int.from_bytes(data[pos:pos+4], 'little')
+                    pos += 4
+                    field_len = int.from_bytes(data[pos:pos+4], 'little')
+                    pos += 4
+                    padded = data[pos:pos+field_len]
+                    pos += field_len
+                    if rom_offset + field_len > len(rom):
+                        rom.extend(b'\xff' * (rom_offset + field_len - len(rom)))
+                    rom[rom_offset:rom_offset + field_len] = padded
+                    written += 1
+                return written
+
+    # Cache miss — encode from scratch.
     tbl = Table(table_filename)
     fb_tbl = Table(fallback_table) if fallback_table else None
 
@@ -1604,7 +1765,7 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
         content = entry.split('>>')[1]
         if content.startswith('\n'):
             content = content[1:]
-        content = content.rstrip()
+        content = content.rstrip('\n\r\t ')
 
         # Header format: $73808:5.name or $377344:0.class
         m = re.match(r'\$\d+:(\d+)\.(\w+)', header)
@@ -1619,6 +1780,7 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
     if required_end > len(rom):
         rom.extend(b'\xff' * (required_end - len(rom)))
 
+    patches = []  # (rom_offset, padded_bytes) for cache
     written = 0
     for idx, label, content in parsed:
         if idx >= entries:
@@ -1636,7 +1798,7 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
         encoded = encode_text(content, tbl, fallback_tbl=fb_tbl)
 
         if len(encoded) > field_len:
-            print(f'  WARNING: {tbl_info["name"]}:{idx}.{label} '
+            print(f'  WARNING: {name}:{idx}.{label} '
                   f'encoded to {len(encoded)} bytes, truncating to {field_len}')
             encoded = encoded[:field_len]
 
@@ -1646,7 +1808,18 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
         # Write into ROM
         rom_offset = data_pos + idx * block_len + field['start']
         rom[rom_offset:rom_offset + field_len] = padded
+        patches.append((rom_offset, padded))
         written += 1
+
+    # Write cache.
+    if bin_path:
+        with open(bin_path, 'wb') as f:
+            for rom_offset, padded in patches:
+                f.write(rom_offset.to_bytes(4, 'little'))
+                f.write(len(padded).to_bytes(4, 'little'))
+                f.write(padded)
+        with open(cksum_path, 'w') as f:
+            f.write(current_checksum)
 
     return written
 
@@ -1672,8 +1845,10 @@ def insert_all_fixed(rom: bytearray,
             continue
 
         fb_tbl = 'jap.tbl' if table_filename != 'jap.tbl' else None
+        cache_dir = os.path.join(en_folder, 'bin')
         written = insert_fixed_table(rom, script_file, table_filename,
-                                     tbl_info, fallback_table=fb_tbl)
+                                     tbl_info, fallback_table=fb_tbl,
+                                     cache_dir=cache_dir, force=force)
         print(f'  {name}: {written} fields written')
 
 
@@ -1712,6 +1887,21 @@ def insert_all_scripts(rom_path: str,
     dialog_data_pos = DIALOG_TEXT_BASE
     FREE_FILL = 0xCC  # fill byte for blanked-out relocated data (visible in hex editor)
 
+    # Copy entry 0's raw JP strings (sub 0-15) to bank $C5 before battle
+    # table insertion.  Only needed when battle tables will be processed.
+    battle_names = {'battle-menu', 'battle-text', 'battle-msg'}
+    if tables_filter is None or battle_names & set(tables_filter):
+        jp_tbl = Table('jap.tbl')
+        battle_c5_next = copy_entry0_raw_strings(rom, jp_tbl)
+    else:
+        battle_c5_next = 0x228258  # default: right after 200×3 ptr table
+
+    # Chained data positions for shared-region groups.
+    # battle-c5: three sub-tables pack sequentially in $C5 after raw strings.
+    group_data_pos = {
+        'battle-c5': battle_c5_next,
+    }
+
     # Build the list of tables to process with their source info.
     jobs = []
     for tbl_info in SCRIPT_TABLES:
@@ -1720,9 +1910,11 @@ def insert_all_scripts(rom_path: str,
             continue
 
         if name in jp_tables:
-            folder = 'jp_ptr_data'
-            tbl_file = 'jap.tbl'
-            lang_tag = ' [JP]'
+            # JP tables: original ROM data is already correct — skip reinsertion.
+            # Re-encoding JP text doesn't round-trip perfectly and can corrupt
+            # interleaved data from other tables sharing the same ROM region.
+            print(f'  skip {name} (JP — original ROM data preserved)')
+            continue
         else:
             folder = en_folder
             tbl_file = table_filename
@@ -1768,6 +1960,11 @@ def insert_all_scripts(rom_path: str,
         if name.startswith('dialog-'):
             kwargs['data_start_pc'] = dialog_data_pos
 
+        # Chained group data positioning (e.g. battle sub-tables share one region)
+        group = tbl_info.get('group')
+        if group and group in group_data_pos:
+            kwargs['data_start_pc'] = group_data_pos[group]
+
         size = insert_table_into_rom(
             rom, script_file, tbl_file,
             tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
@@ -1786,6 +1983,9 @@ def insert_all_scripts(rom_path: str,
 
         if name.startswith('dialog-'):
             dialog_data_pos += size
+
+        if group and group in group_data_pos:
+            group_data_pos[group] += size
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -1861,13 +2061,23 @@ def build_scripted(source: str = 'lm3.sfc',
         f.write(data)
     print(f'  ROM padded to {target // 1024} KB, size byte = ${size_byte:02X}')
 
-    # Apply script_patch.asm: TextPtrDispatch + game code patch + meta-table patch.
-    # This enables the main script in bank $C1 without needing the VWF patch.
+    # Apply ASM patches via asar.
+    # script_patch.asm: TextPtrDispatch + meta-table redirects (always needed).
+    # name_expansion_patch.asm: unit name relocation to bank $C4 (only for full builds).
     import os as _os
-    if _os.path.exists('script_patch.asm'):
-        import subprocess
+    import subprocess
+
+    asm_patches = ['script_patch.asm']
+    # Meta-table redirects and name expansion only for full builds (4 MB+).
+    if target >= 4 * 1024 * 1024:
+        asm_patches.append('metatbl_patch.asm')
+        asm_patches.append('name_expansion_patch.asm')
+
+    for patch_file in asm_patches:
+        if not _os.path.exists(patch_file):
+            continue
         result = subprocess.run(
-            ['disassembly/asar', 'script_patch.asm', output],
+            ['disassembly/asar', patch_file, output],
             capture_output=True, text=True,
         )
         if result.stdout:
@@ -1875,9 +2085,9 @@ def build_scripted(source: str = 'lm3.sfc',
         if result.stderr:
             print(result.stderr.strip())
         if result.returncode != 0:
-            print('ERROR: script_patch.asm failed')
+            print(f'ERROR: {patch_file} failed')
             return
-        print('  script_patch.asm applied')
+        print(f'  {patch_file} applied')
 
     print(f'=== scripted ROM ready: {output} ===')
 
@@ -2086,6 +2296,308 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
     return all_pass
 
 
+# ============================================================================
+# EN structural validation
+# ============================================================================
+
+# Tables to validate (pointer-based script tables with JP counterparts).
+# Excludes fixed-width tables (unit-names, unit-classes, unit-items, unit-equipment).
+VALIDATE_TABLES = [
+    'script', 'scenario-desc', 'unit-terrain-desc', 'unit-attacks', 'quiz-text',
+    'dialog-2', 'dialog-3', 'dialog-4', 'dialog-5',
+    'field-menu', 'field-text', 'field-msg',
+    'battle-menu', 'battle-text', 'battle-msg',
+]
+
+
+def _parse_entries(filepath):
+    """Parse a text dump file into a list of (header, content) tuples."""
+    import re
+    with open(filepath, 'r', encoding='utf-16-le') as f:
+        text = f.read()
+    if text and text[0] == '\ufeff':
+        text = text[1:]
+    # Split on entry headers
+    parts = re.split(r'(<<[^>]+>>)', text)
+    entries = []
+    for i in range(1, len(parts), 2):
+        header = parts[i]
+        content = parts[i + 1] if i + 1 < len(parts) else ''
+        if content.startswith('\n'):
+            content = content[1:]
+        content = content.rstrip('\n\r\t ')
+        # Extract entry index from header
+        idx_match = re.search(r':(\d+)', header)
+        idx = int(idx_match.group(1)) if idx_match else len(entries)
+        entries.append((idx, header, content))
+    return entries
+
+
+def _extract_skeleton(content):
+    """Extract ordered list of bracketed control codes from entry content."""
+    import re
+    return re.findall(r'\[[^\]]+\]', content)
+
+
+def _has_translation(content):
+    """Check if content has Latin characters (actual EN translation present)."""
+    import re
+    # Strip all bracketed codes first
+    plain = re.sub(r'\[[^\]]+\]', '', content)
+    # Check for Latin letters
+    return bool(re.search(r'[A-Za-z]', plain))
+
+
+def _is_raw_hex(content):
+    """Check if content is mostly single-byte hex brackets (old broken extraction)."""
+    import re
+    codes = re.findall(r'\[[^\]]+\]', content)
+    plain = re.sub(r'\[[^\]]+\]', '', content).strip()
+    if not codes:
+        return False
+    hex_codes = sum(1 for c in codes if re.match(r'^\[[0-9A-Fa-f]{2}\]$', c))
+    return hex_codes > len(codes) * 0.5 and not plain
+
+
+def validate_en_scripts(jp_folder='jp_ptr_data', en_folder='en_ptr_data',
+                        tables_filter=None, fix=False, report_file=None):
+    """
+    Compare EN script files against JP originals to find missing or malformed
+    structural control codes.
+
+    Returns dict: {table_name: [(idx, severity, message), ...]}
+    """
+    import os, re
+
+    results = {}
+    total_critical = 0
+    total_warning = 0
+    total_info = 0
+    total_ok = 0
+    fixes_applied = {}
+
+    for name in VALIDATE_TABLES:
+        if tables_filter and name not in tables_filter:
+            continue
+
+        jp_file = os.path.join(jp_folder, f'{name}.txt')
+        en_file = os.path.join(en_folder, f'{name}.txt')
+        if not os.path.exists(jp_file):
+            print(f'  skip {name} (no JP file)')
+            continue
+        if not os.path.exists(en_file):
+            print(f'  skip {name} (no EN file)')
+            continue
+
+        jp_entries = _parse_entries(jp_file)
+        en_entries = _parse_entries(en_file)
+
+        # Index by entry number
+        jp_by_idx = {idx: (hdr, content) for idx, hdr, content in jp_entries}
+        en_by_idx = {idx: (hdr, content) for idx, hdr, content in en_entries}
+
+        issues = []
+        fixed_entries = {}  # idx -> new content (for --fix mode)
+
+        for idx in sorted(jp_by_idx.keys()):
+            jp_hdr, jp_content = jp_by_idx[idx]
+            if idx not in en_by_idx:
+                issues.append((idx, 'CRITICAL', 'EN entry missing entirely'))
+                if fix:
+                    fixed_entries[idx] = (jp_hdr, jp_content)
+                continue
+
+            en_hdr, en_content = en_by_idx[idx]
+
+            jp_skel = _extract_skeleton(jp_content)
+            en_skel = _extract_skeleton(en_content)
+
+            if jp_skel == en_skel:
+                total_ok += 1
+                continue
+
+            # Classify the mismatch
+            is_raw = _is_raw_hex(en_content)
+            has_trans = _has_translation(en_content)
+
+            # Check for spurious [end] mid-entry (old 0x00-as-end bug)
+            en_end_count = en_skel.count('[end]')
+            jp_end_count = jp_skel.count('[end]')
+
+            # Count FF codes
+            jp_ff = [c for c in jp_skel if c.startswith('[FF') or c.startswith('[ff')]
+            en_ff = [c for c in en_skel if c.startswith('[FF') or c.startswith('[ff')]
+
+            if is_raw:
+                severity = 'CRITICAL'
+                msg = f'Raw hex (never translated) — {len(en_ff)} EN FF codes vs {len(jp_ff)} JP'
+                if fix:
+                    fixed_entries[idx] = (en_hdr, jp_content)
+            elif en_end_count > jp_end_count and len(en_skel) < len(jp_skel):
+                severity = 'CRITICAL'
+                msg = (f'Truncated — extra [end] markers ({en_end_count} vs {jp_end_count} in JP), '
+                       f'missing {len(jp_skel) - len(en_skel)} codes')
+                if fix:
+                    if has_trans:
+                        # Preserve EN text, append JP tail after truncation point
+                        # Find where EN diverges from JP
+                        fixed_content = _repair_truncated(jp_content, en_content)
+                        fixed_entries[idx] = (en_hdr, fixed_content)
+                    else:
+                        fixed_entries[idx] = (en_hdr, jp_content)
+            elif len(en_ff) < len(jp_ff):
+                severity = 'CRITICAL'
+                msg = f'Missing FF codes — EN has {len(en_ff)} vs JP has {len(jp_ff)}'
+                if fix:
+                    if has_trans:
+                        fixed_content = _repair_truncated(jp_content, en_content)
+                        fixed_entries[idx] = (en_hdr, fixed_content)
+                    else:
+                        fixed_entries[idx] = (en_hdr, jp_content)
+            elif en_ff != jp_ff:
+                severity = 'WARNING'
+                msg = f'FF code mismatch — EN: {en_ff[:3]}... vs JP: {jp_ff[:3]}...'
+                if fix and not has_trans:
+                    fixed_entries[idx] = (en_hdr, jp_content)
+            else:
+                severity = 'INFO'
+                msg = f'Non-FF skeleton differs (EN: {len(en_skel)} codes, JP: {len(jp_skel)})'
+
+            issues.append((idx, severity, msg))
+            if severity == 'CRITICAL':
+                total_critical += 1
+            elif severity == 'WARNING':
+                total_warning += 1
+            else:
+                total_info += 1
+
+        results[name] = issues
+
+        # Print summary per table
+        crits = sum(1 for _, s, _ in issues if s == 'CRITICAL')
+        warns = sum(1 for _, s, _ in issues if s == 'WARNING')
+        infos = sum(1 for _, s, _ in issues if s == 'INFO')
+        ok = len(jp_by_idx) - len(issues)
+        if not issues:
+            print(f'  {name}: OK ({ok} entries)')
+        else:
+            print(f'  {name}: {crits} CRITICAL, {warns} WARNING, {infos} INFO '
+                  f'({ok} OK / {len(jp_by_idx)} total)')
+            for idx, sev, msg in issues[:5]:
+                print(f'    [{sev}] #{idx}: {msg}')
+            if len(issues) > 5:
+                print(f'    ... ({len(issues) - 5} more)')
+
+        # Apply fixes
+        if fix and fixed_entries:
+            _apply_fixes(en_file, en_entries, fixed_entries)
+            fixes_applied[name] = len(fixed_entries)
+            print(f'    → Fixed {len(fixed_entries)} entries in {en_file}')
+
+    # Summary
+    print(f'\n  Total: {total_ok} OK, {total_critical} CRITICAL, '
+          f'{total_warning} WARNING, {total_info} INFO')
+
+    if fix and fixes_applied:
+        print(f'  Fixes applied: {sum(fixes_applied.values())} entries across '
+              f'{len(fixes_applied)} files')
+
+    # Write report file
+    if report_file:
+        with open(report_file, 'w') as f:
+            f.write('EN Structural Validation Report\n')
+            f.write('=' * 60 + '\n\n')
+            for name, issues in results.items():
+                if not issues:
+                    f.write(f'{name}: OK\n')
+                    continue
+                f.write(f'{name}: {len(issues)} issues\n')
+                for idx, sev, msg in issues:
+                    f.write(f'  [{sev}] #{idx}: {msg}\n')
+                f.write('\n')
+        print(f'  Report written to {report_file}')
+
+    return results
+
+
+def _repair_truncated(jp_content, en_content):
+    """
+    Repair a truncated EN entry by finding where EN text diverges from JP
+    structural codes and appending the missing JP tail.
+    """
+    import re
+
+    # Tokenize both into (is_code, text) sequences
+    jp_tokens = re.split(r'(\[[^\]]+\])', jp_content)
+    en_tokens = re.split(r'(\[[^\]]+\])', en_content)
+
+    # Remove spurious [end] in the middle of EN (from 0x00-as-end bug)
+    cleaned_en = []
+    for i, tok in enumerate(en_tokens):
+        if tok == '[end]' and i < len(en_tokens) - 1:
+            # Skip mid-entry [end] — it's a false terminator
+            continue
+        cleaned_en.append(tok)
+
+    # Find the last matching structural code between cleaned EN and JP
+    jp_codes = [(i, tok) for i, tok in enumerate(jp_tokens) if re.match(r'^\[', tok)]
+    en_codes = [(i, tok) for i, tok in enumerate(cleaned_en) if re.match(r'^\[', tok)]
+
+    # Find divergence point in JP tokens
+    match_up_to = 0
+    for j, (ei, etok) in enumerate(en_codes):
+        if j < len(jp_codes) and jp_codes[j][1] == etok:
+            match_up_to = j + 1
+        else:
+            break
+
+    if match_up_to > 0 and match_up_to < len(jp_codes):
+        # EN matches up to match_up_to codes, append rest from JP
+        last_jp_match_idx = jp_codes[match_up_to - 1][0]
+        # Take EN up to its last matching code + following text
+        last_en_match_idx = en_codes[match_up_to - 1][0]
+        en_prefix = ''.join(cleaned_en[:last_en_match_idx + 2])  # +2 to include text after code
+        jp_suffix = ''.join(jp_tokens[last_jp_match_idx + 2:])   # rest of JP after match point
+
+        return en_prefix + jp_suffix
+    else:
+        # Can't align — return JP content
+        return jp_content
+
+
+def _apply_fixes(en_file, en_entries, fixed_entries):
+    """Rewrite the EN file with fixed entries replacing originals."""
+    with open(en_file, 'r', encoding='utf-16-le') as f:
+        text = f.read()
+    if text and text[0] == '\ufeff':
+        text = text[1:]
+
+    import re
+    parts = re.split(r'(<<[^>]+>>)', text)
+
+    # Build index map: entry idx -> position in parts list
+    entry_positions = {}
+    for i in range(1, len(parts), 2):
+        header = parts[i]
+        idx_match = re.search(r':(\d+)', header)
+        if idx_match:
+            idx = int(idx_match.group(1))
+            entry_positions[idx] = i
+
+    for idx, (new_hdr, new_content) in fixed_entries.items():
+        if idx in entry_positions:
+            pos = entry_positions[idx]
+            parts[pos + 1] = '\n' + new_content + '\n'
+        else:
+            # Entry missing — append at end
+            parts.append(new_hdr)
+            parts.append('\n' + new_content + '\n')
+
+    result = '\ufeff' + ''.join(parts)
+    with open(en_file, 'w', encoding='utf-16-le') as f:
+        f.write(result)
+
+
 def jptest_orig(rom_path: str, output_path: str, jp_folder: str = 'jp_ptr_data',
                 table_filename: str = 'jap.tbl', tables_filter: list = None):
     """
@@ -2134,7 +2646,7 @@ def jptest_orig(rom_path: str, output_path: str, jp_folder: str = 'jp_ptr_data',
             content = entry.split('>>')[1]
             if content.startswith('\n'):
                 content = content[1:]
-            content = content.rstrip()
+            content = content.rstrip('\n\r\t ')
 
             # Parse original address from header: <<$78336:0[$85558]>>
             addr_match = re.search(r'\[\$(\d+)\]', header)
@@ -2202,6 +2714,7 @@ commands:
   build    Full build: font + script + vwf
   extract  Extract script from ROM to text files
   verify   Round-trip test: re-encode text dumps and compare against ROM binary
+  validate-en  Check EN scripts have correct structural control codes vs JP
   hexify   Convert untranslated Japanese in en_ptr_data to [XX] hex placeholders
   jptest   Re-insert JP scripts into expanded ROM layout (round-trip insertion test)
   jptest-orig  Re-insert JP scripts at original ROM locations (data integrity test)

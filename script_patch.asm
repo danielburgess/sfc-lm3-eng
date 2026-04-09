@@ -14,11 +14,10 @@ lorom
 ;        $16 = bank byte (if >= $C0 → 3-byte table; else → original 2-byte table).
 ; Exit:  $14/$16 updated to point at the actual text. A = entry index restored.
 ; ============================================================================
-; Placed in the kanji glyph area (PC $20000 = $04:$8000).
-; This is within the original 2 MB ROM, so every emulator maps it correctly.
-; Bank $C0+ lives in the expanded region and may not be mapped for code
-; execution under plain LoROM map-mode $20.
-org $048000
+; Placed in a zero-filled gap in bank $2E (PC $172A54 = $2E:$AA54).
+; Bank $04:$8000 was used previously but that overwrites kanji glyph tiles
+; needed by the file-info screen and other JP text displays.
+org $2EAA54
 
 TextPtrDispatch:
     PHP                          ; save P flags
@@ -71,120 +70,9 @@ org $81EE67
     NOP : NOP                    ; 2 bytes pad
 
 ; ============================================================================
-; Meta-table patches — redirect main script pointers to $C1 (3-byte table).
+; Meta-table redirects are in a separate file: metatbl_patch.asm
+; Only applied during full builds (requires expanded ROM with data in $C1+).
 ;
-; The meta-table at $82:$8000 has 20 entries (4 bytes each).  The main script
-; appears TWICE: entries 3/4 AND entries 16/17.  The game uses entries 16/17
-; (hi=$10/$11) at runtime, so ALL four must be patched.
-;
-;   Entry  3 ($82:$800C): hi=$03, entries 0-255   → $C1:$8000
-;   Entry  4 ($82:$8010): hi=$04, entries 256-511 → $C1:$8300
-;   Entry 16 ($82:$8040): hi=$10, entries 0-255   → $C1:$8000  (duplicate)
-;   Entry 17 ($82:$8044): hi=$11, entries 256-511 → $C1:$8300  (duplicate)
+; Unit Name Expansion is in a separate file: name_expansion_patch.asm
+; Only applied during full builds (requires 4 MB ROM + bank $C4 name data).
 ; ============================================================================
-org $82800C
-    db $00, $80, $C1, $00   ; entry  3: was 00 80 36 00
-
-org $828010
-    db $00, $83, $C1, $00   ; entry  4: was 00 82 36 00
-
-org $828040
-    db $00, $80, $C1, $00   ; entry 16: was 00 80 36 00
-
-org $828044
-    db $00, $83, $C1, $00   ; entry 17: was 00 82 36 00
-
-; quiz-text: relocated from $06:$8800 to $C2:$9700 (3-byte ptrs).
-; unit-terrain-desc data (27 KB) overflowed into quiz-text's original location.
-org $82803C
-    db $00, $97, $C2, $00   ; entry 15: was 00 88 06 00
-
-; scenario-desc: relocated from $22:$9EE3 to $C3:$8000 (3-byte ptrs).
-; EN text (10840 bytes) overflows JP space (6732 bytes) into adjacent ptr tables.
-; Entries 11 and 12 are sub-views into scenario-desc's ptr table (at indices 59/131).
-org $828008
-    db $00, $80, $C3, $00   ; entry  2: was E3 9E 22 00
-org $82802C
-    db $B1, $80, $C3, $00   ; entry 11: was 59 9F 22 00 (idx 59 = byte 0xB1)
-org $828030
-    db $89, $81, $C3, $00   ; entry 12: was E9 9F 22 00 (idx 131 = byte 0x189)
-
-; ============================================================================
-; Unit Name Expansion — relocate 8-byte names to 16-byte entries in bank $C4.
-; ============================================================================
-; Original unit name table: $02:A050, 146 entries × 8 bytes, $20-padded.
-;   Entries 0–72 = first names, entries 73–145 = surnames.
-; Two copy functions read from this table:
-;   copyUnitFirstName ($00:B90F): 3×ASL (×8), base $02:A050
-;   copyUnitSurname   ($00:B923): 3×ASL (×8), base $02:A298 ($A050 + 73*8)
-; Both share a copy loop that stops at $20 (space padding).
-;
-; Expanded table: $C4:8000, 146 entries × 16 bytes, $20-padded.
-;   First names: base $C4:8000
-;   Surnames:    base $C4:8490 ($8000 + 73*16)
-; Multiply changed from ×8 (3×ASL) to ×16 (4×ASL).
-; ============================================================================
-
-; --- Redirect original functions to expanded versions in kanji area ---
-; copyUnitFirstName ($80:B90F): 22 bytes ($B90F-$B924, ends with BRA to shared tail)
-; Callers: JSR $B90F at $80:B8F4, $80:B909
-org $80B90F
-    JSL.L ExpandedCopyFirstName   ; 4 bytes
-    RTS                           ; 1 byte
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP                     ; 2 bytes padding (covers BRA at $B923-$B924)
-
-; copyUnitSurname ($80:B925) + shared copy tail ($B939-$B949): 37 bytes total
-; Caller: JSR $B925 at $80:B8FE
-org $80B925
-    JSL.L ExpandedCopySurname     ; 4 bytes
-    RTS                           ; 1 byte
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP : NOP : NOP : NOP  ; 5 bytes padding
-    NOP : NOP                     ; 2 bytes padding (total: 37 bytes)
-
-; --- New expanded functions in kanji glyph area (safe — font relocated to $170000) ---
-org $04803E
-
-ExpandedCopyFirstName:
-    PHY
-    REP #$20
-    AND.W #$00FF
-    ASL A : ASL A : ASL A : ASL A  ; ×16
-    TAY
-    LDA.W #$00C4                    ; bank $C4
-    STA.B $02
-    LDA.W #$8000                    ; first name base
-    STA.B $00
-    BRA ExpandedCopyLoop
-
-ExpandedCopySurname:
-    PHY
-    REP #$20
-    AND.W #$00FF
-    ASL A : ASL A : ASL A : ASL A  ; ×16
-    TAY
-    LDA.W #$00C4                    ; bank $C4
-    STA.B $02
-    LDA.W #$8490                    ; surname base ($8000 + 73*16)
-    STA.B $00
-
-ExpandedCopyLoop:
-    SEP #$20
-ExpandedCopyByte:
-    LDA.B [$00],Y
-    INY
-    CMP.B #$20                      ; stop at space padding
-    BEQ ExpandedCopyDone
-    STA.W $0400,X
-    INX
-    BRA ExpandedCopyByte
-ExpandedCopyDone:
-    PLY
-    RTL
