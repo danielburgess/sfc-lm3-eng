@@ -81,6 +81,12 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'table_name': 'script_ext',
             'event_script': False
         },
+        {   # event script bytecodes with inline dialog text (bank $22)
+            'ptr_tbl_pos': 0x113A9B,
+            'tbl_len': 0xC8,
+            'table_name': 'event-text',
+            'event_script': True
+        },
         {   # Scenario description
             'ptr_tbl_pos': 0x111EE3,
             'tbl_len': 0x13C,
@@ -356,7 +362,17 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
             # Use next unique pointer address as upper bound to prevent over-scanning
             addr_idx = sorted_unique_addrs.index(data_start) if data_start in sorted_unique_addrs else -1
             max_addr = sorted_unique_addrs[addr_idx + 1] if addr_idx >= 0 and addr_idx + 1 < len(sorted_unique_addrs) else None
-            data_end = tbl.find_entry_end(bin_data, data_start, max_addr=max_addr)
+            if kwargs.get('event_script', False):
+                # Event script entries have embedded 0x00 in bytecodes, so
+                # find_entry_end would truncate them.  Use the next unique
+                # pointer address as the boundary instead.
+                if max_addr is not None:
+                    data_end = max_addr
+                else:
+                    # Last entry: fall back to find_entry_end
+                    data_end = tbl.find_entry_end(bin_data, data_start, max_addr=max_addr)
+            else:
+                data_end = tbl.find_entry_end(bin_data, data_start, max_addr=max_addr)
         else:
             data_end = data_start + add_len
 
@@ -465,16 +481,12 @@ def data_extract(input_filename: str, table_name: str, out_folder: str, data_pos
 
 def interpret_event_script(bin_data, tbl):
     """
-    Interpret binary data that mixes event bytecode with embedded text.
-    Event bytecode is wrapped in {XX} notation, text is decoded through the table.
-
-    Detection strategy:
-    - Multi-byte FF-prefix sequences are always decoded as control codes
-    - Once a text marker is found ([msg], [special], or 0x92 「), switch to text mode
-    - In text mode, decode through the table normally
-    - Text mode ends at 0x00 (end) or when data runs out
-    - Before any text marker, output bytes as {XX} raw hex
-    - Pure text entries (most bytes >= 0x20) are decoded entirely as text
+    Interpret event script binary data as a single unified stream.
+    Mirrors the game's interpreter at $80:B68D exactly:
+      0x00       → [end] terminator (1 byte)
+      0x01-0x08  → parameter ref command (2 bytes: opcode + param index)
+      0x09-0xFE  → text character (font glyph, decoded via table)
+      0xFF       → extended command prefix (variable length via @ctrl)
 
     :param bin_data: list of byte values
     :param tbl: Table instance for character lookups
@@ -483,156 +495,72 @@ def interpret_event_script(bin_data, tbl):
     if not bin_data:
         return ''
 
-    # Multi-byte control code sequences (FF-prefix) that we always recognize
-    ff_controls = {
-        (0xFF, 0x7F, 0x02): '[msg]\n',
-        (0xFF, 0xFD, 0x02): '[special]',
-        (0xFF, 0xFF, 0x00): '[cls]\n',
-        (0xFF, 0xFB, 0x00): '[white]',
-        (0xFF, 0xFB, 0x01): '[pink]',
-    }
-
-    # Single-byte text markers and controls
-    text_controls = {
-        0x00: '[end]\n',
-        0x09: '[u]',
-        0x0A: '[d]',
-        0x10: '[P]',
-        0x11: '[R]',
-        0x12: '[S]',
-        0x13: '[E]',
-        0x14: '[K]',
-        0x15: '[A]',
-        0x16: '[G]',
-        0x17: '[Y]',
-        0x1B: '!!',
-        0x1C: '...',
-        0x1E: '[cry]',
-        0x1F: '[luv]',
-        0x90: '[nl]\n',
-        0x91: '[pause][cls]\n',  # acts as 。 in text but functionally pause+cls
-        0x92: '「',
-        0x93: '」',
-    }
-
-    # Determine if this entry is primarily text or event bytecode.
-    # Strategy: find where text begins by looking for structural markers.
-    has_text_markers = any(b in (0x90, 0x91, 0x92, 0x93) for b in bin_data)
-
-    # Find first text marker position (FF7F02 [msg] or FFFD02 [special])
-    msg_pos = -1
-    for i in range(len(bin_data) - 2):
-        if bin_data[i] == 0xFF:
-            triple = (bin_data[i], bin_data[i+1], bin_data[i+2])
-            if triple in [(0xFF, 0x7F, 0x02), (0xFF, 0xFD, 0x02)]:
-                msg_pos = i
-                break
-
-    # Find [P] (0x10) that may precede the [msg]/[special]
-    p_pos = -1
-    if msg_pos > 0:
-        for i in range(msg_pos - 1, -1, -1):
-            if bin_data[i] == 0x10:
-                p_pos = i
-                break
-
-    # Determine text start position:
-    # - If [P][msg]/[special] found: text starts at [P], everything before is event code
-    # - If no [msg]/[special] but has text markers (0x90-0x93): treat as pure text
-    # - If no text markers at all: treat as pure event bytecode
-    if msg_pos >= 0:
-        event_end = p_pos if p_pos >= 0 else msg_pos
-        is_text_entry = (event_end == 0)  # text entry only if text starts at byte 0
-    elif has_text_markers:
-        event_end = 0
-        is_text_entry = True
-    else:
-        event_end = 0
-        is_text_entry = False
-
+    ctrl = tbl.ctrl_lengths
     result = ''
     i = 0
-    in_text_mode = is_text_entry
 
     while i < len(bin_data):
-        # Switch to text mode when we reach the text portion
-        if not in_text_mode and i >= event_end and event_end > 0:
-            in_text_mode = True
-
         b = bin_data[i]
 
-        # Check for FF-prefix control codes (always recognized)
-        if b == 0xFF and i + 2 < len(bin_data):
-            triple = (bin_data[i], bin_data[i+1], bin_data[i+2])
-            if triple in ff_controls:
-                result += ff_controls[triple]
-                i += 3
-                in_text_mode = True  # text follows control codes
-                continue
-
-            # FFF2XX = [waitXX] or [pause]
-            if bin_data[i+1] == 0xF2:
-                val = bin_data[i+2]
-                if val == 0x78:
-                    result += '[pause]'
-                else:
-                    result += f'[wait{val:02X}]'
-                i += 3
-                continue
-
-            # FFC0XX, FFFEXX, FFFCXX = other known controls
-            # Generic FF-prefix: output as [FFXXYY]
-            result += f'[FF{bin_data[i+1]:02X}{bin_data[i+2]:02X}]'
-            i += 3
-            continue
-
-        # End marker
+        # 0x00: end terminator
         if b == 0x00:
             result += '[end]\n'
             i += 1
             continue
 
-        # In text mode: decode through table
-        if in_text_mode:
-            # Known single-byte text controls
-            if b in text_controls:
-                result += text_controls[b]
+        # 0x01-0x08: parameter reference (2 bytes: opcode + param index)
+        if 0x01 <= b <= 0x08:
+            if i + 1 < len(bin_data):
+                result += f'{{{b:02X}{bin_data[i+1]:02X}}}'
+                i += 2
+            else:
+                result += f'{{{b:02X}}}'
                 i += 1
-                continue
+            continue
 
-            # Try 3-byte table lookup first
+        # 0xFF: extended command prefix — use @ctrl lengths
+        if b == 0xFF and i + 1 < len(bin_data):
+            cmd = bin_data[i + 1]
+            ctrl_len = ctrl.get(cmd, 3)
+
+            # Try named table lookup for the first 3 bytes (e.g. [msg], [cls])
             if i + 2 < len(bin_data):
-                val_3byte = (b << 16) | (bin_data[i+1] << 8) | bin_data[i+2]
+                val_3byte = (0xFF << 16) | (bin_data[i+1] << 8) | bin_data[i+2]
                 char = tbl.get_chars(val_3byte, False)
                 if char:
                     result += char
+                    # Named codes always consume exactly 3 bytes in the table
                     i += 3
                     continue
 
-            # Try 2-byte table lookup (kanji and other multi-byte chars)
-            if i + 1 < len(bin_data):
-                val_2byte = (b << 8) | bin_data[i+1]
-                char = tbl.get_chars(val_2byte, False)
-                if char:
-                    result += char
-                    i += 2
-                    continue
-
-            # Single byte table lookup
-            char = tbl.get_chars(b, False)
-            if char:
-                result += char
-                i += 1
-                continue
-
-            # Unknown byte in text mode
-            result += f'[{b:02X}]'
-            i += 1
+            # Emit as hex bracket with full @ctrl length
+            end = min(i + ctrl_len, len(bin_data))
+            code_bytes = bin_data[i:end]
+            hex_str = ''.join(f'{b:02X}' for b in code_bytes)
+            result += f'[{hex_str}]'
+            i += ctrl_len
             continue
 
-        # In event code mode: output as raw hex
-        result += '{' + f'{b:02X}' + '}'
-        i += 1
+        # 0x09-0xFE: text character — decode through table
+        # Try 3-byte lookup first, then 2-byte, then 1-byte
+        matched = False
+        for size in (3, 2, 1):
+            if i + size > len(bin_data):
+                continue
+            val = 0
+            for j in range(size):
+                val = (val << 8) | bin_data[i + j]
+            char = tbl.get_chars(val, False)
+            if char:
+                result += char
+                i += size
+                matched = True
+                break
+
+        if not matched:
+            # Unknown byte — emit as hex
+            result += tbl.get_chars(b, True) or f'[{b:02X}]'
+            i += 1
 
     return result
 
@@ -777,7 +705,7 @@ def hexify_en_files(en_folder, jp_table_path='jap.tbl', en_table_path='eng.tbl',
             print(f'  {name}: no changes needed')
 
 
-def encode_text(text_str, tbl, fallback_tbl=None):
+def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
     """
     Encode a text string to bytes using the Table's character map.
     All control codes and character mappings come from the table file —
@@ -787,7 +715,10 @@ def encode_text(text_str, tbl, fallback_tbl=None):
     :param fallback_tbl: optional fallback Table (e.g. jap.tbl) for characters
                          not in the primary table — used to pass through
                          untranslated Japanese text as raw bytes
-    :return: bytes
+    :param track_bytecode_offsets: if True, return (bytes, bc_offsets) where
+                                   bc_offsets is a set of output byte indices
+                                   that came from {XX} bytecode notation.
+    :return: bytes, or (bytes, set[int]) when track_bytecode_offsets=True
     """
     # Build a lookup from the Table's char_map, sorted longest-key-first
     # so multi-char sequences like [pause], !!, etc. match before singles.
@@ -807,6 +738,7 @@ def encode_text(text_str, tbl, fallback_tbl=None):
     fb_max_key_len = max((len(k) for k in fb_map), default=1) if fb_map else 1
 
     result = bytearray()
+    bc_offsets = set() if track_bytecode_offsets else None
     i = 0
     while i < len(text_str):
         ch = text_str[i]
@@ -815,6 +747,19 @@ def encode_text(text_str, tbl, fallback_tbl=None):
         if ch in '\n\r':
             i += 1
             continue
+
+        # {XX} bytecode notation — raw hex bytes from event script extraction.
+        # These are non-text bytecodes that must be preserved verbatim.
+        if ch == '{':
+            close = text_str.find('}', i + 1)
+            if close != -1:
+                hex_str = text_str[i + 1:close]
+                if len(hex_str) == 2 and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
+                    if bc_offsets is not None:
+                        bc_offsets.add(len(result))
+                    result.append(int(hex_str, 16))
+                    i = close + 1
+                    continue
 
         # Longest-match against the primary table — multi-char matches always preferred.
         # For '[', try multi-char table entries first, then hex escape [XX]/[XXXX]/etc.,
@@ -883,7 +828,10 @@ def encode_text(text_str, tbl, fallback_tbl=None):
             result.append(0x3F)  # '?'
         i += 1
 
-    return bytes(result)
+    encoded = bytes(result)
+    if track_bytecode_offsets:
+        return encoded, bc_offsets
+    return encoded
 
 
 def insert_script(input_filename, output_filename, script_file, table_filename,
@@ -1266,10 +1214,28 @@ SCRIPT_TABLES = [
     # Sub 0-15: raw JP strings (copied by copy_entry0_raw_strings before insertion).
     # Sub 16-33: battle-menu, Sub 34-143: battle-text, Sub 144-199: battle-msg.
     # Pointer table: 200 × 3 = 0x258 bytes.  Data chains after raw strings.
-    # orig_blank on battle-menu covers the entire old entry 0 region (ptrs + data).
+    # NO orig_blank: text control codes contain embedded 24-bit pointers back to
+    # bank $02 data (e.g. raw-copy opcodes at $80:B985).  The old data must stay
+    # intact so those inline references keep working.
+    # script_ext: event scripts with embedded dialog (bank $0A).
+    # 512 entries × 2-byte pointers.  Data packs after ptr table at $50501.
+    # Mixed bytecode + text entries round-trip through the table encoder.
+    {'name': 'script_ext',       'ptr_tbl_pos': 0x050101, 'tbl_len': 0x400,
+                                  'data_start_pc': 0x050501},
+    # event-text: 100 event bytecode routines with inline text (bank $22).
+    # Pointer table relocated from $22:BA9B to $22:9EE3 (freed scenario-desc
+    # space).  Data packs after the new ptr table.  Script meta-table at
+    # $0A:$8000 patched by metatbl_patch.asm to point to new location.
+    # Bytecodes contain embedded 3-byte SNES addresses that reference
+    # mid-entry positions within the data blob — fixup_event_text_addresses()
+    # patches these after insertion.
+    {'name': 'event-text',       'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0xC8,
+                                  'data_start_pc': 0x111FAB,
+                                  'event_script': True,
+                                  'orig_ptr_tbl_pos': 0x113A9B},
+    # battle region: relocated to bank $C5 (PC $228000) with 3-byte SNES pointers.
     {'name': 'battle-menu',      'ptr_tbl_pos': 0x228030, 'tbl_len': 0x036, 'ptr_size': 3,
-                                  'group': 'battle-c5',
-                                  'orig_blank': [(0x0130E0, 0x016576)]},
+                                  'group': 'battle-c5'},
     {'name': 'battle-text',      'ptr_tbl_pos': 0x228066, 'tbl_len': 0x14A, 'ptr_size': 3,
                                   'group': 'battle-c5'},
     {'name': 'battle-msg',       'ptr_tbl_pos': 0x2281B0, 'tbl_len': 0x0A8, 'ptr_size': 3,
@@ -1379,6 +1345,15 @@ def build_font(font_png='font/font_accented.png', force=False):
     print('Font build complete.')
 
 
+def _read_script_text(script_file: str) -> str:
+    """Read a script text file, auto-detecting UTF-16-LE (BOM) vs UTF-8 encoding."""
+    with open(script_file, 'rb') as f:
+        bom = f.read(2)
+    encoding = 'utf-16' if bom == b'\xff\xfe' else 'utf-8'
+    with open(script_file, 'r', encoding=encoding) as f:
+        return f.read()
+
+
 def encode_script_file(script_file: str, table_filename: str,
                        cache_dir: str = None, force: bool = False,
                        fallback_table: str = None) -> list[bytes]:
@@ -1442,8 +1417,7 @@ def encode_script_file(script_file: str, table_filename: str,
     tbl = Table(table_filename)
     fb_tbl = Table(fallback_table) if fallback_table else None
 
-    with open(script_file, 'r', encoding='utf-16') as f:
-        text = f.read()
+    text = _read_script_text(script_file)
 
     import re
 
@@ -1593,15 +1567,15 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
     return total_size
 
 
-def copy_entry0_raw_strings(rom: bytearray, table) -> int:
+def copy_entry0_raw_strings(rom: bytearray) -> int:
     """
     Copy meta-table entry 0's 16 raw JP strings (sub 0-15) from their
     original bank $02 location into the $C5 data area, building 3-byte
     pointers at $C5:$8000 for each.
 
-    These strings contain JP control codes and ASCII text for the file-info
-    screen, SRAM check, and battle UI labels.  They are not in any text dump
-    and must be copied byte-for-byte from the original ROM.
+    These entries contain raw binary data (PPU register sequences, DMA
+    descriptors, control codes) with embedded 0x00 bytes — NOT null-terminated
+    text.  They must be copied byte-for-byte using pointer-based bounding.
 
     Must be called BEFORE battle table insertion (which chains after).
 
@@ -1618,22 +1592,24 @@ def copy_entry0_raw_strings(rom: bytearray, table) -> int:
     DST_PTR_TBL = 0x228000   # 200-entry 3-byte ptr table
     DST_DATA_START = 0x228258  # after 200 × 3 = 0x258 bytes of pointers
 
-    # Read original 2-byte pointers for sub 0-15, plus sub 16 as upper boundary.
-    src_pcs = []
-    for i in range(NUM_RAW + 1):
+    # Read ALL 200 original 2-byte pointers (need full set for bounding).
+    all_src_pcs = []
+    for i in range(200):
         off = SRC_PTR_TBL + i * 2
         snes_addr = rom[off] | (rom[off + 1] << 8) | (SRC_BANK << 16)
         pc = SFCAddress(snes_addr, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
-        src_pcs.append(pc)
+        all_src_pcs.append(pc)
 
-    # Determine byte ranges for each unique data block.
-    # Entry 0's strings are scattered — some point into the battle data region,
-    # others into a separate area.  Use null-terminator scanning to find each
-    # string's actual length instead of relying on pointer ordering.
+    # Build sorted unique addresses from all 200 pointers for bounding.
+    # Entry 0's sub-entries contain raw binary data (PPU register sequences,
+    # DMA descriptors) with embedded 0x00 bytes — NOT null-terminated text.
+    # We must use pointer ordering to determine entry boundaries.
+    sorted_unique = sorted(set(all_src_pcs))
+
     data_pos = DST_DATA_START
 
     # Ensure ROM is large enough for destination
-    est_max = DST_DATA_START + 2048  # generous estimate
+    est_max = DST_DATA_START + 4096  # generous estimate
     if est_max > len(rom):
         rom.extend(b'\xff' * (est_max - len(rom)))
 
@@ -1641,15 +1617,18 @@ def copy_entry0_raw_strings(rom: bytearray, table) -> int:
     src_to_dst_ptr = {}  # src_pc -> 3-byte SNES pointer bytes
 
     for i in range(NUM_RAW):
-        src_pc = src_pcs[i]
+        src_pc = all_src_pcs[i]
 
         if src_pc in src_to_dst_ptr:
             # Duplicate pointer — reuse already-copied data
             ptr_bytes = src_to_dst_ptr[src_pc]
         else:
-            # Use find_entry_end to properly skip FF control code parameters
-            # that contain 0x00 bytes (a naive null scan truncates these).
-            end = table.find_entry_end(rom, src_pc, max_bytes=3)
+            # Bound by next unique pointer address
+            idx_in_sorted = sorted_unique.index(src_pc)
+            if idx_in_sorted + 1 < len(sorted_unique):
+                end = sorted_unique[idx_in_sorted + 1]
+            else:
+                end = src_pc + 256  # fallback for last entry
             raw_data = bytes(rom[src_pc:end])
 
             # Ensure space
@@ -1745,8 +1724,7 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
     tbl = Table(table_filename)
     fb_tbl = Table(fallback_table) if fallback_table else None
 
-    with open(script_file, 'r', encoding='utf-16') as f:
-        text = f.read()
+    text = _read_script_text(script_file)
 
     data_pos = tbl_info['data_pos']
     block_len = tbl_info['block_len']
@@ -1852,12 +1830,231 @@ def insert_all_fixed(rom: bytearray,
         print(f'  {name}: {written} fields written')
 
 
+def fixup_event_text_addresses(rom: bytearray, source_rom_path: str,
+                               old_ptr_tbl_pos: int, new_ptr_tbl_pos: int,
+                               tbl_len: int, bank: int = 0x22,
+                               **_kwargs) -> int:
+    """
+    Patch embedded 3-byte SNES addresses in event-text bytecodes after relocation.
+
+    Uses forward-scan alignment between old (JP) and new (EN) entry data.
+    Bytecodes are identical in both; only text regions differ in content and
+    length.  The alignment walks both byte streams in parallel, matching runs
+    of identical bytes (bytecodes) and skipping divergent runs (text).
+
+    :param rom: The ROM bytearray (already has new data inserted).
+    :param source_rom_path: Path to the original (unpatched) ROM.
+    :param old_ptr_tbl_pos: PC address of the original pointer table.
+    :param new_ptr_tbl_pos: PC address of the relocated pointer table.
+    :param tbl_len: Pointer table size in bytes (num_entries * 2).
+    :param bank: Bank byte for the data (default 0x22).
+    :returns: Number of addresses patched.
+    """
+    import struct
+    from bisect import bisect_right
+
+    num_entries = tbl_len // 2
+    bank_base_pc = (bank & 0x7F) * 0x8000
+
+    def snes_to_pc(snes_addr):
+        return bank_base_pc + ((snes_addr & 0xFFFF) - 0x8000)
+
+    def pc_to_snes(pc):
+        return (bank << 16) | ((pc - bank_base_pc) + 0x8000)
+
+    # --- Read pointer tables ---
+    with open(source_rom_path, 'rb') as f:
+        orig_rom = f.read()
+
+    old_snes = []
+    for i in range(num_entries):
+        ptr = struct.unpack_from('<H', orig_rom, old_ptr_tbl_pos + i * 2)[0]
+        old_snes.append((bank << 16) | ptr)
+    old_pc = [snes_to_pc(s) for s in old_snes]
+
+    new_snes = []
+    for i in range(num_entries):
+        ptr = struct.unpack_from('<H', rom, new_ptr_tbl_pos + i * 2)[0]
+        new_snes.append((bank << 16) | ptr)
+    new_pc = [snes_to_pc(s) for s in new_snes]
+
+    old_unique_sorted = sorted(set(old_pc))
+    new_unique_sorted = sorted(set(new_pc))
+
+    def get_old_entry_end(pc):
+        idx = old_unique_sorted.index(pc)
+        if idx + 1 < len(old_unique_sorted):
+            return old_unique_sorted[idx + 1]
+        pos = pc
+        while pos < len(orig_rom) - 1:
+            if orig_rom[pos] == 0x00:
+                if pos + 1 < len(orig_rom) and orig_rom[pos + 1] in (0xAA, 0xA8, 0xA2):
+                    return pos + 1
+            pos += 1
+        return pos
+
+    def get_new_entry_end(npc_val):
+        idx = new_unique_sorted.index(npc_val)
+        if idx + 1 < len(new_unique_sorted):
+            return new_unique_sorted[idx + 1]
+        # Last unique entry: use generous bound from old entry size.
+        return None
+
+    # --- Forward-scan alignment ---
+    def align_entries(old_bytes, new_bytes):
+        """Build old→new byte offset mapping.
+
+        Walk old and new in parallel.  When bytes match, record mapping.
+        When they diverge (text region), find the best reconvergence
+        point — the longest matching anchor in both streams.
+        """
+        mapping = {}
+        oi, ni = 0, 0
+
+        while oi < len(old_bytes) and ni < len(new_bytes):
+            if old_bytes[oi] == new_bytes[ni]:
+                mapping[oi] = ni
+                oi += 1
+                ni += 1
+            else:
+                # Divergent region.  Find the best reconvergence: try each
+                # skip distance in old_bytes, measure match length, and
+                # pick the candidate with the longest contiguous match.
+                max_skip = min(800, len(old_bytes) - oi)
+                best = None  # (match_len, d_o, new_pos)
+
+                for d_o in range(1, max_skip):
+                    if oi + d_o + 3 > len(old_bytes):
+                        break
+                    anchor = old_bytes[oi + d_o:oi + d_o + 3]
+                    search_lo = max(ni + 1, ni - 20)
+                    search_hi = min(ni + d_o + 400, len(new_bytes) - 2)
+
+                    # Check all occurrences of anchor in the window.
+                    sf = search_lo
+                    while sf < search_hi:
+                        pos = new_bytes.find(anchor, sf, search_hi)
+                        if pos == -1:
+                            break
+                        # Measure total contiguous match length.
+                        ml = 3
+                        while (oi + d_o + ml < len(old_bytes) and
+                               pos + ml < len(new_bytes) and
+                               old_bytes[oi + d_o + ml] == new_bytes[pos + ml]):
+                            ml += 1
+                        if ml >= 3:
+                            if best is None or ml > best[0]:
+                                best = (ml, d_o, pos)
+                            if ml >= 8:
+                                break  # long enough, accept early
+                        sf = pos + 1
+
+                    # Once we have a match >= 8, stop searching further.
+                    if best and best[0] >= 8:
+                        break
+
+                if best:
+                    _, d_o, pos = best
+                    oi += d_o
+                    ni = pos
+                else:
+                    break
+
+        return mapping
+
+    # --- Build per-entry alignment maps ---
+    old_entry_data = {}
+    old_to_new_pc = {}
+    offset_maps = {}
+    processed = set()
+
+    for i in range(num_entries):
+        opc = old_pc[i]
+        if opc in processed:
+            continue
+        processed.add(opc)
+
+        old_end = get_old_entry_end(opc)
+        old_data = bytes(orig_rom[opc:old_end])
+        old_entry_data[opc] = old_data
+        npc = new_pc[i]
+        old_to_new_pc[opc] = npc
+
+        ne = get_new_entry_end(npc)
+        if ne is None:
+            ne = npc + len(old_data) + 500
+            if ne > len(rom):
+                ne = len(rom)
+        new_data = bytes(rom[npc:ne])
+
+        offset_maps[opc] = align_entries(old_data, new_data)
+
+    # --- Scan and patch ---
+    old_data_min_snes = min(old_snes)
+    old_data_max_snes = max(old_snes)
+    last_entry_pc = snes_to_pc(old_data_max_snes)
+    old_data_max_snes_end = pc_to_snes(get_old_entry_end(last_entry_pc))
+
+    patched = 0
+
+    for i in range(num_entries):
+        opc = old_pc[i]
+        if opc in set(old_pc[:i]):
+            continue
+
+        npc = new_pc[i]
+        old_data = old_entry_data.get(opc)
+        if old_data is None:
+            continue
+        mapping = offset_maps.get(opc, {})
+
+        for off in range(len(old_data) - 2):
+            if old_data[off + 2] != bank:
+                continue
+            old_addr_snes = (bank << 16) | (old_data[off + 1] << 8) | old_data[off]
+            if old_addr_snes < old_data_min_snes or old_addr_snes >= old_data_max_snes_end:
+                continue
+            if off not in mapping or (off + 1) not in mapping or (off + 2) not in mapping:
+                continue
+
+            old_target_pc = snes_to_pc(old_addr_snes)
+            idx = bisect_right(old_unique_sorted, old_target_pc) - 1
+            if idx < 0:
+                continue
+            containing_opc = old_unique_sorted[idx]
+
+            target_old_offset = old_target_pc - containing_opc
+            target_mapping = offset_maps.get(containing_opc)
+            if target_mapping is None or target_old_offset not in target_mapping:
+                continue
+
+            target_new_offset = target_mapping[target_old_offset]
+            target_npc = old_to_new_pc.get(containing_opc)
+            if target_npc is None:
+                continue
+
+            new_target_snes = pc_to_snes(target_npc + target_new_offset)
+            new_lo = new_target_snes & 0xFF
+            new_hi = (new_target_snes >> 8) & 0xFF
+
+            rom_pos_lo = npc + mapping[off]
+            rom_pos_hi = npc + mapping[off + 1]
+
+            if rom[rom_pos_lo] != new_lo or rom[rom_pos_hi] != new_hi:
+                rom[rom_pos_lo] = new_lo
+                rom[rom_pos_hi] = new_hi
+                patched += 1
+
+    return patched
+
+
 def insert_all_scripts(rom_path: str,
                        en_folder: str = 'en_ptr_data',
                        table_filename: str = 'eng.tbl',
                        tables_filter: list = None,
                        jp_tables: set = None,
-                       force: bool = False):
+                       force: bool = False,
+                       source_rom: str = 'lm3.sfc'):
     """
     Insert translated script tables into rom_path in place.
 
@@ -1892,7 +2089,7 @@ def insert_all_scripts(rom_path: str,
     battle_names = {'battle-menu', 'battle-text', 'battle-msg'}
     if tables_filter is None or battle_names & set(tables_filter):
         jp_tbl = Table('jap.tbl')
-        battle_c5_next = copy_entry0_raw_strings(rom, jp_tbl)
+        battle_c5_next = copy_entry0_raw_strings(rom)
     else:
         battle_c5_next = 0x228258  # default: right after 200×3 ptr table
 
@@ -1974,6 +2171,17 @@ def insert_all_scripts(rom_path: str,
         )
         data_start = kwargs.get('data_start_pc', tbl_info['ptr_tbl_pos'] + tbl_info['tbl_len'])
         print(f'  {name}: {size} bytes written (data @ 0x{data_start:X}){lang_tag}')
+
+        # Fixup embedded addresses in event-text bytecodes after relocation.
+        orig_ptr = tbl_info.get('orig_ptr_tbl_pos')
+        if tbl_info.get('event_script') and orig_ptr is not None:
+            n = fixup_event_text_addresses(
+                rom, source_rom,
+                old_ptr_tbl_pos=orig_ptr,
+                new_ptr_tbl_pos=tbl_info['ptr_tbl_pos'],
+                tbl_len=tbl_info['tbl_len'],
+            )
+            print(f'    fixup: {n} embedded addresses patched')
 
         # Blank out original JP location for relocated tables.
         for start, end in tbl_info.get('orig_blank', []):
@@ -2169,6 +2377,9 @@ EXTRACT_TABLES = {
     'battle-menu':      {'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
     'battle-text':      {'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
     'battle-msg':       {'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
+    'script_ext':       {'ptr_tbl_pos': 0x050101, 'tbl_len': 0x400},
+    'event-text':       {'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0x0C8,
+                         'event_script': True},
 }
 
 
@@ -2220,6 +2431,7 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
         sorted_unique_addrs = sorted(set(all_starts))
 
         # Extract original binary entries from ROM using pointer table.
+        is_event_script = ext_info.get('event_script', False)
         orig_entries = []  # (data_bytes, data_start_pc)
         for idx in range(num_ptrs):
             data_start = all_starts[idx]
@@ -2227,7 +2439,13 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
             # Use next unique pointer address as upper bound
             addr_idx = sorted_unique_addrs.index(data_start) if data_start in sorted_unique_addrs else -1
             max_addr = sorted_unique_addrs[addr_idx + 1] if addr_idx >= 0 and addr_idx + 1 < len(sorted_unique_addrs) else None
-            data_end = tbl.find_entry_end(rom, data_start, max_addr=max_addr)
+
+            if is_event_script and max_addr is not None:
+                # Event script entries have embedded 0x00 in bytecodes;
+                # find_entry_end would truncate them.  Use pointer distance.
+                data_end = max_addr
+            else:
+                data_end = tbl.find_entry_end(rom, data_start, max_addr=max_addr)
 
             orig_entries.append((bytes(rom[data_start:data_end]), data_start))
 

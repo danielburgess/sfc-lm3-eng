@@ -42,6 +42,13 @@ org $82803C
 ; entry-0 (file-info + battle): relocated to $C5:$8000 (3-byte ptrs).
 ; EN battle text overwrites entry 0's own strings at $02:B2CA-B49E when packed
 ; sequentially.  All 200 sub-entries relocated wholesale to bank $C5.
+; event-text bytecodes: ptr table relocated from $22:BA9B to $22:9EE3
+; (reusing freed scenario-desc space in bank $22 for the ptr table + data).
+; Script meta-table at $0A:$8000, entry 0 — 3-byte SNES ptr to the 100-entry
+; event-text pointer table.
+org $0A8000
+    db $E3, $9E, $22, $00   ; entry 0: was 9B BA 22 00
+
 org $828000
     db $00, $80, $C5, $00   ; entry  0: was E0 B0 02 00
 
