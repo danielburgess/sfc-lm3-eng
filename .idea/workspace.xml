@@ -4,12 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Committing changes before we do some big edits to script files.">
+      <change beforePath="$PROJECT_DIR$/.idea/sfc-lm3-eng.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sfc-lm3-eng.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-menu.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-menu.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/field-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/field-msg.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/bin/battle-msg.checksum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/scenario-desc.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/scenario-desc.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/unit-terrain-desc.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/unit-terrain-desc.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eng.tbl" beforeDir="false" afterPath="$PROJECT_DIR$/eng.tbl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jap.tbl" beforeDir="false" afterPath="$PROJECT_DIR$/jap.tbl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-3.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-3.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-4.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-4.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/dialog-5.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/dialog-5.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-msg.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/field-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/field-text.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/339860.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/339860.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext/346798.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext/346798.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +66,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -85,7 +104,7 @@
       <workItem from="1705786350724" duration="745000" />
       <workItem from="1775367790425" duration="60968000" />
       <workItem from="1775492777372" duration="6588000" />
-      <workItem from="1775499552146" duration="93002000" />
+      <workItem from="1775499552146" duration="113837000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -223,7 +242,23 @@
       <option name="project" value="LOCAL" />
       <updated>1775678687590</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Fixed some english script files that were missing control codes.">
+      <option name="closed" value="true" />
+      <created>1775679988575</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1775679988575</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Committing changes before we do some big edits to script files.">
+      <option name="closed" value="true" />
+      <created>1775702319906</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1775702319906</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -261,6 +296,8 @@
     <MESSAGE value="New text blocks have been identified for translation." />
     <MESSAGE value="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL" />
     <MESSAGE value="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding." />
-    <option name="LAST_COMMIT_MESSAGE" value="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding." />
+    <MESSAGE value="Fixed some english script files that were missing control codes." />
+    <MESSAGE value="Committing changes before we do some big edits to script files." />
+    <option name="LAST_COMMIT_MESSAGE" value="Committing changes before we do some big edits to script files." />
   </component>
 </project>

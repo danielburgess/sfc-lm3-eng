@@ -2403,6 +2403,7 @@ def validate_en_scripts(jp_folder='jp_ptr_data', en_folder='en_ptr_data',
             jp_hdr, jp_content = jp_by_idx[idx]
             if idx not in en_by_idx:
                 issues.append((idx, 'CRITICAL', 'EN entry missing entirely'))
+                total_critical += 1
                 if fix:
                     fixed_entries[idx] = (jp_hdr, jp_content)
                 continue
@@ -2457,8 +2458,14 @@ def validate_en_scripts(jp_folder='jp_ptr_data', en_folder='en_ptr_data',
             elif en_ff != jp_ff:
                 severity = 'WARNING'
                 msg = f'FF code mismatch — EN: {en_ff[:3]}... vs JP: {jp_ff[:3]}...'
-                if fix and not has_trans:
-                    fixed_entries[idx] = (en_hdr, jp_content)
+                if fix:
+                    if has_trans and len(en_ff) == len(jp_ff):
+                        # Same number of FF codes but different format — upgrade old 3-byte
+                        # codes to correct lengths by positional replacement
+                        fixed_content = _upgrade_ff_codes(en_content, en_ff, jp_ff)
+                        fixed_entries[idx] = (en_hdr, fixed_content)
+                    elif not has_trans:
+                        fixed_entries[idx] = (en_hdr, jp_content)
             else:
                 severity = 'INFO'
                 msg = f'Non-FF skeleton differs (EN: {len(en_skel)} codes, JP: {len(jp_skel)})'
@@ -2518,6 +2525,29 @@ def validate_en_scripts(jp_folder='jp_ptr_data', en_folder='en_ptr_data',
         print(f'  Report written to {report_file}')
 
     return results
+
+
+def _upgrade_ff_codes(en_content, en_ff, jp_ff):
+    """
+    Replace old-format FF codes in EN content with correct JP versions.
+    en_ff and jp_ff must have the same length (1:1 positional correspondence).
+    Also removes spurious [end] markers that follow upgraded codes
+    (from parameter bytes that were decoded as 0x00 terminators).
+    """
+    result = en_content
+    for old_code, new_code in zip(en_ff, jp_ff):
+        if old_code != new_code:
+            # Replace old code with new code, also clean up trailing garbage
+            # Old pattern: [FFC000][end] or [FFC000]ん「 (parameter bytes as chars)
+            # New pattern: [FFC000B222]
+            result = result.replace(old_code, new_code, 1)
+
+    # Remove spurious [end] that directly follows an upgraded FF code
+    # (but only if JP doesn't end with [end] at that position)
+    import re
+    # Remove [end] that appears right after a ] from an FF code, unless it's the last code
+    result = re.sub(r'(\[FF[0-9A-Fa-f]{6,}\])\[end\]', r'\1', result)
+    return result
 
 
 def _repair_truncated(jp_content, en_content):
@@ -2720,7 +2750,7 @@ commands:
   jptest-orig  Re-insert JP scripts at original ROM locations (data integrity test)
 """,
     )
-    parser.add_argument('command', choices=['font', 'font-preview', 'script', 'vwf', 'build', 'extract', 'verify', 'hexify', 'jptest', 'jptest-orig'])
+    parser.add_argument('command', choices=['font', 'font-preview', 'script', 'vwf', 'build', 'extract', 'verify', 'validate-en', 'hexify', 'jptest', 'jptest-orig'])
     parser.add_argument('--source',   default='lm3.sfc',          help='Source ROM (default: lm3.sfc)')
     parser.add_argument('--scripted', default='out/lm3_scripted.sfc',  help='Scripted ROM intermediate')
     parser.add_argument('--output',   default='out/lm3_en.sfc',        help='Final output ROM')
@@ -2738,6 +2768,10 @@ commands:
                              'Uses jp_ptr_data/ with jap.tbl.')
     parser.add_argument('--force', action='store_true',
                         help='Force re-encode all scripts (ignore bin cache).')
+    parser.add_argument('--fix', action='store_true',
+                        help='Auto-repair EN entries with broken structural codes.')
+    parser.add_argument('--report', default=None,
+                        help='Write validation report to file.')
 
     args = parser.parse_args()
     import os
@@ -2802,6 +2836,16 @@ commands:
             tables_filter=tables_filter,
         )
         print(f'=== {"ALL PASS" if ok else "FAILURES DETECTED"} ===')
+
+    elif args.command == 'validate-en':
+        print(f'=== EN structural validation: jp_ptr_data/ vs {args.en_folder}/ ===')
+        validate_en_scripts(
+            jp_folder='jp_ptr_data',
+            en_folder=args.en_folder,
+            tables_filter=tables_filter,
+            fix=args.fix,
+            report_file=args.report,
+        )
 
     elif args.command == 'hexify':
         print(f'=== Converting Japanese text to hex in {args.en_folder}/ ===')
