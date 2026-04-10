@@ -76,8 +76,10 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
             'table_name': 'script'
         },
         {   # secondary script data (event scripts with embedded dialog)
-            'ptr_tbl_pos': 0x50101,
-            'tbl_len': 0x400,
+            # Master pointer table at $0A:$8010 (PC 0x050010), 120 entries × 2 bytes.
+            # Data blob starts at $0A:$8101 (PC 0x050101) right after the null terminator.
+            'ptr_tbl_pos': 0x050010,
+            'tbl_len': 0xF0,
             'table_name': 'script_ext',
             'event_script': False
         },
@@ -481,16 +483,13 @@ def data_extract(input_filename: str, table_name: str, out_folder: str, data_pos
 
 def interpret_event_script(bin_data, tbl):
     """
-    Interpret event script binary data as a single unified stream.
-    Mirrors the game's interpreter at $80:B68D exactly:
-      0x00       → [end] terminator (1 byte)
-      0x01-0x08  → parameter ref command (2 bytes: opcode + param index)
-      0x09-0xFE  → text character (font glyph, decoded via table)
-      0xFF       → extended command prefix (variable length via @ctrl)
-
-    :param bin_data: list of byte values
-    :param tbl: Table instance for character lookups
-    :return: string representation
+    Decode event-text binary using the standard table, with two guards:
+      1. 0x00 is ALWAYS a sub-entry terminator ([end]) — never consumed
+         by a multi-byte character lookup.
+      2. 0xFF commands use @ctrl byte lengths so their parameter bytes
+         (which may include 0x00) are never misinterpreted.
+    Everything else (including 0x01-0x08 kanji high bytes) goes through
+    the normal 3→2→1 byte table lookup, identical to interpret_binary_data.
     """
     if not bin_data:
         return ''
@@ -502,38 +501,27 @@ def interpret_event_script(bin_data, tbl):
     while i < len(bin_data):
         b = bin_data[i]
 
-        # 0x00: end terminator
+        # 0x00: sub-entry terminator — must be caught before table lookup
         if b == 0x00:
-            result += '[end]\n'
+            result += '[end]'
             i += 1
             continue
 
-        # 0x01-0x08: parameter reference (2 bytes: opcode + param index)
-        if 0x01 <= b <= 0x08:
-            if i + 1 < len(bin_data):
-                result += f'{{{b:02X}{bin_data[i+1]:02X}}}'
-                i += 2
-            else:
-                result += f'{{{b:02X}}}'
-                i += 1
-            continue
-
-        # 0xFF: extended command prefix — use @ctrl lengths
+        # 0xFF: extended command — use @ctrl lengths to skip params
         if b == 0xFF and i + 1 < len(bin_data):
             cmd = bin_data[i + 1]
             ctrl_len = ctrl.get(cmd, 3)
 
-            # Try named table lookup for the first 3 bytes (e.g. [msg], [cls])
+            # Try named 3-byte lookup first (e.g. [msg], [cls], [pink])
             if i + 2 < len(bin_data):
                 val_3byte = (0xFF << 16) | (bin_data[i+1] << 8) | bin_data[i+2]
                 char = tbl.get_chars(val_3byte, False)
                 if char:
                     result += char
-                    # Named codes always consume exactly 3 bytes in the table
                     i += 3
                     continue
 
-            # Emit as hex bracket with full @ctrl length
+            # Emit full command as hex bracket with @ctrl length
             end = min(i + ctrl_len, len(bin_data))
             code_bytes = bin_data[i:end]
             hex_str = ''.join(f'{b:02X}' for b in code_bytes)
@@ -541,11 +529,14 @@ def interpret_event_script(bin_data, tbl):
             i += ctrl_len
             continue
 
-        # 0x09-0xFE: text character — decode through table
-        # Try 3-byte lookup first, then 2-byte, then 1-byte
+        # Standard table lookup: 3-byte → 2-byte → 1-byte (same as interpret_binary_data)
+        # Guard: never let a multi-byte match span across a 0x00 byte
         matched = False
         for size in (3, 2, 1):
             if i + size > len(bin_data):
+                continue
+            # Don't consume a 0x00 as part of a multi-byte character
+            if size > 1 and any(bin_data[i + j] == 0x00 for j in range(1, size)):
                 continue
             val = 0
             for j in range(size):
@@ -558,7 +549,6 @@ def interpret_event_script(bin_data, tbl):
                 break
 
         if not matched:
-            # Unknown byte — emit as hex
             result += tbl.get_chars(b, True) or f'[{b:02X}]'
             i += 1
 
@@ -567,26 +557,15 @@ def interpret_event_script(bin_data, tbl):
 
 def dump_event_script(filename, dict_data, tbl, deduplicate=True):
     """
-    Dump event script data with smart bytecode/text separation.
+    Dump event script data using the standard table-based text decoder.
+    Event-text is processed identically to other script tables — the only
+    special handling is during insertion (embedded SNES pointer fixup).
     :param filename: output file path
     :param dict_data: list of dicts with 'id', 'addr', 'data' keys
     :param tbl: Table instance
     :param deduplicate: skip duplicate addresses
     """
-    line1 = True
-    nl = "\n"
-    with open(filename, 'w', encoding='utf-16') as of:
-        dumped_addrs = []
-        for data in dict_data:
-            of.write(f"{'' if line1 else nl}<<{data.get('id')}>>{nl}")
-            addr = data.get('addr', None)
-            if deduplicate and addr is not None:
-                if addr not in dumped_addrs:
-                    dumped_addrs.append(addr)
-                    of.write(interpret_event_script(data['data'], tbl))
-            else:
-                of.write(interpret_event_script(data['data'], tbl))
-            line1 = False
+    tbl.dump_script(filename, dict_data, deduplicate)
 
 
 def _int_to_bytes_be(val):
@@ -1218,21 +1197,19 @@ SCRIPT_TABLES = [
     # bank $02 data (e.g. raw-copy opcodes at $80:B985).  The old data must stay
     # intact so those inline references keep working.
     # script_ext: event scripts with embedded dialog (bank $0A).
-    # 512 entries × 2-byte pointers.  Data packs after ptr table at $50501.
-    # Mixed bytecode + text entries round-trip through the table encoder.
-    {'name': 'script_ext',       'ptr_tbl_pos': 0x050101, 'tbl_len': 0x400,
-                                  'data_start_pc': 0x050501},
+    # 120 entries × 2-byte pointers at $0A:$8010.  Data at $0A:$8101.
+    # Entries contain bytecodes with absolute addresses — cannot be relocated.
+    # DTE handles overflow: inline text + FF F7 INDEX → expansion in bank $C6.
+    {'name': 'script_ext',       'ptr_tbl_pos': 0x050010, 'tbl_len': 0x0F0,
+                                  'data_start_pc': 0x050101,
+                                  'dte': 1},
     # event-text: 100 event bytecode routines with inline text (bank $22).
-    # Pointer table relocated from $22:BA9B to $22:9EE3 (freed scenario-desc
-    # space).  Data packs after the new ptr table.  Script meta-table at
-    # $0A:$8000 patched by metatbl_patch.asm to point to new location.
-    # Bytecodes contain embedded 3-byte SNES addresses that reference
-    # mid-entry positions within the data blob — fixup_event_text_addresses()
-    # patches these after insertion.
-    {'name': 'event-text',       'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0xC8,
-                                  'data_start_pc': 0x111FAB,
+    # Entries contain bytecodes with absolute addresses — cannot be relocated.
+    # DTE handles overflow: inline text + FF F8 INDEX → expansion in bank $C6.
+    # Original pointer table at $22:BA9B (used by DTE to read original sizes).
+    {'name': 'event-text',       'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0xC8,
                                   'event_script': True,
-                                  'orig_ptr_tbl_pos': 0x113A9B},
+                                  'dte': 2},
     # battle region: relocated to bank $C5 (PC $228000) with 3-byte SNES pointers.
     {'name': 'battle-menu',      'ptr_tbl_pos': 0x228030, 'tbl_len': 0x036, 'ptr_size': 3,
                                   'group': 'battle-c5'},
@@ -1565,6 +1542,252 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
             rom[off + 1] = (ptr >> 8) & 0xFF
 
     return total_size
+
+
+# ---------------------------------------------------------------------------
+# DTE (Dual Table Encoding) — overflow insertion for non-relocatable tables
+# ---------------------------------------------------------------------------
+# For tables like script_ext and event-text, entries contain bytecodes with
+# absolute addresses that cannot be relocated.  English text may be longer
+# than the original Japanese.  DTE writes as much text inline as fits, then
+# redirects the remainder to an expansion area via FF F7/F8 + INDEX codes.
+#
+# DTE trigger codes (defined in dte_patch.asm):
+#   FF F7 INDEX  → redirect to DTE table 1 expansion string (3 bytes)
+#   FF F8 INDEX  → redirect to DTE table 2 expansion string (3 bytes)
+#   FF F6        → return from expansion to inline text (2 bytes, auto-appended)
+#
+# Expansion area: bank $C6
+#   Table 1 pointers: $C6:$8000  (256 × 2-byte within-bank pointers)
+#   Table 2 pointers: $C6:$C000  (256 × 2-byte within-bank pointers)
+# ---------------------------------------------------------------------------
+
+DTE_TABLE1_PTR_PC = 0x230000    # PC offset: $C6:$8000 in LoROM
+DTE_TABLE1_DATA_PC = 0x230200   # after 256 × 2-byte pointers
+DTE_TABLE2_PTR_PC = 0x234000    # PC offset: $C6:$C000 in LoROM
+DTE_TABLE2_DATA_PC = 0x234200   # after 256 × 2-byte pointers
+DTE_BANK = 0xC6
+
+DTE_TRIGGER_TBL1 = bytes([0xFF, 0xF7])  # FF F7 INDEX
+DTE_TRIGGER_TBL2 = bytes([0xFF, 0xF8])  # FF F8 INDEX
+DTE_RETURN = bytes([0xFF, 0xF6])         # FF F6 (appended to expansion string)
+
+
+def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict) -> int:
+    """
+    Find the latest safe byte-boundary split point in encoded data that
+    leaves room for a 3-byte DTE redirect (FF F7/F8 INDEX) + null terminator.
+
+    A "safe" split point is between complete characters/control codes — never
+    in the middle of a multi-byte FF sequence.
+
+    :param encoded: full encoded entry (including trailing 0x00 terminator)
+    :param max_inline: maximum bytes available for inline data
+    :param ctrl_lengths: dict {sub_opcode: total_length} from Table.ctrl_lengths
+    :return: byte offset to split at (inline = encoded[:split], overflow = encoded[split:])
+    """
+    # We need 3 bytes for the DTE trigger (FF Fx INDEX) + 1 byte null terminator.
+    # So inline portion can be at most (max_inline - 4) bytes of actual content.
+    budget = max_inline - 4  # reserve space for FF Fx INDEX 00
+    if budget <= 0:
+        return 0  # no room for any inline content
+
+    # Walk through the encoded bytes tracking character boundaries.
+    pos = 0
+    last_safe = 0
+    while pos < len(encoded):
+        b = encoded[pos]
+        if b == 0x00:
+            # Null terminator — end of content
+            break
+        if b == 0xFF and pos + 1 < len(encoded):
+            sub = encoded[pos + 1]
+            ctrl_len = ctrl_lengths.get(sub, 2)  # default 2 if unknown
+            if pos + ctrl_len <= budget:
+                last_safe = pos + ctrl_len
+                pos += ctrl_len
+            else:
+                break  # can't fit this control code inline
+        else:
+            if pos + 1 <= budget:
+                last_safe = pos + 1
+                pos += 1
+            else:
+                break
+
+    return last_safe
+
+
+def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
+                     ptr_tbl_pos: int, tbl_len: int, source_rom: bytes,
+                     dte_table_num: int = 1,
+                     data_start_pc: int = None,
+                     cache_dir: str = None, force: bool = False,
+                     fallback_table: str = None) -> dict:
+    """
+    Insert a script table using DTE for overflow entries.  Each entry is
+    written back to its original ROM location.  If the encoded English text
+    is longer than the original Japanese entry, the excess is redirected to
+    a DTE expansion area in bank $C6.
+
+    :param source_rom: original (unmodified) ROM bytes for reading original pointers
+    :param dte_table_num: 1 or 2 (selects FF F7 or FF F8 trigger + table area)
+    :param data_start_pc: override data start (default: ptr_tbl_pos + tbl_len)
+    :returns: dict with 'dte_entries' (list of (index, expansion_bytes)),
+              'inline_bytes' written, 'overflow_count', 'total_entries'
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    num_ptrs = tbl_len // 2
+
+    # Read original pointers from the UNMODIFIED source ROM to get entry positions.
+    ptr_table_addr = SFCAddress(ptr_tbl_pos)
+    ptr_bank = ptr_table_addr.get_bank_byte(SFCAddressType.LOROM1)
+
+    orig_pcs = []
+    for i in range(num_ptrs):
+        off = ptr_tbl_pos + i * 2
+        addr16 = source_rom[off] | (source_rom[off + 1] << 8)
+        snes = (ptr_bank << 16) | addr16
+        pc = SFCAddress(snes, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
+        orig_pcs.append(pc)
+
+    # Compute each entry's available space (distance to next unique pointer).
+    sorted_unique_pcs = sorted(set(orig_pcs))
+    bank_end_pc = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000
+
+    def entry_max_size(pc):
+        idx = sorted_unique_pcs.index(pc)
+        if idx + 1 < len(sorted_unique_pcs):
+            return sorted_unique_pcs[idx + 1] - pc
+        else:
+            return bank_end_pc - pc
+
+    # Encode the English script file.
+    encoded_entries = encode_script_file(script_file, table_filename,
+                                         cache_dir=cache_dir, force=force,
+                                         fallback_table=fallback_table)
+
+    # Load ctrl_lengths for safe splitting.
+    tbl = Table(table_filename)
+    ctrl_lengths = tbl.ctrl_lengths
+
+    dte_trigger = DTE_TRIGGER_TBL1 if dte_table_num == 1 else DTE_TRIGGER_TBL2
+    dte_expansion = []  # list of (dte_index, expansion_bytes)
+    overflow_count = 0
+    inline_total = 0
+
+    # Ensure ROM is large enough.
+    if bank_end_pc > len(rom):
+        rom.extend(b'\xff' * (bank_end_pc - len(rom)))
+
+    seen = {}  # orig_pc -> already handled
+    dte_index = 0
+
+    for i, (encoded, orig_addr) in enumerate(encoded_entries):
+        if i >= num_ptrs:
+            break
+
+        pc = orig_pcs[i]
+        max_size = entry_max_size(pc)
+
+        # Skip duplicate-pointer entries (share same data location).
+        if pc in seen:
+            continue
+        seen[pc] = True
+
+        if len(encoded) <= max_size:
+            # Fits inline — write directly.
+            rom[pc:pc + len(encoded)] = encoded
+            # Pad remainder with 0x00.
+            if len(encoded) < max_size:
+                rom[pc + len(encoded):pc + max_size] = b'\x00' * (max_size - len(encoded))
+            inline_total += len(encoded)
+        else:
+            # Overflow — split with DTE redirect.
+            split = _find_safe_split(encoded, max_size, ctrl_lengths)
+            inline_part = encoded[:split]
+
+            # Build DTE redirect: inline_part + FF Fx INDEX + 00
+            redirect = inline_part + dte_trigger + bytes([dte_index]) + b'\x00'
+            assert len(redirect) <= max_size, (
+                f'Entry {i}: DTE redirect ({len(redirect)}) > max_size ({max_size})')
+
+            # Write inline portion + redirect.
+            rom[pc:pc + len(redirect)] = redirect
+            if len(redirect) < max_size:
+                rom[pc + len(redirect):pc + max_size] = b'\x00' * (max_size - len(redirect))
+
+            # Overflow = rest of the content (without the original null terminator)
+            # + DTE return marker + null terminator.
+            overflow_content = encoded[split:]
+            # If overflow_content ends with 0x00 (the original null), keep it.
+            # We need to insert FF F6 before the final null.
+            if overflow_content and overflow_content[-1] == 0x00:
+                expansion = overflow_content[:-1] + DTE_RETURN + b'\x00'
+            else:
+                expansion = overflow_content + DTE_RETURN + b'\x00'
+
+            dte_expansion.append((dte_index, expansion))
+            dte_index += 1
+            overflow_count += 1
+            inline_total += len(redirect)
+
+            if dte_index > 255:
+                print(f'  WARNING: DTE table {dte_table_num} overflow — more than 256 entries!')
+
+    return {
+        'dte_entries': dte_expansion,
+        'inline_bytes': inline_total,
+        'overflow_count': overflow_count,
+        'total_entries': len(encoded_entries),
+        'dte_table_num': dte_table_num,
+    }
+
+
+def write_dte_expansion(rom: bytearray, dte_results: list[dict]):
+    """
+    Write DTE expansion strings and pointer tables into bank $C6.
+
+    :param dte_results: list of dicts from insert_dte_table() calls
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    for result in dte_results:
+        tbl_num = result['dte_table_num']
+        entries = result['dte_entries']
+        if not entries:
+            continue
+
+        if tbl_num == 1:
+            ptr_pc = DTE_TABLE1_PTR_PC
+            data_pc = DTE_TABLE1_DATA_PC
+        else:
+            ptr_pc = DTE_TABLE2_PTR_PC
+            data_pc = DTE_TABLE2_DATA_PC
+
+        # Ensure ROM is large enough for expansion area.
+        max_needed = data_pc + sum(len(exp) for _, exp in entries)
+        if max_needed > len(rom):
+            rom.extend(b'\xff' * (max_needed - len(rom)))
+
+        # Write expansion strings and build pointer table.
+        data_offset = data_pc
+        for dte_idx, expansion in entries:
+            # Write 2-byte within-bank pointer.
+            snes_addr = SFCAddress(data_offset).get_address(SFCAddressType.LOROM2)
+            ptr_val = snes_addr & 0xFFFF  # within-bank 16-bit address
+            ptr_off = ptr_pc + dte_idx * 2
+            rom[ptr_off] = ptr_val & 0xFF
+            rom[ptr_off + 1] = (ptr_val >> 8) & 0xFF
+
+            # Write expansion string data.
+            rom[data_offset:data_offset + len(expansion)] = expansion
+            data_offset += len(expansion)
+
+        total_data = data_offset - data_pc
+        print(f'  DTE table {tbl_num}: {len(entries)} expansion strings, '
+              f'{total_data} bytes in bank $C6')
 
 
 def copy_entry0_raw_strings(rom: bytearray) -> int:
@@ -2142,10 +2365,33 @@ def insert_all_scripts(rom_path: str,
             fut.result()
             print(f'  encoded: {name}')
 
+    # Read original ROM for DTE tables (need original pointer positions).
+    with open(source_rom, 'rb') as f:
+        orig_rom = f.read()
+
     # Insert encoded data into ROM (serial — writes to shared bytearray).
     print('Inserting into ROM...')
+    dte_results = []
+
     for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
         name = tbl_info['name']
+        dte_num = tbl_info.get('dte')
+
+        if dte_num:
+            # --- DTE insertion: write to original locations, overflow to bank $C6 ---
+            result = insert_dte_table(
+                rom, script_file, tbl_file,
+                tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+                source_rom=orig_rom,
+                dte_table_num=dte_num,
+                cache_dir=cache_dir, force=force,
+                fallback_table=fb_tbl,
+            )
+            dte_results.append(result)
+            oc = result['overflow_count']
+            total = result['total_entries']
+            print(f'  {name}: {total} entries, {oc} overflow → DTE table {dte_num}{lang_tag}')
+            continue
 
         kwargs = {}
         if tbl_info.get('ptr_size', 2) == 3:
@@ -2172,17 +2418,6 @@ def insert_all_scripts(rom_path: str,
         data_start = kwargs.get('data_start_pc', tbl_info['ptr_tbl_pos'] + tbl_info['tbl_len'])
         print(f'  {name}: {size} bytes written (data @ 0x{data_start:X}){lang_tag}')
 
-        # Fixup embedded addresses in event-text bytecodes after relocation.
-        orig_ptr = tbl_info.get('orig_ptr_tbl_pos')
-        if tbl_info.get('event_script') and orig_ptr is not None:
-            n = fixup_event_text_addresses(
-                rom, source_rom,
-                old_ptr_tbl_pos=orig_ptr,
-                new_ptr_tbl_pos=tbl_info['ptr_tbl_pos'],
-                tbl_len=tbl_info['tbl_len'],
-            )
-            print(f'    fixup: {n} embedded addresses patched')
-
         # Blank out original JP location for relocated tables.
         for start, end in tbl_info.get('orig_blank', []):
             length = end - start
@@ -2194,6 +2429,10 @@ def insert_all_scripts(rom_path: str,
 
         if group and group in group_data_pos:
             group_data_pos[group] += size
+
+    # Write DTE expansion data to bank $C6.
+    if dte_results:
+        write_dte_expansion(rom, dte_results)
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -2276,9 +2515,33 @@ def build_scripted(source: str = 'lm3.sfc',
     import subprocess
 
     asm_patches = ['script_patch.asm']
-    # Meta-table redirects and name expansion only for full builds (4 MB+).
+    # Per-table meta-table redirects — only apply patches for tables being built.
+    # Each metatbl_*.asm patches the meta-table entries for one relocated block.
     if target >= 4 * 1024 * 1024:
-        asm_patches.append('metatbl_patch.asm')
+        # Map: table names → the metatbl patch they require.
+        metatbl_map = {
+            'script':        'metatbl_script.asm',
+            'scenario-desc': 'metatbl_scenario_desc.asm',
+            'quiz-text':     'metatbl_quiz_text.asm',
+            'battle-menu':   'metatbl_battle.asm',
+            'battle-text':   'metatbl_battle.asm',
+            'battle-msg':    'metatbl_battle.asm',
+            # event-text and script_ext use DTE (no relocation, no metatbl redirect)
+        }
+        applied_patches = set()
+        has_dte = False
+        for tbl_info in SCRIPT_TABLES:
+            name = tbl_info['name']
+            if tables_filter is not None and name not in tables_filter:
+                continue
+            if tbl_info.get('dte'):
+                has_dte = True
+            patch = metatbl_map.get(name)
+            if patch and patch not in applied_patches:
+                asm_patches.append(patch)
+                applied_patches.add(patch)
+        if has_dte:
+            asm_patches.append('dte_patch.asm')
         asm_patches.append('name_expansion_patch.asm')
 
     for patch_file in asm_patches:
@@ -2377,7 +2640,7 @@ EXTRACT_TABLES = {
     'battle-menu':      {'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
     'battle-text':      {'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
     'battle-msg':       {'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
-    'script_ext':       {'ptr_tbl_pos': 0x050101, 'tbl_len': 0x400},
+    'script_ext':       {'ptr_tbl_pos': 0x050010, 'tbl_len': 0x0F0},
     'event-text':       {'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0x0C8,
                          'event_script': True},
 }
@@ -3074,18 +3337,15 @@ commands:
 
     elif args.command == 'jptest':
         output = args.output.replace('_en.sfc', '_jptest.sfc') if '_en' in args.output else 'out/lm3_jptest.sfc'
-        all_table_names = set(t['name'] for t in SCRIPT_TABLES)
-        if tables_filter:
-            all_table_names = all_table_names & set(tables_filter)
         print(f'=== jptest: re-inserting JP scripts into expanded layout ===')
         print(f'  source: {args.source} → {output}')
         build_scripted(
             source=args.source,
             output=output,
             font_png=args.font,
+            en_folder='jp_ptr_data',
             table_filename='jap.tbl',
             tables_filter=tables_filter,
-            jp_tables=all_table_names,
             force=args.force,
         )
 

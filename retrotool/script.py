@@ -274,7 +274,18 @@ class Table:
                 if end_check > len(bin_data):
                     len_check -= 1
                     continue
+                # Reject multi-byte match if the value's byte width is less
+                # than the window size.  bytes_to_val([00, 81], reverse=True)
+                # produces 0x81 — a 1-byte value from a 2-byte window.
+                # Accepting it would silently consume the leading 0x00.
                 val = self.bytes_to_val(bin_data[i: end_check], True)
+                if val is not None and val.bit_length() > 0:
+                    byte_width = (val.bit_length() + 7) // 8
+                else:
+                    byte_width = 1
+                if byte_width < len_check:
+                    len_check -= 1
+                    continue
                 char = self.get_chars(val, False)
                 if char:
                     found_char = True

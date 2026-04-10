@@ -325,6 +325,9 @@ FE
 @ctrl 8D=6
 @ctrl 8E=6
 @ctrl 9C=6
+@ctrl F6=2
+@ctrl F7=3
+@ctrl F8=3
 FFF278=[pause]
 FFF2**=[wait**]
 FFFD02=[special]
