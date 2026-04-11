@@ -698,6 +698,12 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
                                    bc_offsets is a set of output byte indices
                                    that came from {XX} bytecode notation.
     :return: bytes, or (bytes, set[int]) when track_bytecode_offsets=True
+
+    Entry-reference syntax: [FFC0@N] emits FF C0 + 3 placeholder bytes (FF FF FF)
+    and records a fixup: (byte_offset_of_addr, target_entry_index).  The caller
+    must patch the 3 address bytes once entry N's SNES address is known.
+    Fixups are returned in encoded.ffc0_fixups (list of (offset, entry_idx) tuples)
+    as an attribute on the returned bytes object.
     """
     # Build a lookup from the Table's char_map, sorted longest-key-first
     # so multi-char sequences like [pause], !!, etc. match before singles.
@@ -717,6 +723,8 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
     fb_max_key_len = max((len(k) for k in fb_map), default=1) if fb_map else 1
 
     result = bytearray()
+    ffc0_fixups = []   # list of (byte_offset, target_entry_index, label_or_None)
+    labels = {}        # label_name -> byte_offset within this entry
     bc_offsets = set() if track_bytecode_offsets else None
     i = 0
     while i < len(text_str):
@@ -756,7 +764,28 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
                     matched = True
                     break
 
-            # Second: try hex escape [XX], [XXXX], [XXXXXX], [XXXXXXXX]
+            # Second: [FFC0@N] or [FFC0@N:label] entry-reference syntax
+            if not matched:
+                import re as _re
+                m = _re.match(r'\[FFC0@(\d+)(?::(\w+))?\]', text_str[i:])
+                if m:
+                    target_idx = int(m.group(1))
+                    label = m.group(2)  # None if no :label
+                    result.extend(b'\xFF\xC0')       # FF C0 opcode
+                    ffc0_fixups.append((len(result), target_idx, label))
+                    result.extend(b'\xFF\xFF\xFF')    # 3-byte placeholder
+                    i += m.end()
+                    matched = True
+
+            # [label:NAME] — zero-width marker recording byte offset
+            if not matched:
+                m = _re.match(r'\[label:(\w+)\]', text_str[i:])
+                if m:
+                    labels[m.group(1)] = len(result)
+                    i += m.end()
+                    matched = True
+
+            # Third: try hex escape [XX], [XXXX], [XXXXXX], [XXXXXXXX]
             if not matched:
                 close = text_str.find(']', i + 1)
                 if close != -1:
@@ -809,7 +838,9 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
 
     encoded = bytes(result)
     if track_bytecode_offsets:
-        return encoded, bc_offsets
+        return encoded, bc_offsets, ffc0_fixups, labels
+    if ffc0_fixups or labels:
+        return encoded, ffc0_fixups, labels
     return encoded
 
 
@@ -977,6 +1008,9 @@ def convert_font_to_1bppil(image_path, output_path, rom_path=None, rom_offset=0x
 
     # Build inverted version (XOR 0xFF)
     font_inverted = bytearray(b ^ 0xFF for b in font_normal)
+    # Char $00 must stay blank (all zeros) in both halves — the game uses it
+    # as a transparent background tile in menus that use the inverted font set.
+    font_inverted[0:16] = bytearray(16)
 
     # Combine normal + inverted
     font_full = font_normal + font_inverted
@@ -1160,12 +1194,15 @@ SCRIPT_TABLES = [
     {'name': 'dialog-3',         'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
     {'name': 'dialog-4',         'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
     {'name': 'dialog-5',         'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
-    # scenario-desc: relocated to $C3:$8000 (3-byte ptrs). EN text (10840 bytes)
-    # overflows JP space (6732 bytes) into adjacent ptr tables in bank $22.
-    # Meta-table entries 2, 11, 12 patched in script_patch.asm.
-    # 158 entries × 3 bytes = 0x1DA.
-    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x218000, 'tbl_len': 0x1DA, 'ptr_size': 3,
-                                  'orig_blank': [(0x111EE3, 0x113A6B)]},
+    # scenario-desc: relocated to $C3:$8000 (2-byte ptrs, bank $C3).
+    # EN text overflows JP space in bank $22 → relocated to $C3.
+    # Meta-table entries 2, 11, 12 patched in metatbl_scenario_desc.asm.
+    # 158 entries × 2 bytes = 0x13C.
+    # NO orig_blank: entries contain FF C0 raw-copy pointers back to $22:B200+
+    # in the original data region.  Blanking destroys those targets → crash.
+    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x218000, 'tbl_len': 0x13C, 'ptr_size': 2,
+                                  'word_wrap': {'line_width': 26, 'max_lines': 6,
+                                                'entries': '0-56'}},
     # unit-terrain-desc: JP data at $030A00. EN text (27 KB) overflows the 32 KB half-bank
     # so this must be relocated to expanded area in a future step.
     {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500,
@@ -1331,9 +1368,133 @@ def _read_script_text(script_file: str) -> str:
         return f.read()
 
 
+def _entry_in_range(idx: int, entries_spec) -> bool:
+    """Check if entry index matches an entries spec.
+
+    entries_spec can be:
+      None          — matches all entries
+      '0-57'        — range (inclusive)
+      '0,5,10-20'   — comma-separated values and ranges
+      [0, 1, 2]     — explicit list
+    """
+    if entries_spec is None:
+        return True
+    if isinstance(entries_spec, (list, set)):
+        return idx in entries_spec
+    # Parse string spec: comma-separated values and ranges
+    for part in str(entries_spec).split(','):
+        part = part.strip()
+        if '-' in part:
+            lo, hi = part.split('-', 1)
+            if int(lo) <= idx <= int(hi):
+                return True
+        elif part.isdigit():
+            if idx == int(part):
+                return True
+    return False
+
+
+def _word_wrap_text(text: str, line_width: int, max_lines: int) -> str:
+    """Word-wrap text for fixed-width display, inserting [nl] at line breaks.
+
+    - Replaces \\n / \\r\\n between words with spaces (source file line breaks
+      are not game line breaks).
+    - Existing [nl] in text forces a line break.
+    - Hex control codes like [FFC000B222] are zero-width (preserved in output).
+    - Named table codes like [end] are zero-width and preserved.
+    - After max_lines, remaining text is truncated.  Hex control codes
+      ([XXYY...] and {XX}) after the truncation point are preserved;
+      named table codes are not.
+    - Returns the wrapped/truncated text ready for encoding.
+    """
+    import re
+
+    # --- Step 1: Normalize source newlines to spaces ---
+    # \r\n or \r or \n between content becomes a single space.
+    normalized = text.replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
+    # Collapse multiple spaces into one.
+    normalized = re.sub(r' {2,}', ' ', normalized).strip()
+
+    # --- Step 2: Tokenize into words and control codes ---
+    # Tokens: [xxx] control codes, {XX} bytecodes, spaces, or runs of other chars.
+    tokens = re.findall(r'\[[^\]]*\]|\{[0-9A-Fa-f]{2}\}| +|[^ \[\{]+', normalized)
+
+    # --- Step 3: Word-wrap ---
+    lines = []
+    current_line = ''
+    col = 0  # visible character position on current line
+
+    for token in tokens:
+        # [nl] = forced line break
+        if token == '[nl]':
+            lines.append(current_line)
+            current_line = ''
+            col = 0
+            continue
+
+        # Control codes: [xxx] or {XX} — zero visible width
+        if (token.startswith('[') and token.endswith(']')) or \
+           (token.startswith('{') and token.endswith('}')):
+            current_line += token
+            continue
+
+        # Space
+        if token.strip() == '':
+            if col > 0 and col < line_width:
+                current_line += ' '
+                col += 1
+            continue
+
+        # Visible word
+        word_len = len(token)
+
+        if col + word_len <= line_width:
+            # Fits on current line
+            current_line += token
+            col += word_len
+        elif word_len <= line_width:
+            # Doesn't fit — wrap to next line
+            lines.append(current_line.rstrip(' '))
+            current_line = token
+            col = word_len
+        else:
+            # Word longer than line_width — force-break it
+            while token:
+                remaining = line_width - col
+                if remaining <= 0:
+                    lines.append(current_line.rstrip(' '))
+                    current_line = ''
+                    col = 0
+                    remaining = line_width
+                chunk = token[:remaining]
+                current_line += chunk
+                col += len(chunk)
+                token = token[remaining:]
+
+    # Flush last line
+    if current_line:
+        lines.append(current_line.rstrip(' '))
+
+    # --- Step 4: Truncate to max_lines ---
+    truncated = len(lines) > max_lines
+    if truncated:
+        # Collect hex control codes from dropped lines
+        dropped = lines[max_lines:]
+        dropped_text = ''.join(dropped)
+        trailing_hex = re.findall(r'\[FFC0@\d+(?::\w+)?\]|\[[0-9A-Fa-f]{2,}\]|\{[0-9A-Fa-f]{2}\}', dropped_text)
+        lines = lines[:max_lines]
+        # Append preserved hex codes to last line
+        if trailing_hex:
+            lines[-1] += ''.join(trailing_hex)
+
+    result = '[nl]'.join(lines)
+    return result, truncated, len(lines)
+
+
 def encode_script_file(script_file: str, table_filename: str,
                        cache_dir: str = None, force: bool = False,
-                       fallback_table: str = None) -> list[bytes]:
+                       fallback_table: str = None,
+                       word_wrap: dict = None) -> list[bytes]:
     """
     Encode a script file into a list of binary entries, one per <<index>> block.
 
@@ -1375,6 +1536,7 @@ def encode_script_file(script_file: str, table_filename: str,
             with open(cksum_path, 'r') as f:
                 cached_checksum = f.read().strip()
             if cached_checksum == current_checksum:
+                import json as _json
                 encoded_entries = []
                 with open(bin_path, 'rb') as f:
                     data = f.read()
@@ -1384,9 +1546,26 @@ def encode_script_file(script_file: str, table_filename: str,
                     pos += 8
                     if addr == -1:
                         addr = None
+                    num_fixups = int.from_bytes(data[pos:pos+2], 'little')
+                    pos += 2
+                    fixups = []
+                    for _ in range(num_fixups):
+                        foff = int.from_bytes(data[pos:pos+4], 'little')
+                        pos += 4
+                        fidx = int.from_bytes(data[pos:pos+4], 'little')
+                        pos += 4
+                        lbl_len = int.from_bytes(data[pos:pos+2], 'little')
+                        pos += 2
+                        flabel = data[pos:pos+lbl_len].decode('utf-8') or None
+                        pos += lbl_len
+                        fixups.append((foff, fidx, flabel))
+                    labels_len = int.from_bytes(data[pos:pos+4], 'little')
+                    pos += 4
+                    entry_labels = _json.loads(data[pos:pos+labels_len].decode('utf-8'))
+                    pos += labels_len
                     entry_len = int.from_bytes(data[pos:pos+4], 'little')
                     pos += 4
-                    encoded_entries.append((data[pos:pos+entry_len], addr))
+                    encoded_entries.append((data[pos:pos+entry_len], addr, fixups, entry_labels))
                     pos += entry_len
                 return encoded_entries
 
@@ -1416,16 +1595,45 @@ def encode_script_file(script_file: str, table_filename: str,
             orig_addr = int(addr_match.group(1))
 
         if not content or content == '[end]':
-            encoded_entries.append((b'\x00', orig_addr))
+            encoded_entries.append((b'\x00', orig_addr, [], {}))
         else:
-            encoded_entries.append((encode_text(content, tbl, fallback_tbl=fb_tbl), orig_addr))
+            entry_idx = len(encoded_entries)
+            if word_wrap is not None and _entry_in_range(entry_idx, word_wrap.get('entries')):
+                lw = word_wrap['line_width']
+                ml = word_wrap['max_lines']
+                content, was_truncated, num_lines = _word_wrap_text(content, lw, ml)
+                if was_truncated:
+                    print(f'  WARNING: {name} entry {entry_idx}: text exceeds '
+                          f'{ml} lines of {lw} chars, truncated')
+            result = encode_text(content, tbl, fallback_tbl=fb_tbl)
+            if isinstance(result, tuple):
+                encoded, fixups, entry_labels = result
+            else:
+                encoded, fixups, entry_labels = result, [], {}
+            encoded_entries.append((encoded, orig_addr, fixups, entry_labels))
 
     # Write cache.
     if bin_path:
+        import json as _json
         with open(bin_path, 'wb') as f:
-            for data, addr in encoded_entries:
-                # addr as 8-byte signed (-1 for None), then 4-byte len + data
+            for data, addr, fixups, entry_labels in encoded_entries:
+                # addr as 8-byte signed (-1 for None)
                 f.write((addr if addr is not None else -1).to_bytes(8, 'little', signed=True))
+                # fixups: 2-byte count, then (4-byte offset, 4-byte entry_idx, label_str)
+                f.write(len(fixups).to_bytes(2, 'little'))
+                for fixup_tuple in fixups:
+                    foff, fidx = fixup_tuple[0], fixup_tuple[1]
+                    flabel = fixup_tuple[2] if len(fixup_tuple) > 2 else None
+                    f.write(foff.to_bytes(4, 'little'))
+                    f.write(fidx.to_bytes(4, 'little'))
+                    label_bytes = (flabel or '').encode('utf-8')
+                    f.write(len(label_bytes).to_bytes(2, 'little'))
+                    f.write(label_bytes)
+                # labels: JSON blob
+                labels_json = _json.dumps(entry_labels).encode('utf-8')
+                f.write(len(labels_json).to_bytes(4, 'little'))
+                f.write(labels_json)
+                # entry data
                 f.write(len(data).to_bytes(4, 'little'))
                 f.write(data)
         with open(cksum_path, 'w') as f:
@@ -1439,7 +1647,8 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
                           ptr_bank: int = None, ptr_addr_type=None,
                           ptr_size: int = 2, data_start_pc: int = None,
                           cache_dir: str = None, force: bool = False,
-                          fallback_table: str = None) -> int:
+                          fallback_table: str = None,
+                          word_wrap: dict = None) -> int:
     """
     Encode a translated script file and write it into a ROM bytearray in place.
 
@@ -1469,7 +1678,8 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
 
     encoded_entries = encode_script_file(script_file, table_filename,
                                          cache_dir=cache_dir, force=force,
-                                         fallback_table=fallback_table)
+                                         fallback_table=fallback_table,
+                                         word_wrap=word_wrap)
 
     if data_start_pc is None:
         data_start_pc = ptr_tbl_pos + tbl_len
@@ -1479,7 +1689,8 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
     # reuse the earlier entry's pointer — no new data written.
     seen_addrs = {}  # orig_addr -> pointer value
     total_size = 0
-    for encoded, orig_addr in encoded_entries:
+    for entry_tuple in encoded_entries:
+        encoded, orig_addr = entry_tuple[0], entry_tuple[1]
         is_dup = (orig_addr is not None and orig_addr in seen_addrs
                   and encoded == b'\x00')
         if not is_dup:
@@ -1507,7 +1718,14 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
     seen_addrs = {}  # orig_addr -> pointer value (filled on first write)
     data_offset = 0
     new_ptrs = []
-    for encoded, orig_addr in encoded_entries:
+    entry_pc_map = {}     # entry_index -> PC offset where entry data starts
+    pending_fixups = []   # (rom_pc_of_placeholder, target_entry_idx)
+    entry_labels_map = {}  # entry_idx -> {label_name: byte_offset}
+    for entry_idx, entry_tuple in enumerate(encoded_entries):
+        encoded, orig_addr = entry_tuple[0], entry_tuple[1]
+        fixups = entry_tuple[2] if len(entry_tuple) > 2 else []
+        entry_labels = entry_tuple[3] if len(entry_tuple) > 3 else {}
+
         # Check if this is a duplicate pointer entry
         is_dup = (orig_addr is not None and orig_addr in seen_addrs
                   and encoded == b'\x00')
@@ -1517,6 +1735,9 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
             new_ptrs.append(seen_addrs[orig_addr])
         else:
             pc = data_start_pc + data_offset
+            entry_pc_map[entry_idx] = pc
+            if entry_labels:
+                entry_labels_map[entry_idx] = entry_labels
             if ptr_size == 3:
                 snes = SFCAddress(pc).get_address(SFCAddressType.LOROM2)
                 ptr_val = bytes([snes & 0xFF, (snes >> 8) & 0xFF, (snes >> 16) & 0xFF])
@@ -1525,10 +1746,36 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
                 ptr_val = snes_addr.get_address(ptr_addr_type) & 0xFFFF
             new_ptrs.append(ptr_val)
             rom[pc:pc + len(encoded)] = encoded
+            # Collect FFC0@ fixups — byte_offset is relative to entry start
+            for fixup_tuple in fixups:
+                foff, fidx = fixup_tuple[0], fixup_tuple[1]
+                flabel = fixup_tuple[2] if len(fixup_tuple) > 2 else None
+                pending_fixups.append((pc + foff, fidx, flabel))
             data_offset += len(encoded)
             # Record this address's pointer for future duplicates
             if orig_addr is not None:
                 seen_addrs[orig_addr] = ptr_val
+
+    # Apply [FFC0@N] and [FFC0@N:label] fixups
+    for rom_pc, target_idx, label in pending_fixups:
+        if target_idx not in entry_pc_map:
+            print(f'  WARNING: [FFC0@{target_idx}] references missing entry {target_idx}')
+            continue
+        target_pc = entry_pc_map[target_idx]
+        # If a label is specified, add its byte offset within the target entry
+        if label:
+            target_labels = entry_labels_map.get(target_idx, {})
+            if label not in target_labels:
+                print(f'  WARNING: [FFC0@{target_idx}:{label}] — label "{label}" '
+                      f'not found in entry {target_idx}')
+                continue
+            target_pc += target_labels[label]
+        target_snes = SFCAddress(target_pc).get_address(SFCAddressType.LOROM2)
+        rom[rom_pc]     = target_snes & 0xFF
+        rom[rom_pc + 1] = (target_snes >> 8) & 0xFF
+        rom[rom_pc + 2] = (target_snes >> 16) & 0xFF
+        ref = f'FFC0@{target_idx}:{label}' if label else f'FFC0@{target_idx}'
+        print(f'    {ref} → ${target_snes:06X}')
 
     for i, ptr in enumerate(new_ptrs):
         if i >= num_ptrs:
@@ -1684,7 +1931,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
     seen = {}  # orig_pc -> already handled
     dte_index = 0
 
-    for i, (encoded, orig_addr) in enumerate(encoded_entries):
+    for i, entry_tuple in enumerate(encoded_entries):
+        encoded, orig_addr = entry_tuple[0], entry_tuple[1]
         if i >= num_ptrs:
             break
 
@@ -2358,7 +2606,8 @@ def insert_all_scripts(rom_path: str,
         for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
             fut = pool.submit(encode_script_file, script_file, tbl_file,
                               cache_dir=cache_dir, force=force,
-                              fallback_table=fb_tbl)
+                              fallback_table=fb_tbl,
+                              word_wrap=tbl_info.get('word_wrap'))
             futures[tbl_info['name']] = fut
         # Wait for all to finish (also raises any exceptions).
         for name, fut in futures.items():
@@ -2407,6 +2656,9 @@ def insert_all_scripts(rom_path: str,
         group = tbl_info.get('group')
         if group and group in group_data_pos:
             kwargs['data_start_pc'] = group_data_pos[group]
+
+        if 'word_wrap' in tbl_info:
+            kwargs['word_wrap'] = tbl_info['word_wrap']
 
         size = insert_table_into_rom(
             rom, script_file, tbl_file,
@@ -2514,7 +2766,7 @@ def build_scripted(source: str = 'lm3.sfc',
     import os as _os
     import subprocess
 
-    asm_patches = ['script_patch.asm']
+    asm_patches = ['script_patch.asm', 'textbuf_limit_patch.asm']
     # Per-table meta-table redirects — only apply patches for tables being built.
     # Each metatbl_*.asm patches the meta-table entries for one relocated block.
     if target >= 4 * 1024 * 1024:
@@ -2729,14 +2981,15 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
 
         # Build map: orig_addr -> first encoded data for that address
         addr_to_encoded = {}
-        for enc_data, orig_addr in encoded_entries:
+        for entry_tuple in encoded_entries:
+            enc_data, orig_addr = entry_tuple[0], entry_tuple[1]
             if orig_addr is not None and orig_addr not in addr_to_encoded:
                 if enc_data != b'\x00':
                     addr_to_encoded[orig_addr] = enc_data
 
         for idx in range(max_entries):
             orig_data, orig_pc = orig_entries[idx]
-            enc_data, orig_addr = encoded_entries[idx]
+            enc_data, orig_addr = encoded_entries[idx][0], encoded_entries[idx][1]
 
             # For duplicate-address entries, use the first occurrence's encoding
             if enc_data == b'\x00' and orig_addr is not None and orig_addr in addr_to_encoded:

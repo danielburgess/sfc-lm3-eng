@@ -26,9 +26,19 @@ TextPtrDispatch:
 
     SEP #$20                     ; 8-bit A for bank byte check
     LDA.B $16
-    CMP.B #$C0                   ; bank >= $C0 → expanded area, 3-byte ptrs
+    CMP.B #$C0                   ; bank >= $C0 → expanded area
+    BCC .do2Byte                 ; bank < $C0 → always 2-byte
+    ; Bank >= $C0: check for 2-byte exceptions
+    CMP.B #$C3                   ; bank $C3 = scenario-desc (2-byte ptrs)
+    BEQ .do2Byte
+    CMP.B #$C4                   ; bank $C4 = unit-names (fixed table, 2-byte)
+    BEQ .do2Byte
     REP #$20
-    BCC .twoBytePtr              ; branch if bank < $C0
+    BRA .threeBytePtr
+
+.do2Byte:
+    REP #$20
+    BRA .twoBytePtr
 
 .threeBytePtr:
     PLA                          ; pop entry index
