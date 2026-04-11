@@ -1198,76 +1198,48 @@ def font_width_preview(font_bin_path='font/bin/font_accented_1bpp.bin',
 # Tables that can be inserted with insert_table_into_rom.
 # script_ext and unit-equipment require special handling and are not listed here.
 SCRIPT_TABLES = [
-    # Main dialog script: relocated to bank $C1 (PC $208000) with 3-byte SNES pointers.
-    # This bypasses the 32 KB bank-$B6 limit and lets the EN text span into $C2+.
-    # Requires the TextPtrDispatch patch and meta-table patch in script_patch.asm.
-    {'name': 'script',           'ptr_tbl_pos': 0x208000, 'tbl_len': 0x600, 'ptr_size': 3},
-    # Dialog tables: ptr tables live at $1B8000-$1B83CF; ALL text is packed
-    # sequentially from DIALOG_TEXT_BASE ($1B83D0) to avoid overlap.
+    # All tables use in-place insertion with FFC0 overflow to bank $C6.
+    # Original pointer tables are unchanged — no relocation or metatbl patches needed.
+
+    # Main script: 512 entries × 2-byte ptrs at $1B:$8000.
+    {'name': 'script',           'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
+    # Dialog tables: ptr tables live at $1B8000-$1B83CF.
     {'name': 'dialog-2',         'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
     {'name': 'dialog-3',         'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
     {'name': 'dialog-4',         'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
     {'name': 'dialog-5',         'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
-    # scenario-desc: relocated to $C3:$8000 (2-byte ptrs, bank $C3).
-    # EN text overflows JP space in bank $22 → relocated to $C3.
-    # Meta-table entries 2, 11, 12 patched in metatbl_scenario_desc.asm.
-    # 158 entries × 2 bytes = 0x13C.
-    # NO orig_blank: entries contain FF C0 raw-copy pointers back to $22:B200+
-    # in the original data region.  Blanking destroys those targets → crash.
-    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x218000, 'tbl_len': 0x13C, 'ptr_size': 2,
+    # scenario-desc: 158 entries × 2-byte ptrs at $22:$9EE3.
+    # Contains [FFC0@58:label] cross-entry references.
+    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C,
                                   'word_wrap': {'line_width': 26, 'max_lines': 6,
                                                 'entries': '0-56'}},
-    # unit-terrain-desc: JP data at $030A00. EN text (27 KB) overflows the 32 KB half-bank
-    # so this must be relocated to expanded area in a future step.
+    # unit-terrain-desc: 640 entries × 2-byte ptrs.  Data at $030A00.
     {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500,
                                   'data_start_pc': 0x030A00},
-    # unit-attacks: JP data starts at $1B1200 (gap between ptrs and data has other data).
+    # unit-attacks: 53 entries × 2-byte ptrs.  Data at $1B1200.
     {'name': 'unit-attacks',     'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A,
                                   'data_start_pc': 0x1B1200},
-    # quiz-text: relocated to expanded area (was $06:$8800, overflowed by unit-terrain-desc).
-    # Meta-table entry 15 patched in script_patch.asm to point to $C2:$9700.
-    # 96 entries × 3 bytes = 0x120 for the pointer table.
-    {'name': 'quiz-text',        'ptr_tbl_pos': 0x211700, 'tbl_len': 0x120, 'ptr_size': 3,
-                                  'orig_blank': [(0x030800, 0x0308C0),   # old ptr table
-                                                 (0x035AE0, 0x036ED2)]}, # old text data
-    # field region: three contiguous pointer sub-tables at $03:BBB4-BD41.
-    # Data regions are sequential: field-menu ($01C0F1+), field-text ($01E348+),
-    # field-msg ($01F2B7+). A $0000 separator sits between field-menu and field-text.
+    # quiz-text: 96 entries × 2-byte ptrs at $06:$8800.
+    {'name': 'quiz-text',        'ptr_tbl_pos': 0x030800, 'tbl_len': 0xC0},
+    # field region: three contiguous pointer sub-tables.
     {'name': 'field-menu',       'ptr_tbl_pos': 0x01BBB4, 'tbl_len': 0x0EE,
                                   'data_start_pc': 0x01C0F1},
     {'name': 'field-text',       'ptr_tbl_pos': 0x01BCA4, 'tbl_len': 0x05C,
                                   'data_start_pc': 0x01E348},
     {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042,
                                   'data_start_pc': 0x01F2B7},
-    # battle region: relocated to bank $C5 (PC $228000) with 3-byte SNES pointers.
-    # Meta-table entry 0's full 200-entry pointer table is unified at $C5:$8000.
-    # Sub 0-15: raw JP strings (copied by copy_entry0_raw_strings before insertion).
-    # Sub 16-33: battle-menu, Sub 34-143: battle-text, Sub 144-199: battle-msg.
-    # Pointer table: 200 × 3 = 0x258 bytes.  Data chains after raw strings.
-    # NO orig_blank: text control codes contain embedded 24-bit pointers back to
-    # bank $02 data (e.g. raw-copy opcodes at $80:B985).  The old data must stay
-    # intact so those inline references keep working.
-    # script_ext: event scripts with embedded dialog (bank $0A).
-    # 120 entries × 2-byte pointers at $0A:$8010.  Data at $0A:$8101.
-    # Entries contain bytecodes with absolute addresses — cannot be relocated.
-    # DTE handles overflow: inline text + FF F7 INDEX → expansion in bank $C6.
+    # script_ext: 120 entries × 2-byte ptrs at $0A:$8010.  Data at $0A:$8101.
+    # Bytecodes with absolute addresses — cannot be relocated.
     {'name': 'script_ext',       'ptr_tbl_pos': 0x050010, 'tbl_len': 0x0F0,
-                                  'data_start_pc': 0x050101,
-                                  'dte': 1},
-    # event-text: 100 event bytecode routines with inline text (bank $22).
-    # Entries contain bytecodes with absolute addresses — cannot be relocated.
-    # DTE handles overflow: inline text + FF F8 INDEX → expansion in bank $C6.
-    # Original pointer table at $22:BA9B (used by DTE to read original sizes).
+                                  'data_start_pc': 0x050101},
+    # event-text: 100 event bytecode entries with inline text (bank $22).
+    # Bytecodes with absolute addresses — cannot be relocated.
     {'name': 'event-text',       'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0xC8,
-                                  'event_script': True,
-                                  'dte': 2},
-    # battle region: relocated to bank $C5 (PC $228000) with 3-byte SNES pointers.
-    {'name': 'battle-menu',      'ptr_tbl_pos': 0x228030, 'tbl_len': 0x036, 'ptr_size': 3,
-                                  'group': 'battle-c5'},
-    {'name': 'battle-text',      'ptr_tbl_pos': 0x228066, 'tbl_len': 0x14A, 'ptr_size': 3,
-                                  'group': 'battle-c5'},
-    {'name': 'battle-msg',       'ptr_tbl_pos': 0x2281B0, 'tbl_len': 0x0A8, 'ptr_size': 3,
-                                  'group': 'battle-c5'},
+                                  'event_script': True},
+    # battle tables: original 2-byte ptr tables in bank $02.
+    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
+    {'name': 'battle-text',      'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
+    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
 ]
 
 # All four dialog ptr tables end by $1B83D0; pack dialog text from here.
@@ -1434,16 +1406,27 @@ def _word_wrap_text(text: str, line_width: int, max_lines: int) -> str:
     tokens = re.findall(r'\[[^\]]*\]|\{[0-9A-Fa-f]{2}\}| +|[^ \[\{]+', normalized)
 
     # --- Step 3: Word-wrap ---
+    # lines[] holds completed lines; line_nl[] is parallel — True means an
+    # explicit [nl] is needed after this line.  When a line fills to exactly
+    # line_width the game auto-wraps, so no [nl] is emitted (avoids double
+    # line break).
     lines = []
+    line_nl = []       # parallel to lines: True = emit [nl], False = auto-wrap
     current_line = ''
     col = 0  # visible character position on current line
+
+    def _flush_line(explicit):
+        """Flush current_line to lines[]. explicit=True → emit [nl]."""
+        nonlocal current_line, col
+        lines.append(current_line.rstrip(' '))
+        line_nl.append(explicit)
+        current_line = ''
+        col = 0
 
     for token in tokens:
         # [nl] = forced line break
         if token == '[nl]':
-            lines.append(current_line)
-            current_line = ''
-            col = 0
+            _flush_line(True)
             continue
 
         # Control codes: [xxx] or {XX} — zero visible width
@@ -1466,9 +1449,13 @@ def _word_wrap_text(text: str, line_width: int, max_lines: int) -> str:
             # Fits on current line
             current_line += token
             col += word_len
+            # If we exactly filled the line, the game auto-wraps — flush
+            # without [nl] so we don't get a double line break.
+            if col == line_width:
+                _flush_line(False)
         elif word_len <= line_width:
-            # Doesn't fit — wrap to next line
-            lines.append(current_line.rstrip(' '))
+            # Doesn't fit — wrap to next line (needs [nl])
+            _flush_line(True)
             current_line = token
             col = word_len
         else:
@@ -1476,18 +1463,20 @@ def _word_wrap_text(text: str, line_width: int, max_lines: int) -> str:
             while token:
                 remaining = line_width - col
                 if remaining <= 0:
-                    lines.append(current_line.rstrip(' '))
-                    current_line = ''
-                    col = 0
+                    _flush_line(True)
                     remaining = line_width
                 chunk = token[:remaining]
                 current_line += chunk
                 col += len(chunk)
                 token = token[remaining:]
+                # Auto-wrap if we exactly filled the line
+                if col == line_width and token:
+                    _flush_line(False)
 
     # Flush last line
     if current_line:
         lines.append(current_line.rstrip(' '))
+        line_nl.append(False)  # no trailing [nl] after last line
 
     # --- Step 4: Truncate to max_lines ---
     truncated = len(lines) > max_lines
@@ -1497,18 +1486,28 @@ def _word_wrap_text(text: str, line_width: int, max_lines: int) -> str:
         dropped_text = ''.join(dropped)
         trailing_hex = re.findall(r'\[FFC0@\d+(?::\w+)?\]|\[[0-9A-Fa-f]{2,}\]|\{[0-9A-Fa-f]{2}\}', dropped_text)
         lines = lines[:max_lines]
+        line_nl = line_nl[:max_lines]
         # Append preserved hex codes to last line
         if trailing_hex:
             lines[-1] += ''.join(trailing_hex)
 
-    result = '[nl]'.join(lines)
+    # Join lines: [nl] only where line_nl[i] is True (explicit break).
+    # Auto-wrapped lines (line_nl[i] == False) are joined without [nl]
+    # because the game already wraps at line_width.
+    parts = []
+    for i, line in enumerate(lines):
+        parts.append(line)
+        if i < len(lines) - 1 and line_nl[i]:
+            parts.append('[nl]')
+    result = ''.join(parts)
     return result, truncated, len(lines)
 
 
 def encode_script_file(script_file: str, table_filename: str,
                        cache_dir: str = None, force: bool = False,
                        fallback_table: str = None,
-                       word_wrap: dict = None) -> list[bytes]:
+                       word_wrap: dict = None,
+                       sub_table_filter: int = None) -> list[bytes]:
     """
     Encode a script file into a list of binary entries, one per <<index>> block.
 
@@ -1537,6 +1536,8 @@ def encode_script_file(script_file: str, table_filename: str,
     for path in [script_file, table_filename] + source_files:
         with open(path, 'rb') as f:
             h.update(f.read())
+    if sub_table_filter is not None:
+        h.update(f'sub_table_filter={sub_table_filter}'.encode())
     current_checksum = h.hexdigest()
 
     # Check cache.
@@ -1611,8 +1612,15 @@ def encode_script_file(script_file: str, table_filename: str,
         addr_match = re.search(r'\[\$(\d+)\]', header)
         if addr_match:
             orig_addr = int(addr_match.group(1))
+        tbl_match = re.match(r'\$(\d+):', header)
+        tbl_addr = int(tbl_match.group(1)) if tbl_match else None
         idx_match = re.search(r':(\d+)', header)
         header_idx = int(idx_match.group(1)) if idx_match else len(file_order)
+        # When a sub_table_filter is given, skip entries whose header $TBLPTR
+        # doesn't match.  Files with multiple sub-tables (e.g. unit-attacks)
+        # would otherwise have duplicate :N headers collide in `parsed`.
+        if sub_table_filter is not None and tbl_addr is not None and tbl_addr != sub_table_filter:
+            continue
         if header_idx in parsed:
             print(f'  WARNING: {name} duplicate header index {header_idx} in {script_file}')
         parsed[header_idx] = (content, orig_addr)
@@ -1911,18 +1919,21 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                      data_start_pc: int = None,
                      cache_dir: str = None, force: bool = False,
                      fallback_table: str = None,
-                     event_script: bool = False) -> dict:
+                     event_script: bool = False,
+                     word_wrap: dict = None) -> dict:
     """
-    Insert a script table using DTE for overflow entries.  Each entry is
-    written back to its original ROM location.  If the encoded English text
-    is longer than the original Japanese entry, the excess is redirected to
-    a DTE expansion area in bank $C6.
+    Universal in-place script insertion.  Each entry is written back to its
+    original ROM location.  If the encoded English text is longer than the
+    original Japanese entry, the excess is redirected to expansion space in
+    bank $C6 via FFC0 (native game mechanism — no custom ASM needed).
+
+    Also resolves [FFC0@N] and [FFC0@N:label] cross-entry fixups.
 
     :param source_rom: original (unmodified) ROM bytes for reading original pointers
-    :param dte_table_num: 1 or 2 (selects FF F7 or FF F8 trigger + table area)
+    :param dte_table_num: legacy DTE table number (unused, kept for API compat)
     :param data_start_pc: override data start (default: ptr_tbl_pos + tbl_len)
-    :returns: dict with 'dte_entries' (list of (index, expansion_bytes)),
-              'inline_bytes' written, 'overflow_count', 'total_entries'
+    :param word_wrap: word wrap config (passed to encode_script_file)
+    :returns: dict with 'ffc0_overflow', 'inline_bytes', 'overflow_count', etc.
     """
     from retrotool.snes import SFCAddress, SFCAddressType
 
@@ -1940,29 +1951,46 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
         pc = SFCAddress(snes, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
         orig_pcs.append(pc)
 
-    # Compute each entry's available space (distance to next unique pointer).
-    sorted_unique_pcs = sorted(set(orig_pcs))
-    bank_end_pc = ((ptr_tbl_pos // 0x8000) + 1) * 0x8000
-
-    def entry_max_size(pc):
-        idx = sorted_unique_pcs.index(pc)
-        if idx + 1 < len(sorted_unique_pcs):
-            return sorted_unique_pcs[idx + 1] - pc
-        else:
-            return bank_end_pc - pc
-
-    # Encode the English script file.
-    encoded_entries = encode_script_file(script_file, table_filename,
-                                         cache_dir=cache_dir, force=force,
-                                         fallback_table=fallback_table)
-
-    # Load ctrl_lengths for safe splitting.
+    # Load table for ctrl_lengths (needed for entry size scanning and safe splitting).
     tbl = Table(table_filename)
     ctrl_lengths = tbl.ctrl_lengths
 
-    dte_trigger = DTE_TRIGGER_TBL1 if dte_table_num == 1 else DTE_TRIGGER_TBL2
-    dte_expansion = []  # list of (dte_index, expansion_bytes)
-    ffc0_overflow = []  # list of (entry_idx, fixup_pc, overflow_tail) for event_script
+    # Measure each entry's actual size from the source ROM.
+    # Uses find_entry_end (same as extraction) for text tables — this correctly
+    # handles FF control code parameters that contain 0x00 bytes.
+    # For event_script, 0x00 is not a terminator; use pointer-distance instead.
+    ref_pc = data_start_pc if data_start_pc else ptr_tbl_pos
+    bank_end_pc = ((ref_pc // 0x8000) + 1) * 0x8000
+    sorted_pcs = sorted(set(orig_pcs))
+    rom_as_list = list(source_rom)  # find_entry_end expects list
+
+    orig_entry_sizes = {}  # pc -> entry size as extraction sees it
+    for pc in set(orig_pcs):
+        idx = sorted_pcs.index(pc)
+        next_pc = sorted_pcs[idx + 1] if idx + 1 < len(sorted_pcs) else bank_end_pc
+        if event_script:
+            # Event-script: 0x00 is not a terminator → use pointer distance.
+            orig_entry_sizes[pc] = next_pc - pc
+        else:
+            # Must match verify_roundtrip's extraction: find_entry_end with
+            # max_addr=next_pc.  This may return a size 1 byte larger than
+            # the pointer distance when a multi-byte char match straddles
+            # the boundary — that trailing byte matches the next entry's
+            # first byte, so the overlap is benign when entries are written
+            # in sorted order.
+            end = tbl.find_entry_end(rom_as_list, pc, max_addr=next_pc)
+            orig_entry_sizes[pc] = end - pc
+
+    # Encode the English script file.
+    # Pass ptr_tbl_pos as sub_table_filter so files with multiple sub-tables
+    # (e.g. unit-attacks) only emit entries matching this table's headers.
+    encoded_entries = encode_script_file(script_file, table_filename,
+                                         cache_dir=cache_dir, force=force,
+                                         fallback_table=fallback_table,
+                                         word_wrap=word_wrap,
+                                         sub_table_filter=ptr_tbl_pos)
+
+    ffc0_overflow = []  # list of (entry_idx, fixup_pc, overflow_tail)
     overflow_count = 0
     inline_total = 0
 
@@ -1971,15 +1999,24 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
         rom.extend(b'\xff' * (bank_end_pc - len(rom)))
 
     seen = {}  # orig_pc -> already handled
-    dte_index = 0
+    entry_pc_map = {}   # entry_idx -> PC offset (for FFC0@ fixup resolution)
+    entry_labels_map = {}  # entry_idx -> {label: byte_offset}
+    pending_fixups = []  # (rom_pc, target_idx, label)
 
     for i, entry_tuple in enumerate(encoded_entries):
-        encoded, orig_addr = entry_tuple[0], entry_tuple[1]
+        encoded = entry_tuple[0]
+        fixups = entry_tuple[2] if len(entry_tuple) > 2 else []
+        entry_labels = entry_tuple[3] if len(entry_tuple) > 3 else {}
         if i >= num_ptrs:
             break
 
         pc = orig_pcs[i]
-        max_size = entry_max_size(pc)
+        max_size = orig_entry_sizes.get(pc, 0)
+
+        # Track entry position for FFC0@ fixup resolution.
+        entry_pc_map[i] = pc
+        if entry_labels:
+            entry_labels_map[i] = entry_labels
 
         # Skip duplicate-pointer entries (share same data location).
         if pc in seen:
@@ -1994,52 +2031,21 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
 
         if len(encoded) <= max_size:
             # Fits inline — write directly.
+            # No padding: tables share banks, and padding could overwrite
+            # another table's data.  The 0x00 terminator in encoded data
+            # is sufficient — leftover JP bytes are never read.
             rom[pc:pc + len(encoded)] = encoded
-            # Pad remainder with 0x00, but NOT for event_script tables —
-            # their entries share ROM space with bytecodes that must stay.
-            if not event_script and len(encoded) < max_size:
-                rom[pc + len(encoded):pc + max_size] = b'\x00' * (max_size - len(encoded))
             inline_total += len(encoded)
-        elif event_script:
-            # Event-script overflow: use FFC0 redirect (native game mechanism).
-            # FFC0 permanently redirects the text pointer — the entire tail
-            # (remaining text + bytecodes + sub-entries) goes to expansion space.
-            # Reserve 5 bytes: FF C0 + 3-byte SNES address.
-            split = _find_safe_split(encoded, max_size, ctrl_lengths,
-                                     event_script=True, reserve=5)
-            if split == 0:
-                # Can't fit anything inline — skip (shouldn't happen in practice)
-                overflow_count += 1
-                print(f'  WARNING: entry {i} — no room for FFC0 redirect, '
-                      f'preserving JP ({len(encoded)} > {max_size})')
-                continue
-
-            inline_part = encoded[:split]
-
-            # Build FFC0 redirect: inline_part + FF C0 + placeholder (3 bytes).
-            # The 3-byte SNES address is resolved after we know expansion layout.
-            redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
-            assert len(redirect) <= max_size, (
-                f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
-
-            # Write inline portion + redirect (no padding — preserve ROM after).
-            rom[pc:pc + len(redirect)] = redirect
-
-            # Record the fixup position and the overflow tail.
-            ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
-            overflow_tail = encoded[split:]  # includes the final 0x00 terminator
-
-            ffc0_overflow.append((i, ffc0_fixup_pc, overflow_tail))
-            overflow_count += 1
-            inline_total += len(redirect)
         else:
             # Overflow — split with FFC0 redirect to expansion space.
-            # Reserve 5 bytes: FF C0 + 3-byte SNES address.
-            split = _find_safe_split(encoded, max_size, ctrl_lengths, reserve=5)
+            # FFC0 permanently redirects the text pointer.  The entire tail
+            # goes to expansion space in bank $C6.  No custom ASM needed.
+            split = _find_safe_split(encoded, max_size, ctrl_lengths,
+                                     event_script=event_script, reserve=5)
             if split == 0:
-                overflow_count += 1
-                print(f'  WARNING: entry {i} — no room for FFC0 redirect, '
-                      f'preserving JP ({len(encoded)} > {max_size})')
+                # Original slot is smaller than a 5-byte FFC0 redirect —
+                # can't overflow, preserve original JP bytes.  Not a warning:
+                # these slots were never meant to hold meaningful text.
                 continue
 
             inline_part = encoded[:split]
@@ -2049,10 +2055,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
             assert len(redirect) <= max_size, (
                 f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
 
-            # Write inline portion + redirect.  Pad remainder with 0x00.
+            # Write inline portion + redirect (no padding — banks are shared).
             rom[pc:pc + len(redirect)] = redirect
-            if len(redirect) < max_size:
-                rom[pc + len(redirect):pc + max_size] = b'\x00' * (max_size - len(redirect))
 
             # Record the fixup position and the overflow tail.
             ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
@@ -2062,13 +2066,37 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
             overflow_count += 1
             inline_total += len(redirect)
 
+        # Collect FFC0@ cross-entry fixups — byte_offset is relative to entry start.
+        for fixup_tuple in fixups:
+            foff, fidx = fixup_tuple[0], fixup_tuple[1]
+            flabel = fixup_tuple[2] if len(fixup_tuple) > 2 else None
+            pending_fixups.append((pc + foff, fidx, flabel))
+
+    # Resolve [FFC0@N] and [FFC0@N:label] cross-entry fixups.
+    for rom_pc, target_idx, label in pending_fixups:
+        if target_idx not in entry_pc_map:
+            print(f'  WARNING: [FFC0@{target_idx}] references missing entry {target_idx}')
+            continue
+        target_pc = entry_pc_map[target_idx]
+        if label:
+            target_labels = entry_labels_map.get(target_idx, {})
+            if label not in target_labels:
+                print(f'  WARNING: [FFC0@{target_idx}:{label}] — label "{label}" '
+                      f'not found in entry {target_idx}')
+                continue
+            target_pc += target_labels[label]
+        target_snes = SFCAddress(target_pc).get_address(SFCAddressType.LOROM2)
+        rom[rom_pc]     = target_snes & 0xFF
+        rom[rom_pc + 1] = (target_snes >> 8) & 0xFF
+        rom[rom_pc + 2] = (target_snes >> 16) & 0xFF
+        ref = f'FFC0@{target_idx}:{label}' if label else f'FFC0@{target_idx}'
+        print(f'    {ref} → ${target_snes:06X}')
+
     return {
-        'dte_entries': dte_expansion,
         'ffc0_overflow': ffc0_overflow,
         'inline_bytes': inline_total,
         'overflow_count': overflow_count,
         'total_entries': len(encoded_entries),
-        'dte_table_num': dte_table_num,
     }
 
 
@@ -2662,18 +2690,13 @@ def insert_all_scripts(rom_path: str,
     """
     Insert translated script tables into rom_path in place.
 
-    :param tables_filter: Optional list of table names to process (e.g.
-                          ['script', 'dialog-2']).  If None, all tables are
-                          processed.
-    :param jp_tables: Set of table names to insert from JP source (jp_ptr_data/
-                      with jap.tbl) instead of EN.  Useful for debugging
-                      individual tables by swapping back to the original.
+    All tables are written at their original ROM positions using the original
+    pointer tables.  Entries that overflow their original space are redirected
+    to expansion space in bank $C6 via FFC0 (native game mechanism).
+    No metatbl patches or table relocation needed.
 
-    Dialog tables (dialog-2/3/4/5) share a text region starting at
-    DIALOG_TEXT_BASE ($1B83D0) to avoid overlapping each other's data.
-
-    The main 'script' table uses 3-byte SNES pointers and lives in bank $C1+
-    (PC $208000+) to overcome the 32 KB bank-$B6 limit.
+    :param tables_filter: Optional list of table names to process.
+    :param jp_tables: Set of table names to skip (preserve original JP ROM data).
     """
     import os
     from concurrent.futures import ProcessPoolExecutor
@@ -2685,24 +2708,6 @@ def insert_all_scripts(rom_path: str,
     with open(rom_path, 'rb') as f:
         rom = bytearray(f.read())
 
-    dialog_data_pos = DIALOG_TEXT_BASE
-    FREE_FILL = 0xCC  # fill byte for blanked-out relocated data (visible in hex editor)
-
-    # Copy entry 0's raw JP strings (sub 0-15) to bank $C5 before battle
-    # table insertion.  Only needed when battle tables will be processed.
-    battle_names = {'battle-menu', 'battle-text', 'battle-msg'}
-    if tables_filter is None or battle_names & set(tables_filter):
-        jp_tbl = Table('jap.tbl')
-        battle_c5_next = copy_entry0_raw_strings(rom)
-    else:
-        battle_c5_next = 0x228258  # default: right after 200×3 ptr table
-
-    # Chained data positions for shared-region groups.
-    # battle-c5: three sub-tables pack sequentially in $C5 after raw strings.
-    group_data_pos = {
-        'battle-c5': battle_c5_next,
-    }
-
     # Build the list of tables to process with their source info.
     jobs = []
     for tbl_info in SCRIPT_TABLES:
@@ -2712,8 +2717,6 @@ def insert_all_scripts(rom_path: str,
 
         if name in jp_tables:
             # JP tables: original ROM data is already correct — skip reinsertion.
-            # Re-encoding JP text doesn't round-trip perfectly and can corrupt
-            # interleaved data from other tables sharing the same ROM region.
             print(f'  skip {name} (JP — original ROM data preserved)')
             continue
         else:
@@ -2747,83 +2750,41 @@ def insert_all_scripts(rom_path: str,
             fut.result()
             print(f'  encoded: {name}')
 
-    # Read original ROM for DTE tables (need original pointer positions).
+    # Read original ROM for pointer positions.
     with open(source_rom, 'rb') as f:
         orig_rom = f.read()
 
-    # Insert encoded data into ROM (serial — writes to shared bytearray).
-    print('Inserting into ROM...')
-    dte_results = []
+    # Insert all tables in-place with FFC0 overflow to bank $C6.
+    print('Inserting into ROM (in-place + FFC0 overflow)...')
+    all_results = []
 
     for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
         name = tbl_info['name']
-        dte_num = tbl_info.get('dte')
 
-        if dte_num:
-            # --- DTE insertion: write to original locations, overflow to bank $C6 ---
-            result = insert_dte_table(
-                rom, script_file, tbl_file,
-                tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
-                source_rom=orig_rom,
-                dte_table_num=dte_num,
-                cache_dir=cache_dir, force=force,
-                fallback_table=fb_tbl,
-                event_script=tbl_info.get('event_script', False),
-            )
-            dte_results.append(result)
-            oc = result['overflow_count']
-            ffc0_count = len(result.get('ffc0_overflow', []))
-            total = result['total_entries']
-            if ffc0_count:
-                print(f'  {name}: {total} entries, {ffc0_count} overflow → FFC0 redirect{lang_tag}')
-            else:
-                print(f'  {name}: {total} entries, {oc} overflow → DTE table {dte_num}{lang_tag}')
-            continue
-
-        kwargs = {}
-        if tbl_info.get('ptr_size', 2) == 3:
-            kwargs['ptr_size'] = 3
-
-        if 'data_start_pc' in tbl_info:
-            kwargs['data_start_pc'] = tbl_info['data_start_pc']
-
-        if name.startswith('dialog-'):
-            kwargs['data_start_pc'] = dialog_data_pos
-
-        # Chained group data positioning (e.g. battle sub-tables share one region)
-        group = tbl_info.get('group')
-        if group and group in group_data_pos:
-            kwargs['data_start_pc'] = group_data_pos[group]
-
-        if 'word_wrap' in tbl_info:
-            kwargs['word_wrap'] = tbl_info['word_wrap']
-
-        size = insert_table_into_rom(
+        result = insert_dte_table(
             rom, script_file, tbl_file,
             tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
-            cache_dir=cache_dir,
+            source_rom=orig_rom,
+            data_start_pc=tbl_info.get('data_start_pc'),
+            cache_dir=cache_dir, force=force,
             fallback_table=fb_tbl,
-            **kwargs,
+            event_script=tbl_info.get('event_script', False),
+            word_wrap=tbl_info.get('word_wrap'),
         )
-        data_start = kwargs.get('data_start_pc', tbl_info['ptr_tbl_pos'] + tbl_info['tbl_len'])
-        print(f'  {name}: {size} bytes written (data @ 0x{data_start:X}){lang_tag}')
+        all_results.append(result)
+        oc = result['overflow_count']
+        ffc0_count = len(result.get('ffc0_overflow', []))
+        total = result['total_entries']
+        if ffc0_count:
+            print(f'  {name}: {total} entries, {ffc0_count} overflow → FFC0{lang_tag}')
+        elif oc:
+            print(f'  {name}: {total} entries, {oc} overflow (preserved JP){lang_tag}')
+        else:
+            print(f'  {name}: {total} entries, all inline{lang_tag}')
 
-        # Blank out original JP location for relocated tables.
-        for start, end in tbl_info.get('orig_blank', []):
-            length = end - start
-            rom[start:end] = bytes([FREE_FILL]) * length
-            print(f'    blanked 0x{start:06X}-0x{end:06X} ({length} bytes, fill 0x{FREE_FILL:02X})')
-
-        if name.startswith('dialog-'):
-            dialog_data_pos += size
-
-        if group and group in group_data_pos:
-            group_data_pos[group] += size
-
-    # Write DTE expansion data to bank $C6.
-    if dte_results:
-        write_dte_expansion(rom, dte_results)
-        write_ffc0_overflow(rom, dte_results)
+    # Write FFC0 overflow data to bank $C6.
+    if all_results:
+        write_ffc0_overflow(rom, all_results)
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -2900,43 +2861,13 @@ def build_scripted(source: str = 'lm3.sfc',
     print(f'  ROM padded to {target // 1024} KB, size byte = ${size_byte:02X}')
 
     # Apply ASM patches via asar.
-    # script_patch.asm: TextPtrDispatch + meta-table redirects (always needed).
-    # name_expansion_patch.asm: unit name relocation to bank $C4 (only for full builds).
+    # With in-place insertion + FFC0 overflow, no metatbl patches are needed.
+    # name_expansion_patch.asm: unit name relocation to bank $C4 (fixed-width table).
     import os as _os
     import subprocess
 
-    asm_patches = ['script_patch.asm', 'textbuf_limit_patch.asm', 'debug_mode_patch.asm']
-    # Per-table meta-table redirects — only apply patches for tables being built.
-    # Each metatbl_*.asm patches the meta-table entries for one relocated block.
+    asm_patches = ['debug_mode_patch.asm']
     if target >= 4 * 1024 * 1024:
-        # Map: table names → the metatbl patch they require.
-        metatbl_map = {
-            'script':        'metatbl_script.asm',
-            'scenario-desc': 'metatbl_scenario_desc.asm',
-            'quiz-text':     'metatbl_quiz_text.asm',
-            'battle-menu':   'metatbl_battle.asm',
-            'battle-text':   'metatbl_battle.asm',
-            'battle-msg':    'metatbl_battle.asm',
-            # event-text and script_ext use DTE (no relocation, no metatbl redirect)
-        }
-        applied_patches = set()
-        has_dte = False
-        for tbl_info in SCRIPT_TABLES:
-            name = tbl_info['name']
-            if tables_filter is not None and name not in tables_filter:
-                continue
-            if tbl_info.get('dte'):
-                has_dte = True
-            patch = metatbl_map.get(name)
-            if patch and patch not in applied_patches:
-                asm_patches.append(patch)
-                applied_patches.add(patch)
-        # DTE patch disabled: the hook at $80:B698 crashes during scene
-        # loading.  Root cause TBD — the hook is logically correct but
-        # breaks text rendering in practice.  Event-text overflow entries
-        # are preserved as JP until this is fixed.
-        # if has_dte:
-        #     asm_patches.append('dte_patch.asm')
         asm_patches.append('name_expansion_patch.asm')
 
     for patch_file in asm_patches:
