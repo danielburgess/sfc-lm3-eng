@@ -795,7 +795,21 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
                         i = close + 1
                         matched = True
 
-            # Third: single-char '[' from table (e.g. display bracket character)
+            # Fourth: multi-char match from fallback table (e.g. [c] defined
+            # only in jap.tbl). Must run before single-char '[' steal.
+            if not matched and fb_map:
+                for length in range(min(fb_max_key_len, len(text_str) - i), 1, -1):
+                    substr = text_str[i:i + length]
+                    if not substr.startswith('['):
+                        continue
+                    val = fb_map.get(substr)
+                    if val is not None:
+                        result.extend(_int_to_bytes_be(val))
+                        i += length
+                        matched = True
+                        break
+
+            # Fifth: single-char '[' from table (e.g. display bracket character)
             if not matched:
                 val = char_map.get('[')
                 if val is not None:
