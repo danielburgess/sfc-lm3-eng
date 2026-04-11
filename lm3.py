@@ -1578,7 +1578,11 @@ def encode_script_file(script_file: str, table_filename: str,
     import re
 
     entries = text.split('<<')[1:]
-    encoded_entries = []
+    # Parse each entry; key by the header index `:N` so that file order can
+    # diverge from sub-entry order (e.g. battle-menu extracted entry 0 to the
+    # end of the file). encoded_entries is then built in header-index order.
+    parsed = {}  # header_idx -> (content, orig_addr)
+    file_order = []
     for entry in entries:
         if '>>' not in entry:
             continue
@@ -1588,16 +1592,30 @@ def encode_script_file(script_file: str, table_filename: str,
             content = content[1:]
         content = content.rstrip('\n\r\t ')
 
-        # Parse original address from header: <<$78336:0[$85558]>>
+        # Parse header: <<$TBLPTR:ENTRYIDX[$DATAPTR]>>
         orig_addr = None
         addr_match = re.search(r'\[\$(\d+)\]', header)
         if addr_match:
             orig_addr = int(addr_match.group(1))
+        idx_match = re.search(r':(\d+)', header)
+        header_idx = int(idx_match.group(1)) if idx_match else len(file_order)
+        if header_idx in parsed:
+            print(f'  WARNING: {name} duplicate header index {header_idx} in {script_file}')
+        parsed[header_idx] = (content, orig_addr)
+        file_order.append(header_idx)
 
-        if not content or content == '[end]':
-            encoded_entries.append((b'\x00', orig_addr, [], {}))
-        else:
-            entry_idx = len(encoded_entries)
+    # Build encoded_entries in header-index order, filling any gaps with empty.
+    encoded_entries = []
+    if parsed:
+        max_idx = max(parsed)
+        for entry_idx in range(max_idx + 1):
+            if entry_idx not in parsed:
+                encoded_entries.append((b'\x00', None, [], {}))
+                continue
+            content, orig_addr = parsed[entry_idx]
+            if not content or content == '[end]':
+                encoded_entries.append((b'\x00', orig_addr, [], {}))
+                continue
             if word_wrap is not None and _entry_in_range(entry_idx, word_wrap.get('entries')):
                 lw = word_wrap['line_width']
                 ml = word_wrap['max_lines']
@@ -2766,7 +2784,7 @@ def build_scripted(source: str = 'lm3.sfc',
     import os as _os
     import subprocess
 
-    asm_patches = ['script_patch.asm', 'textbuf_limit_patch.asm']
+    asm_patches = ['script_patch.asm', 'textbuf_limit_patch.asm', 'debug_mode_patch.asm']
     # Per-table meta-table redirects — only apply patches for tables being built.
     # Each metatbl_*.asm patches the meta-table entries for one relocated block.
     if target >= 4 * 1024 * 1024:
