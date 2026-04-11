@@ -1852,10 +1852,11 @@ DTE_TRIGGER_TBL2 = bytes([0xFF, 0xF8])  # FF F8 INDEX
 DTE_RETURN = bytes([0xFF, 0xF6])         # FF F6 (appended to expansion string)
 
 
-def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict) -> int:
+def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
+                     event_script: bool = False, reserve: int = 4) -> int:
     """
     Find the latest safe byte-boundary split point in encoded data that
-    leaves room for a 3-byte DTE redirect (FF F7/F8 INDEX) + null terminator.
+    leaves room for a redirect sequence at the split point.
 
     A "safe" split point is between complete characters/control codes — never
     in the middle of a multi-byte FF sequence.
@@ -1863,11 +1864,12 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict) -> int
     :param encoded: full encoded entry (including trailing 0x00 terminator)
     :param max_inline: maximum bytes available for inline data
     :param ctrl_lengths: dict {sub_opcode: total_length} from Table.ctrl_lengths
+    :param event_script: if True, 0x00 inside FF command params is not a terminator
+    :param reserve: bytes to reserve for the redirect sequence (default 4 for DTE:
+                    FF Fx INDEX 00; use 5 for FFC0: FF C0 aa bb cc)
     :return: byte offset to split at (inline = encoded[:split], overflow = encoded[split:])
     """
-    # We need 3 bytes for the DTE trigger (FF Fx INDEX) + 1 byte null terminator.
-    # So inline portion can be at most (max_inline - 4) bytes of actual content.
-    budget = max_inline - 4  # reserve space for FF Fx INDEX 00
+    budget = max_inline - reserve
     if budget <= 0:
         return 0  # no room for any inline content
 
@@ -1876,9 +1878,6 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict) -> int
     last_safe = 0
     while pos < len(encoded):
         b = encoded[pos]
-        if b == 0x00:
-            # Null terminator — end of content
-            break
         if b == 0xFF and pos + 1 < len(encoded):
             sub = encoded[pos + 1]
             ctrl_len = ctrl_lengths.get(sub, 2)  # default 2 if unknown
@@ -1887,6 +1886,15 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict) -> int
                 pos += ctrl_len
             else:
                 break  # can't fit this control code inline
+        elif b == 0x00:
+            if event_script and pos + 1 < len(encoded) and encoded[pos + 1] != 0x00:
+                if pos + 1 <= budget:
+                    last_safe = pos + 1
+                    pos += 1
+                else:
+                    break
+            else:
+                break
         else:
             if pos + 1 <= budget:
                 last_safe = pos + 1
@@ -1902,7 +1910,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                      dte_table_num: int = 1,
                      data_start_pc: int = None,
                      cache_dir: str = None, force: bool = False,
-                     fallback_table: str = None) -> dict:
+                     fallback_table: str = None,
+                     event_script: bool = False) -> dict:
     """
     Insert a script table using DTE for overflow entries.  Each entry is
     written back to its original ROM location.  If the encoded English text
@@ -1953,6 +1962,7 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
 
     dte_trigger = DTE_TRIGGER_TBL1 if dte_table_num == 1 else DTE_TRIGGER_TBL2
     dte_expansion = []  # list of (dte_index, expansion_bytes)
+    ffc0_overflow = []  # list of (entry_idx, fixup_pc, overflow_tail) for event_script
     overflow_count = 0
     inline_total = 0
 
@@ -1976,48 +1986,85 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
             continue
         seen[pc] = True
 
+        # Skip empty entries (just a null terminator) — preserve original ROM
+        # data.  Event-script tables have bytecodes at these positions; writing
+        # 0x00 over them crashes the event engine.
+        if encoded == b'\x00':
+            continue
+
         if len(encoded) <= max_size:
             # Fits inline — write directly.
             rom[pc:pc + len(encoded)] = encoded
-            # Pad remainder with 0x00.
-            if len(encoded) < max_size:
+            # Pad remainder with 0x00, but NOT for event_script tables —
+            # their entries share ROM space with bytecodes that must stay.
+            if not event_script and len(encoded) < max_size:
                 rom[pc + len(encoded):pc + max_size] = b'\x00' * (max_size - len(encoded))
             inline_total += len(encoded)
-        else:
-            # Overflow — split with DTE redirect.
-            split = _find_safe_split(encoded, max_size, ctrl_lengths)
+        elif event_script:
+            # Event-script overflow: use FFC0 redirect (native game mechanism).
+            # FFC0 permanently redirects the text pointer — the entire tail
+            # (remaining text + bytecodes + sub-entries) goes to expansion space.
+            # Reserve 5 bytes: FF C0 + 3-byte SNES address.
+            split = _find_safe_split(encoded, max_size, ctrl_lengths,
+                                     event_script=True, reserve=5)
+            if split == 0:
+                # Can't fit anything inline — skip (shouldn't happen in practice)
+                overflow_count += 1
+                print(f'  WARNING: entry {i} — no room for FFC0 redirect, '
+                      f'preserving JP ({len(encoded)} > {max_size})')
+                continue
+
             inline_part = encoded[:split]
 
-            # Build DTE redirect: inline_part + FF Fx INDEX + 00
-            redirect = inline_part + dte_trigger + bytes([dte_index]) + b'\x00'
+            # Build FFC0 redirect: inline_part + FF C0 + placeholder (3 bytes).
+            # The 3-byte SNES address is resolved after we know expansion layout.
+            redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
             assert len(redirect) <= max_size, (
-                f'Entry {i}: DTE redirect ({len(redirect)}) > max_size ({max_size})')
+                f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
 
-            # Write inline portion + redirect.
+            # Write inline portion + redirect (no padding — preserve ROM after).
+            rom[pc:pc + len(redirect)] = redirect
+
+            # Record the fixup position and the overflow tail.
+            ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
+            overflow_tail = encoded[split:]  # includes the final 0x00 terminator
+
+            ffc0_overflow.append((i, ffc0_fixup_pc, overflow_tail))
+            overflow_count += 1
+            inline_total += len(redirect)
+        else:
+            # Overflow — split with FFC0 redirect to expansion space.
+            # Reserve 5 bytes: FF C0 + 3-byte SNES address.
+            split = _find_safe_split(encoded, max_size, ctrl_lengths, reserve=5)
+            if split == 0:
+                overflow_count += 1
+                print(f'  WARNING: entry {i} — no room for FFC0 redirect, '
+                      f'preserving JP ({len(encoded)} > {max_size})')
+                continue
+
+            inline_part = encoded[:split]
+
+            # Build FFC0 redirect: inline_part + FF C0 + placeholder (3 bytes).
+            redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
+            assert len(redirect) <= max_size, (
+                f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
+
+            # Write inline portion + redirect.  Pad remainder with 0x00.
             rom[pc:pc + len(redirect)] = redirect
             if len(redirect) < max_size:
                 rom[pc + len(redirect):pc + max_size] = b'\x00' * (max_size - len(redirect))
 
-            # Overflow = rest of the content (without the original null terminator)
-            # + DTE return marker + null terminator.
-            overflow_content = encoded[split:]
-            # If overflow_content ends with 0x00 (the original null), keep it.
-            # We need to insert FF F6 before the final null.
-            if overflow_content and overflow_content[-1] == 0x00:
-                expansion = overflow_content[:-1] + DTE_RETURN + b'\x00'
-            else:
-                expansion = overflow_content + DTE_RETURN + b'\x00'
+            # Record the fixup position and the overflow tail.
+            ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
+            overflow_tail = encoded[split:]  # includes the final 0x00 terminator
 
-            dte_expansion.append((dte_index, expansion))
-            dte_index += 1
+            ffc0_overflow.append((i, ffc0_fixup_pc, overflow_tail))
             overflow_count += 1
             inline_total += len(redirect)
 
-            if dte_index > 255:
-                print(f'  WARNING: DTE table {dte_table_num} overflow — more than 256 entries!')
-
     return {
         'dte_entries': dte_expansion,
+        'ffc0_overflow': ffc0_overflow,
         'inline_bytes': inline_total,
         'overflow_count': overflow_count,
         'total_entries': len(encoded_entries),
@@ -2068,6 +2115,60 @@ def write_dte_expansion(rom: bytearray, dte_results: list[dict]):
         total_data = data_offset - data_pc
         print(f'  DTE table {tbl_num}: {len(entries)} expansion strings, '
               f'{total_data} bytes in bank $C6')
+
+
+# ---------------------------------------------------------------------------
+# FFC0 overflow — write event-text overflow tails to expansion space
+# ---------------------------------------------------------------------------
+# For event_script tables where DTE can't work (interleaved bytecodes),
+# FFC0 redirects the text pointer permanently.  The overflow tail (all
+# remaining bytes including subsequent sub-entries) is placed in bank $C6.
+# No custom ASM needed — FFC0 is a native game mechanism.
+# ---------------------------------------------------------------------------
+
+FFC0_OVERFLOW_DATA_PC = DTE_TABLE1_DATA_PC   # reuse DTE table 1 data area
+
+
+def write_ffc0_overflow(rom: bytearray, dte_results: list[dict]):
+    """
+    Write FFC0 overflow tails into bank $C6 and patch the inline FFC0
+    placeholders with the resolved SNES addresses.
+
+    :param dte_results: list of dicts from insert_dte_table() calls
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    all_overflow = []
+    for result in dte_results:
+        all_overflow.extend(result.get('ffc0_overflow', []))
+
+    if not all_overflow:
+        return
+
+    data_pc = FFC0_OVERFLOW_DATA_PC
+
+    # Ensure ROM is large enough.
+    total_bytes = sum(len(tail) for _, _, tail in all_overflow)
+    max_needed = data_pc + total_bytes
+    if max_needed > len(rom):
+        rom.extend(b'\xff' * (max_needed - len(rom)))
+
+    data_offset = data_pc
+    for entry_idx, fixup_pc, overflow_tail in all_overflow:
+        # Write overflow tail to expansion area.
+        rom[data_offset:data_offset + len(overflow_tail)] = overflow_tail
+
+        # Resolve the 3-byte SNES address at the FFC0 fixup location.
+        snes = SFCAddress(data_offset).get_address(SFCAddressType.LOROM2)
+        rom[fixup_pc]     = snes & 0xFF
+        rom[fixup_pc + 1] = (snes >> 8) & 0xFF
+        rom[fixup_pc + 2] = (snes >> 16) & 0xFF
+
+        print(f'    entry {entry_idx}: FFC0 → ${snes:06X} ({len(overflow_tail)} bytes)')
+        data_offset += len(overflow_tail)
+
+    total_data = data_offset - data_pc
+    print(f'  FFC0 overflow: {len(all_overflow)} entries, {total_data} bytes in bank $C6')
 
 
 def copy_entry0_raw_strings(rom: bytearray) -> int:
@@ -2667,11 +2768,16 @@ def insert_all_scripts(rom_path: str,
                 dte_table_num=dte_num,
                 cache_dir=cache_dir, force=force,
                 fallback_table=fb_tbl,
+                event_script=tbl_info.get('event_script', False),
             )
             dte_results.append(result)
             oc = result['overflow_count']
+            ffc0_count = len(result.get('ffc0_overflow', []))
             total = result['total_entries']
-            print(f'  {name}: {total} entries, {oc} overflow → DTE table {dte_num}{lang_tag}')
+            if ffc0_count:
+                print(f'  {name}: {total} entries, {ffc0_count} overflow → FFC0 redirect{lang_tag}')
+            else:
+                print(f'  {name}: {total} entries, {oc} overflow → DTE table {dte_num}{lang_tag}')
             continue
 
         kwargs = {}
@@ -2717,6 +2823,7 @@ def insert_all_scripts(rom_path: str,
     # Write DTE expansion data to bank $C6.
     if dte_results:
         write_dte_expansion(rom, dte_results)
+        write_ffc0_overflow(rom, dte_results)
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -2824,8 +2931,12 @@ def build_scripted(source: str = 'lm3.sfc',
             if patch and patch not in applied_patches:
                 asm_patches.append(patch)
                 applied_patches.add(patch)
-        if has_dte:
-            asm_patches.append('dte_patch.asm')
+        # DTE patch disabled: the hook at $80:B698 crashes during scene
+        # loading.  Root cause TBD — the hook is logically correct but
+        # breaks text rendering in practice.  Event-text overflow entries
+        # are preserved as JP until this is fixed.
+        # if has_dte:
+        #     asm_patches.append('dte_patch.asm')
         asm_patches.append('name_expansion_patch.asm')
 
     for patch_file in asm_patches:
