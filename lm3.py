@@ -1212,7 +1212,8 @@ SCRIPT_TABLES = [
     # Contains [FFC0@58:label] cross-entry references.
     {'name': 'scenario-desc',    'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C,
                                   'word_wrap': {'line_width': 26, 'max_lines': 6,
-                                                'entries': '0-56'}},
+                                                'entries': '0-56'},
+                                  'textbuf_limit': 0x1F0},
     # unit-terrain-desc: 640 entries × 2-byte ptrs.  Data at $030A00.
     {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500,
                                   'data_start_pc': 0x030A00},
@@ -1507,7 +1508,8 @@ def encode_script_file(script_file: str, table_filename: str,
                        cache_dir: str = None, force: bool = False,
                        fallback_table: str = None,
                        word_wrap: dict = None,
-                       sub_table_filter: int = None) -> list[bytes]:
+                       sub_table_filter: int = None,
+                       textbuf_limit: int = None) -> list[bytes]:
     """
     Encode a script file into a list of binary entries, one per <<index>> block.
 
@@ -1538,6 +1540,8 @@ def encode_script_file(script_file: str, table_filename: str,
             h.update(f.read())
     if sub_table_filter is not None:
         h.update(f'sub_table_filter={sub_table_filter}'.encode())
+    if textbuf_limit is not None:
+        h.update(f'textbuf_limit={textbuf_limit}'.encode())
     current_checksum = h.hexdigest()
 
     # Check cache.
@@ -1651,6 +1655,31 @@ def encode_script_file(script_file: str, table_filename: str,
             else:
                 encoded, fixups, entry_labels = result, [], {}
             encoded_entries.append((encoded, orig_addr, fixups, entry_labels))
+
+    # Enforce total buffer byte limit (e.g. $0400 WRAM text buffer = $01F0 bytes).
+    # Walks each entry's FFC0 chain and sums encoded bytes of the whole chain,
+    # since Phase 1 keeps buffering across FFC0 redirects.
+    if textbuf_limit is not None and encoded_entries:
+        def _chain_bytes(idx, visited):
+            if idx in visited or idx >= len(encoded_entries):
+                return 0
+            visited.add(idx)
+            entry_bytes, _, entry_fixups, _ = encoded_entries[idx]
+            total = len(entry_bytes)
+            for fixup in entry_fixups:
+                target = fixup[1] if len(fixup) > 1 else None
+                if target is not None:
+                    total += _chain_bytes(target, visited)
+            return total
+
+        for entry_idx in range(len(encoded_entries)):
+            encoded = encoded_entries[entry_idx][0]
+            if encoded == b'\x00':
+                continue
+            total = _chain_bytes(entry_idx, set())
+            if total > textbuf_limit:
+                print(f'  WARNING: {name} entry {entry_idx}: chain total '
+                      f'{total} bytes exceeds textbuf_limit {textbuf_limit}')
 
     # Write cache.
     if bin_path:
@@ -1920,7 +1949,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                      cache_dir: str = None, force: bool = False,
                      fallback_table: str = None,
                      event_script: bool = False,
-                     word_wrap: dict = None) -> dict:
+                     word_wrap: dict = None,
+                     textbuf_limit: int = None) -> dict:
     """
     Universal in-place script insertion.  Each entry is written back to its
     original ROM location.  If the encoded English text is longer than the
@@ -1988,7 +2018,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                                          cache_dir=cache_dir, force=force,
                                          fallback_table=fallback_table,
                                          word_wrap=word_wrap,
-                                         sub_table_filter=ptr_tbl_pos)
+                                         sub_table_filter=ptr_tbl_pos,
+                                         textbuf_limit=textbuf_limit)
 
     ffc0_overflow = []  # list of (entry_idx, fixup_pc, overflow_tail)
     overflow_count = 0
@@ -2062,30 +2093,63 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
             ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
             overflow_tail = encoded[split:]  # includes the final 0x00 terminator
 
-            ffc0_overflow.append((i, ffc0_fixup_pc, overflow_tail))
+            # Track which fixups land in the overflow tail (tail-relative offset).
+            tail_fixups = []
+            for fixup_tuple in fixups:
+                foff, fidx = fixup_tuple[0], fixup_tuple[1]
+                flabel = fixup_tuple[2] if len(fixup_tuple) > 2 else None
+                if foff >= split:
+                    tail_fixups.append((foff - split, fidx, flabel))
+                else:
+                    pending_fixups.append((pc + foff, fidx, flabel))
+
+            ffc0_overflow.append((i, ffc0_fixup_pc, overflow_tail, tail_fixups))
             overflow_count += 1
             inline_total += len(redirect)
+            continue
 
-        # Collect FFC0@ cross-entry fixups — byte_offset is relative to entry start.
+        # Non-overflow: all fixups are in the inline slot.
         for fixup_tuple in fixups:
             foff, fidx = fixup_tuple[0], fixup_tuple[1]
             flabel = fixup_tuple[2] if len(fixup_tuple) > 2 else None
             pending_fixups.append((pc + foff, fidx, flabel))
 
-    # Resolve [FFC0@N] and [FFC0@N:label] cross-entry fixups.
-    for rom_pc, target_idx, label in pending_fixups:
+    # Resolve [FFC0@N] and [FFC0@N:label] cross-entry fixups (inline slots only).
+    def _resolve_target(target_idx, label):
         if target_idx not in entry_pc_map:
             print(f'  WARNING: [FFC0@{target_idx}] references missing entry {target_idx}')
-            continue
+            return None
         target_pc = entry_pc_map[target_idx]
         if label:
             target_labels = entry_labels_map.get(target_idx, {})
             if label not in target_labels:
                 print(f'  WARNING: [FFC0@{target_idx}:{label}] — label "{label}" '
                       f'not found in entry {target_idx}')
-                continue
+                return None
             target_pc += target_labels[label]
-        target_snes = SFCAddress(target_pc).get_address(SFCAddressType.LOROM2)
+        return SFCAddress(target_pc).get_address(SFCAddressType.LOROM2)
+
+    # Resolve overflow-tail fixups: convert each (tail_off, target_idx, label)
+    # into (tail_off, resolved_snes) so write_ffc0_overflow can patch the tail
+    # after it lands in bank $C6.  Must happen now, while entry_pc_map is in
+    # scope for this table.
+    resolved_overflow = []
+    for entry_idx, fixup_pc, tail, tail_fixups in ffc0_overflow:
+        resolved_tail_fixups = []
+        for tail_off, target_idx, label in tail_fixups:
+            snes = _resolve_target(target_idx, label)
+            if snes is None:
+                continue
+            resolved_tail_fixups.append((tail_off, snes))
+            ref = f'FFC0@{target_idx}:{label}' if label else f'FFC0@{target_idx}'
+            print(f'    entry {entry_idx} tail {ref} → ${snes:06X}')
+        resolved_overflow.append((entry_idx, fixup_pc, tail, resolved_tail_fixups))
+    ffc0_overflow = resolved_overflow
+
+    for rom_pc, target_idx, label in pending_fixups:
+        target_snes = _resolve_target(target_idx, label)
+        if target_snes is None:
+            continue
         rom[rom_pc]     = target_snes & 0xFF
         rom[rom_pc + 1] = (target_snes >> 8) & 0xFF
         rom[rom_pc + 2] = (target_snes >> 16) & 0xFF
@@ -2176,15 +2240,26 @@ def write_ffc0_overflow(rom: bytearray, dte_results: list[dict]):
     data_pc = FFC0_OVERFLOW_DATA_PC
 
     # Ensure ROM is large enough.
-    total_bytes = sum(len(tail) for _, _, tail in all_overflow)
+    total_bytes = sum(len(item[2]) for item in all_overflow)
     max_needed = data_pc + total_bytes
     if max_needed > len(rom):
         rom.extend(b'\xff' * (max_needed - len(rom)))
 
     data_offset = data_pc
-    for entry_idx, fixup_pc, overflow_tail in all_overflow:
+    for item in all_overflow:
+        entry_idx, fixup_pc, overflow_tail = item[0], item[1], item[2]
+        tail_fixups = item[3] if len(item) > 3 else []
         # Write overflow tail to expansion area.
         rom[data_offset:data_offset + len(overflow_tail)] = overflow_tail
+
+        # Patch any [FFC0@N] cross-entry fixups embedded in the tail.  These
+        # were resolved to SNES addresses at encode time (when entry_pc_map
+        # was still in scope for the table).
+        for tail_off, target_snes in tail_fixups:
+            abs_pc = data_offset + tail_off
+            rom[abs_pc]     = target_snes & 0xFF
+            rom[abs_pc + 1] = (target_snes >> 8) & 0xFF
+            rom[abs_pc + 2] = (target_snes >> 16) & 0xFF
 
         # Resolve the 3-byte SNES address at the FFC0 fixup location.
         snes = SFCAddress(data_offset).get_address(SFCAddressType.LOROM2)
@@ -2743,7 +2818,9 @@ def insert_all_scripts(rom_path: str,
             fut = pool.submit(encode_script_file, script_file, tbl_file,
                               cache_dir=cache_dir, force=force,
                               fallback_table=fb_tbl,
-                              word_wrap=tbl_info.get('word_wrap'))
+                              word_wrap=tbl_info.get('word_wrap'),
+                              sub_table_filter=tbl_info.get('ptr_tbl_pos'),
+                              textbuf_limit=tbl_info.get('textbuf_limit'))
             futures[tbl_info['name']] = fut
         # Wait for all to finish (also raises any exceptions).
         for name, fut in futures.items():
@@ -2770,6 +2847,7 @@ def insert_all_scripts(rom_path: str,
             fallback_table=fb_tbl,
             event_script=tbl_info.get('event_script', False),
             word_wrap=tbl_info.get('word_wrap'),
+            textbuf_limit=tbl_info.get('textbuf_limit'),
         )
         all_results.append(result)
         oc = result['overflow_count']
