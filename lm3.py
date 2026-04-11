@@ -230,7 +230,12 @@ def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filena
         {   # battle text (equip, items, save/load, scenario select, etc.)
             'ptr_tbl_pos': 0x013124,
             'tbl_len': 0xDC,
-            'table_name': 'battle-text'
+            'table_name': 'battle-text',
+            # Entry 19's slot holds the "Animation Test" debug menu and a
+            # long list of spell-announcement strings after the visible
+            # [end] — only reachable via raw FF C0 pins from elsewhere.
+            # Extract the full slot so it can be translated / labeled.
+            'full_extent_entries': [19],
         },
         {   # battle messages (spell/item use, status effects)
             'ptr_tbl_pos': 0x013200,
@@ -364,10 +369,13 @@ def pointer_extract(table_name: str, out_folder: str, bin_data: list, ptr_tbl_lo
             # Use next unique pointer address as upper bound to prevent over-scanning
             addr_idx = sorted_unique_addrs.index(data_start) if data_start in sorted_unique_addrs else -1
             max_addr = sorted_unique_addrs[addr_idx + 1] if addr_idx >= 0 and addr_idx + 1 < len(sorted_unique_addrs) else None
-            if kwargs.get('event_script', False):
+            full_extent = kwargs.get('full_extent_entries') or []
+            if kwargs.get('event_script', False) or ptr_index in full_extent:
                 # Event script entries have embedded 0x00 in bytecodes, so
                 # find_entry_end would truncate them.  Use the next unique
                 # pointer address as the boundary instead.
+                # full_extent_entries forces the same behavior per-index for
+                # slots that hold orphan data past the first 0x00 terminator.
                 if max_addr is not None:
                     data_end = max_addr
                 else:
@@ -1882,6 +1890,45 @@ DTE_TRIGGER_TBL2 = bytes([0xFF, 0xF8])  # FF F8 INDEX
 DTE_RETURN = bytes([0xFF, 0xF6])         # FF F6 (appended to expansion string)
 
 
+def _collect_ffc0_pins(en_folder: str = 'en_ptr_data') -> set:
+    """
+    Scan all en_ptr_data .txt files for raw [FFC0HHLLBB] hex literals and
+    return the set of target PC offsets they reference.
+
+    These pins represent absolute SNES addresses baked into text data — typically
+    references to the middle of an entry.  When such a target falls inside an
+    entry's interior, the entry must NOT be FFC0-overflowed past that offset
+    (and ideally must not be translated at all, since the byte sequence at that
+    offset carries meaning that the cross-reference depends on).
+    """
+    import os, re, glob
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    pat = re.compile(r'\[FFC0([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})\]')
+    pins = set()
+    for path in sorted(glob.glob(os.path.join(en_folder, '*.txt'))):
+        try:
+            with open(path, 'rb') as f:
+                raw = f.read()
+            if raw[:2] == b'\xff\xfe':
+                text = raw[2:].decode('utf-16-le')
+            else:
+                text = raw.decode('utf-8', errors='replace')
+        except Exception:
+            continue
+        for m in pat.finditer(text):
+            lo = int(m.group(1), 16)
+            hi = int(m.group(2), 16)
+            bk = int(m.group(3), 16)
+            snes = (bk << 16) | (hi << 8) | lo
+            try:
+                pc = SFCAddress(snes, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
+                pins.add(pc)
+            except Exception:
+                pass
+    return pins
+
+
 def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
                      event_script: bool = False, reserve: int = 4) -> int:
     """
@@ -1943,7 +1990,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                      fallback_table: str = None,
                      event_script: bool = False,
                      word_wrap: dict = None,
-                     textbuf_limit: int = None) -> dict:
+                     textbuf_limit: int = None,
+                     ffc0_pins: set = None) -> dict:
     """
     Universal in-place script insertion.  Each entry is written back to its
     original ROM location.  If the encoded English text is longer than the
@@ -2824,6 +2872,13 @@ def insert_all_scripts(rom_path: str,
     with open(source_rom, 'rb') as f:
         orig_rom = f.read()
 
+    # Pre-scan all en files for raw [FFC0HHLLBB] pins.  Entries whose interior
+    # is referenced by such pins must be preserved as JP (translation would
+    # invalidate the external reference).
+    ffc0_pins = _collect_ffc0_pins(en_folder)
+    if ffc0_pins:
+        print(f'  collected {len(ffc0_pins)} external FFC0 pin target(s)')
+
     # Insert all tables in-place with FFC0 overflow to bank $C6.
     print('Inserting into ROM (in-place + FFC0 overflow)...')
     all_results = []
@@ -2841,6 +2896,7 @@ def insert_all_scripts(rom_path: str,
             event_script=tbl_info.get('event_script', False),
             word_wrap=tbl_info.get('word_wrap'),
             textbuf_limit=tbl_info.get('textbuf_limit'),
+            ffc0_pins=ffc0_pins,
         )
         all_results.append(result)
         oc = result['overflow_count']
