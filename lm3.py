@@ -817,9 +817,16 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
                     i += 1
                     matched = True
         else:
-            for length in range(min(max_key_len, len(text_str) - i), 0, -1):
+            # Longest-match across primary AND fallback tables. At each length
+            # (descending from max), try primary first then fallback — so a
+            # 3-char jap.tbl entry like "(ぇ)"=$5F wins over eng.tbl's 1-char
+            # "("=$28 instead of the single-char steal short-circuiting it.
+            combined_max = max(max_key_len, fb_max_key_len)
+            for length in range(min(combined_max, len(text_str) - i), 0, -1):
                 substr = text_str[i:i + length]
                 val = char_map.get(substr)
+                if val is None and fb_map:
+                    val = fb_map.get(substr)
                 if val is not None:
                     result.extend(_int_to_bytes_be(val))
                     i += length
@@ -828,20 +835,6 @@ def encode_text(text_str, tbl, fallback_tbl=None, track_bytecode_offsets=False):
 
         if matched:
             continue
-
-        # Fallback table: look up untranslated characters (e.g. Japanese)
-        if fb_map:
-            fb_matched = False
-            for length in range(min(fb_max_key_len, len(text_str) - i), 0, -1):
-                substr = text_str[i:i + length]
-                val = fb_map.get(substr)
-                if val is not None:
-                    result.extend(_int_to_bytes_be(val))
-                    i += length
-                    fb_matched = True
-                    break
-            if fb_matched:
-                continue
 
         # Fallback: printable ASCII → identity, else '?'
         if 0x20 <= ord(ch) <= 0x7E:
@@ -2945,7 +2938,12 @@ def build_scripted(source: str = 'lm3.sfc',
     import subprocess
 
     asm_patches = ['debug_mode_patch.asm']
-    if target >= 4 * 1024 * 1024:
+    # name_expansion_patch relocates unit-name reads to $C4:8000.  Only safe
+    # when unit-names is actually being inserted — otherwise the expansion
+    # region is uninitialized (0xFF) and the space-terminated copy loop runs
+    # away forever.
+    building_unit_names = tables_filter is None or 'unit-names' in tables_filter
+    if target >= 4 * 1024 * 1024 and building_unit_names:
         asm_patches.append('name_expansion_patch.asm')
 
     for patch_file in asm_patches:
