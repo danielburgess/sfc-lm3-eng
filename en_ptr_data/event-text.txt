@@ -22,49 +22,49 @@
 
 <<$1129115:2[$1130815]>>
 <<<window[0]:$001B-$0037>>>
-[FF7F0E]主人「まいどあり。次もひいきにしておくれ」
+[FF7F0E]主人「Thanks for your business. Come again」
 
 <<$1129115:3[$1130876]>>
 
 <<$1129115:4[$1130913]>>
 <<<window[0]:$0017-$0026>>>
-[FF7F0E]医者「おだいじに」
+[FF7F0E]医者「Take care of yourself」
 
 <<$1129115:5[$1130957]>>
 
 <<$1129115:6[$1130994]>>
 <<<window[0]:$001B-$0033>>>
-[FF7F0E]「どうもありがとう。またきてくださいね」
+[FF7F0E]「Thank you very much. Please come again」
 
 <<$1129115:7[$1131610]>>
 <<<window[0]:$0024-$0028>>>
 
 <<<window[1]:$002E-$0062>>>
-[msg][special]「こーなったら最後の手段だニャーン。[nl][wait0A]　お前たちの力を借りるニャー!」
+[msg][special]「It's come to this, time for my last resort-nya![nl][wait0A]　I'll borrow your strength-nya!」
 <<<window[2]:$0081-$0082>>>
 
 <<<window[3]:$00BD-$00D6>>>
-[msg][special]「あいつらを、やっつけるニャーー!」
+[msg][special]「Beat them up-nyaaa!」
 <<<window[4]:$00D8-$00F3>>>
 
 
 <<$1129115:8[$1131901]>>
 <<<window[0]:$001C-$002F>>>
-[msg]「ほし　が　召還された!」
+[msg]「A star has been summoned!」
 
 <<$1129115:9[$1131976]>>
 <<<window[0]:$0020-$0021>>>
 
 <<<window[1]:$004C-$0060>>>
-[msg][special]「やっつけてやるニャー!」
+[msg][special]「I'll get you-nya!」
 <<<window[2]:$006F-$0095>>>
 示ぁ[P]呼甘‥[R]憂ぁ[R]呼甘‥[E][d][G]ぁ[E]呼[r.]囲ョ猪[r.]紋ぁ[02]
 <<<window[3]:$0099-$00B7>>>
-[msg][special]「みて![wait20]　古文書と同じ形だわ」
+[msg][special]「Look![wait20] It's the same shape as the manuscript」
 <<<window[4]:$00BB-$00D6>>>
-[msg][special]「リイム、[wait20]虹色の魔石を!」
+[msg][special]「Liam,[wait20] the rainbow magic stone!」
 <<<window[5]:$00E0-$00F5>>>
-[msg][special]「うん、[wait20]やってみるよ」
+[msg][special]「Okay,[wait20] I'll try」
 
 <<$1129115:10[$1136733]>>
 
@@ -72,19 +72,19 @@
 <<<window[0]:$001A-$0027>>>
 
 <<<window[1]:$0031-$003F>>>
-[msg]「よいしょよいしょ」
+[msg]「Heave-ho, heave-ho」
 <<<window[2]:$0070-$0082>>>
-[FF7F01]つき　が　姿を現わした。
+[FF7F01]The moon has appeared.
 
 <<$1129115:12[$1132419]>>
 <<<window[0]:$0013-$0026>>>
-[msg][special]「こりゃまいったニャー」
+[msg][special]「Well, this is a problem-nya」
 
 <<$1129115:13[$1132479]>>
 <<<window[0]:$0006-$0008>>>
 
 <<<window[1]:$0010-$003B>>>
-[FF7F01]間違えてしまいました。退場してもらいます。[nl]「うわっ、おとしあなだ～」
+[FF7F01]Made a mistake. You'll be removed.[nl]「Whoa, it's a pitfall~」
 
 <<$1129115:14[$1132479]>>
 
@@ -92,17 +92,17 @@
 <<<window[0]:$002A-$003B>>>
 
 <<<window[1]:$003F-$0058>>>
-[FF7F00]どこからか‥不思議な玉が‥。[FFFE00]
+[FF7F00]From somewhere... a mysterious orb...[FFFE00]
 
 <<$1129115:16[$1132699]>>
 <<<window[0]:$00A8-$00B5>>>
-[FF7F08]ガシャーーーーン。
+[FF7F08]CRASH!
 
 <<$1129115:17[$1132893]>>
 
 <<$1129115:18[$1133125]>>
 <<<window[0]:$0017-$0032>>>
-[msg][special]「いくぞ、スノースパーク・ブリザード!」
+[msg][special]「Here goes, Snow Spark Blizzard!」
 <<<window[1]:$0035-$0037>>>
 [03]
 <<<window[2]:$0040-$0041>>>
@@ -142,35 +142,35 @@
 
 <<$1129115:20[$1133526]>>
 <<<window[0]:$000B-$0036>>>
-[FF7F09]サイコロプスがサイコロを投げます。[nl]なにがでるかな。[nl]サイコロ、コロコロ‥。
+[FF7F09]Cyclops throws the dice.[nl]What will it land on?[nl]The dice rolls...
 <<<window[1]:$0050-$0051>>>
 
 <<<window[2]:$008C-$008F>>>
 
 <<<window[3]:$00AE-$00DC>>>
-[FF7F00]サイコロの目は、1です。[FFFE00][nl]全員の体力を回復します。ラ、ラッキー？
+[FF7F00]The die shows 1.[FFFE00][nl]Everyone's HP is restored. L-Lucky?
 <<<window[4]:$00EB-$010D>>>
-[FF7F00]サイコロの目は、2です。[FFFE00][nl]なにもおこりません。[FFFE00]
+[FF7F00]The die shows 2.[FFFE00][nl]Nothing happens.[FFFE00]
 <<<window[5]:$0118-$0140>>>
-[FF7F00]サイコロの目は、3です。[FFFE00][nl]全員がパラライズされます。どひー。
+[FF7F00]The die shows 3.[FFFE00][nl]Everyone is paralyzed. Yikes!
 <<<window[6]:$014F-$0171>>>
-[FF7F00]サイコロの目は、4です。[FFFE00][nl]なにもおこりません。[FFFE00]
+[FF7F00]The die shows 4.[FFFE00][nl]Nothing happens.[FFFE00]
 <<<window[7]:$0174-$0178>>>
 
 <<<window[8]:$018E-$0191>>>
 
 <<<window[9]:$0192-$01A6>>>
-[FF7F00]サイコロの目は、5です。[FFFE00]
+[FF7F00]The die shows 5.[FFFE00]
 <<<window[10]:$01B5-$01EB>>>
-[msg][special]「みんな、おどるのだーー。[wait30]イェーーーイ」[nl][FFFD00]全員の位置が入れ替わります。
+[msg][special]「Everyone, dance! [wait30]Yeaaah!」[nl][FFFD00]Everyone's positions are swapped.
 <<<window[11]:$020F-$0213>>>
 
 <<<window[12]:$0217-$0239>>>
-[FF7F00]サイコロの目は、6です。[FFFE00][nl]なにもおこりません。[FFFE00]
+[FF7F00]The die shows 6.[FFFE00][nl]Nothing happens.[FFFE00]
 
 <<$1129115:21[$1134110]>>
 <<<window[0]:$001B-$0031>>>
-[msg][special]「ふふふ‥覚悟するがいい」
+[msg][special]「Hehehe... prepare yourself」
 <<<window[1]:$0041-$0042>>>
 
 <<<window[2]:$0047-$0048>>>
@@ -180,11 +180,11 @@
 <<<window[4]:$0051-$0054>>>
 
 <<<window[5]:$0069-$0086>>>
-[msg][special]「ラララ～～～～。[wait20]ルルル～～～～～★」
+[msg][special]「La la la~~~~.[wait20] Lu lu lu~~~~~★」
 <<<window[6]:$00B6-$00C0>>>
 
 <<<window[7]:$00C7-$00E3>>>
-[msg][special]「ふふふ。[wait20]わしの歌はどうじゃった」
+[msg][special]「Hehehe.[wait20] How did you like my song?」
 <<<window[8]:$00EE-$00EF>>>
 
 <<<window[9]:$00F0-$00F1>>>
@@ -196,31 +196,31 @@
 
 <<$1129115:23[$1134436]>>
 <<<window[0]:$0009-$001E>>>
-[FF7F08]ベルトがまわる。[nl]ぼくらもうごく。
+[FF7F08]The belt moves.[nl]And so do we.
 <<<window[1]:$0050-$0072>>>
-[msg][special]　どこからか　D[r.]．スカルの声がきこえてくる。[FFFE00]
+[msg][special] From somewhere, D[r.]. Skull's voice can be heard.[FFFE00]
 <<<window[2]:$0073-$0094>>>
-[msg][special]「コンベアの乗りごこちは　どうかね？[wait20]　ん？」
+[msg][special]「How's the conveyor ride?[wait20] Hmm?」
 <<<window[3]:$0098-$00C7>>>
-[msg][special]「ただ　のっかってるだけじゃ、[nl][wait20]　我輩のところには　たどりつけないよ」
+[msg][special]「Just standing on it won't get you[nl][wait20] to where I am」
 <<<window[4]:$00CB-$00EB>>>
-[msg][special]「よーく頭を使うことだね。[wait30]ヒャハ」[FFFE00]
+[msg][special]「Better use your heads.[wait30] Hyaha!」[FFFE00]
 
 <<$1129115:24[$1134677]>>
 <<<window[0]:$0009-$0016>>>
-[msg]「すべれーーーー」
+[msg]「Sliiiiide!」
 <<<window[1]:$003C-$004D>>>
-[msg]「うわっ。すべるーーーー」
+[msg]「Whoa! I'm sliiiding!」
 
 <<$1129115:25[$1134772]>>
 <<<window[0]:$0052-$0068>>>
-[msg][special]「このパネルは　何だろう？」
+[msg][special]「What's this panel?」
 <<<window[1]:$0072-$0089>>>
-[msg][special]「2つの絵が　描いてあるわ」
+[msg][special]「There are two pictures on it」
 <<<window[2]:$0093-$00BC>>>
-[msg][special]「これを、[wait20]どーにかしなきゃ　ならないようだな[wait20]　モーモー」
+[msg][special]「We gotta[wait20] do something about this,[wait20] moo-moo」
 <<<window[3]:$00D1-$00E7>>>
-[msg][special]「パネルを　守るでチュー!」
+[msg][special]「I'll guard the panel-chu!」
 
 <<$1129115:26[$1135020]>>
 <<<window[0]:$005E-$005F>>>
@@ -258,35 +258,35 @@
 <<<window[16]:$0201-$0209>>>
 
 <<<window[17]:$020A-$0221>>>
-[FF7F00]神殿の番人が姿をあらわした!
+[FF7F00]The temple guardian has appeared!
 <<<window[18]:$0237-$0247>>>
-[FF7F00]よし。絵が揃ったぞ。
+[FF7F00]Yes! The pictures are matched.
 
 <<$1129115:27[$1135605]>>
 
 <<$1129115:28[$1135654]>>
 <<<window[0]:$0014-$0022>>>
-[FF7F08]鳥がとんできます。
+[FF7F08]A bird comes flying.
 
 <<$1129115:29[$1135766]>>
 <<<window[0]:$000E-$0038>>>
-[FF7F09]たつまきが発生しました。[nl]さわるとはじきとばされますよ。[nl]しかもダブル。
+[FF7F09]A tornado has appeared.[nl]Touch it and you'll be blown away.[nl]And it's a double.
 
 <<$1129115:30[$1135826]>>
 <<<window[0]:$0004-$001F>>>
-[FF7F09]シーソーをふみました。[nl]「ぴょ～～～～～～ん」
+[FF7F09]Stepped on the seesaw.[nl]「Boiiiiing!」
 
 <<$1129115:31[$1135897]>>
 
 <<$1129115:32[$1135903]>>
 <<<window[0]:$000E-$001D>>>
-[FF7F09]も～えろよ、もえろ～。
+[FF7F09]Bu~rn, baby, bu~rn.
 
 <<$1129115:33[$1135936]>>
 <<<window[0]:$0023-$0060>>>
-[msg][special]「うおーーーー、動くなと言ってるだろ～～![nl][wait30]　おまえら![wait20]　このワシを怒らせたようじゃな!」
+[msg][special]「Arrgh, I told you not to move![nl][wait30] You lot![wait20] You've made me angry!」
 <<<window[1]:$0064-$0096>>>
-[msg][special]「竜巻を呼んで　けちらしてやる![nl][wait30]　カモン、ハリケーーーン、コーーール!」
+[msg][special]「I'll summon a tornado to blow you away![nl][wait30] Come, Hurricane Caaall!」
 <<<window[2]:$0098-$009D>>>
 
 
@@ -296,11 +296,11 @@
 
 <<$1129115:36[$1136162]>>
 <<<window[0]:$0010-$0037>>>
-[FF070C]ボンバーズを撃退した勇者軍は[FF0A0F]マテドラル城にむかいます
+[FF070C]Having repelled the Bombers,[FF0A0F]the heroes head for Matedoral Castle
 <<<window[1]:$0064-$008B>>>
-[FF070C]勇者軍は　シャルルの案内で[FF090F]ジャングルの遺跡にむかう
+[FF070C]Led by Charles, the heroes[FF090F]head for the jungle ruins
 <<<window[2]:$009F-$00C1>>>
-[FF090C]まだみぬマテドラルの地で[FF090F]勇者軍を待つものは？
+[FF090C]In the unknown land of Matedoral,[FF090F]what awaits the heroes?
 
 <<$1129115:37[$1136162]>>
 
@@ -326,31 +326,31 @@
 <<<window[3]:$00B3-$0121>>>
 [pink][FF020C]GOOD　BYE．．．[white][FF020E]NOW　WE　BRING　YOU　A　SECRET[FF0210]WORDS　OF　GAME．PLEASE　NOTICE[FF0212]S39　OF　13，AND　S43　SOMEWHERE．
 <<<window[4]:$013C-$01E7>>>
-[FF0507]戦いは終わった。最後の敵を倒した[FF0509]勇者は、心に過去の戦闘の[FF050B]記憶が、よみがえってくるのを感じていた。[FF050D]そして、こう思わずにはいられなかった。[FF050F]これまでの戦いで最強の魔物、それは、[FF0511]サイコロだったのではないだろうか‥‥。[FF0E13]おしまい[FF0815]テストプレイごくろうさまでした。
+[FF0507]The battle was over. The hero who defeated[FF0509]the final enemy felt memories of past[FF050B]battles resurging in his heart.[FF050D]And he couldn't help but think:[FF050F]The most powerful monster of all[FF0511]was the dice, wasn't it...[FF0E13]The End[FF0815]Thank you for playing.
 
 <<$1129115:45[$1131857]>>
 <<<window[0]:$0010-$0027>>>
-[FF7F00]体力を自分で回復しました。
+[FF7F00]Recovered HP on their own.
 
 <<$1129115:46[$1136396]>>
 
 <<$1129115:47[$1136410]>>
 <<<window[0]:$0037-$0064>>>
-[msg][special]「ぼくたちも　おともします。[nl][wait30]　つれていってください。[wait30]ラビラビ」
+[msg][special]「We'll come with you too.[nl][wait30] Please take us along.[wait30] Rabi rabi」
 <<<window[1]:$0068-$007E>>>
-[FF7F00]新しい仲間が　加わりました。
+[FF7F00]New allies have joined.
 <<<window[2]:$008F-$0094>>>
 
 <<<window[3]:$00A6-$00CB>>>
-[FF080C]ピーコックと別れた勇者軍は[FF0A0F]ライナーク城にむかいます
+[FF080C]Having parted with Peacock,[FF0A0F]the heroes head for Lineark Castle
 
 <<$1129115:48[$1136626]>>
 
 <<$1129115:49[$1136649]>>
 <<<window[0]:$000E-$0026>>>
-主人「なんだおめ(ぇ)。なっちゃいねえ」[FFFE00]
+主人「What's wrong with ya. Pathetic」[FFFE00]
 <<<window[1]:$0037-$004D>>>
-主人「すごい地震だったんだ」[FFFE00]
+主人「That was one heck of an earthquake」[FFFE00]
 
 <<$1129115:50[$1136740]>>
 
@@ -362,7 +362,7 @@
 <<<window[2]:$005B-$005C>>>
 
 <<<window[3]:$005D-$0075>>>
-[msg][special]「ん‥なんか、いやな予感が‥」
+[msg][special]「Hmm... I have a bad feeling about this...」
 <<<window[4]:$0078-$007A>>>
 
 <<<window[5]:$0084-$0086>>>
@@ -392,15 +392,15 @@
 <<<window[17]:$0125-$0129>>>
 
 <<<window[18]:$0150-$0171>>>
-[FF7F01]教会の床に不思議な空間が[nl]現われました。
+[FF7F01]A mysterious space appeared[nl]on the church floor.
 <<<window[19]:$0184-$0186>>>
 
 <<<window[20]:$0190-$0192>>>
 
 <<<window[21]:$01B7-$01CF>>>
-[FF7F01]勇者軍のユニットが吸いこまれた!
+[FF7F01]A hero army unit was sucked in!
 <<<window[22]:$01E3-$0201>>>
-[FF7F01]ステンドグラスに、強烈な光が[nl]あふれています。
+[FF7F01]Intense light is pouring from[nl]the stained glass.
 <<<window[23]:$0214-$0219>>>
 
 <<<window[24]:$03EC-$0403>>>
@@ -422,18 +422,18 @@
 <<<window[32]:$0530-$0534>>>
 
 <<<window[33]:$0540-$0555>>>
-[msg][special]「やったっスね、教授!」
+[msg][special]「We did it, Professor!」
 <<<window[34]:$055C-$058A>>>
-[msg][special]「うむ、今度こそみつけたぞ。[nl]　この古文書が、本物であるならば、
+[msg][special]「Yes, this time I've truly found it.[nl] If this ancient manuscript is genuine,
 <<<window[35]:$058F-$05C7>>>
-[msg][special]　カラードの　秘宝伝承を裏付ける、[nl]　なによりの証拠になるじゃろう。やったぞい!」
+[msg][special] it would be the ultimate proof[nl] of the Prisma treasure of legend. We did it!」
 <<<window[36]:$05D2-$05D9>>>
 
 <<<window[37]:$05DD-$05F1>>>
-[msg][special]「うおっ、地震か!!」
+[msg][special]「Whoa, an earthquake!!」
 <<<window[38]:$0600-$060A>>>
 <<<window[39]:$061D-$062F>>>
-「うわーーーーーーーーっ!!」
+「Aaaaaaahhh!!」
 <<<window[40]:$0645-$0653>>>
 <<<window[41]:$0655-$065F>>>
 
@@ -482,23 +482,23 @@
 <<<window[63]:$0810-$0814>>>
 
 <<<window[64]:$0843-$086B>>>
-[msg][special]「やべえっス、入り口が、[nl]　ふさがっちまったっス～～～～～!」
+[msg][special]「This is bad, the entrance[nl] has been blocked off~~~~~!」
 <<<window[65]:$0883-$089B>>>
-[cls][special]ゴンゴン‥‥。[wait0A]ゴンゴン‥‥。
+[cls][special]Knock knock....[wait0A]Knock knock....
 <<<window[66]:$08C2-$08EA>>>
-[msg][special]「あっ!　助かった![nl]　教授、助けが来たみたいっスよ!」
+[msg][special]「Ah! We're saved![nl] Professor, it looks like help has arrived!」
 <<<window[67]:$08F1-$0905>>>
-[msg][special]「しかし、そっちは‥‥‥」
+[msg][special]「But, that way is...」
 <<<window[68]:$0909-$092D>>>
-[msg][special]「おーい、こっちだ、こっちだ。[nl]　助けてほしいっス～!」
+[msg][special]「Hey, over here, over here![nl] Help us~!」
 <<<window[69]:$095F-$0974>>>
-[msg][special]「ひーーーーーーーーーーー」
+[msg][special]「Eeeeeeeeek!」
 <<<window[70]:$099E-$099F>>>
 
 <<<window[71]:$09A1-$09BF>>>
-[msg][special]「だれか!　だれかー!　助けてーーーー!!」
+[msg][special]「Someone! Anyone! Help meeeee!!」
 <<<window[72]:$09DE-$09ED>>>
-[cls]「うおーーーーー!!」
+[cls]「Waaaaahhh!!」
 <<<window[73]:$09F2-$09FA>>>
 
 <<<window[74]:$09FB-$0A03>>>
@@ -512,7 +512,7 @@
 <<<window[78]:$0A1F-$0A27>>>
 
 <<<window[79]:$0A65-$0A79>>>
-[msg][special]「もう大丈夫だぜ!」
+[msg][special]「You're safe now!」
 <<<window[80]:$0A82-$0A87>>>
 
 
@@ -522,13 +522,13 @@
 
 <<$1129115:54[$1131552]>>
 <<<window[0]:$000A-$001A>>>
-[FF0D1A]マップをみわたしています
+[FF0D1A]Surveying the map
 
 <<$1129115:55[$1129991]>>
 <<<window[0]:$0036-$004E>>>
-[FF060E]リイム達は　ライナーク城を目指す
+[FF060E]Liam and friends head for Lineark Castle
 <<<window[1]:$0062-$0098>>>
-[FF030C]途中、ラドック教授の助手〃ピーコック〃を[FF060F]パズタ村まで　送りとどけることになった
+[FF030C]Along the way, Prof. Radock's assistant[FF060F]Peacock must be escorted to Pazta Village
 <<<window[2]:$00F6-$00F7>>>
 
 <<<window[3]:$00FA-$00FC>>>
@@ -540,17 +540,17 @@
 <<<window[6]:$0130-$0136>>>
 
 <<<window[7]:$0165-$017D>>>
-[msg][special]「リイム![wait20]　だいじょうぶ？」
+[msg][special]「Liam![wait20] Are you okay?」
 <<<window[8]:$018B-$01A6>>>
-[msg][special]「うん、[wait20]それよりも教授たちを」
+[msg][special]「Yeah,[wait20] but more importantly, the professor」
 <<<window[9]:$01B0-$01BB>>>
-[msg][special]「ええ」
+[msg][special]「Right」
 <<<window[10]:$01CB-$01D0>>>
 
 <<<window[11]:$01D4-$0204>>>
-[msg][special]「おお、[wait20]タムタムか。[wait30]これを　見てくれ。[nl][wait30]　ついに　みつけたぞ」
+[msg][special]「Oh,[wait20] TamTam.[wait30] Take a look at this.[nl][wait30] I finally found it」
 <<<window[12]:$020E-$023A>>>
-[msg][special]「もう、[wait20]話は　あとで聴きますから[nl][wait20]　じっとしててください」
+[msg][special]「Come on,[wait20] we can talk later.[nl][wait20] Please hold still」
 <<<window[13]:$0283-$0291>>>
 
 <<<window[14]:$0297-$029B>>>
@@ -558,9 +558,9 @@
 <<<window[15]:$02A2-$02A6>>>
 
 <<<window[16]:$02AA-$02DD>>>
-[msg][special]「おお、ありがとよ。[nl][wait30]　それよりも大変じゃ。[wait30]やはり本当だったんじゃ」
+[msg][special]「Oh, thanks.[nl][wait30] But more importantly, this is huge.[wait30] It was true after all」
 <<<window[17]:$02E1-$030E>>>
-[msg][special]「この古文書を見るのじゃ。[nl][wait30]　ほれ、[wait20]ここの部分じゃ」
+[msg][special]「Look at this ancient manuscript.[nl][wait30] See,[wait20] this part right here」
 
 <<$1129115:56[$1136757]>>
 
@@ -612,17 +612,17 @@
 
 <<$1129115:80[$1139459]>>
 <<<window[0]:$0024-$0060>>>
-[msg][special]「そうげつ様とトランプ様の御命令だ![nl][wait30]　邪魔者を　ここに近づけるんじゃねえぞ～!」
+[msg][special]「Orders from Lord Fang and Lord Trump![nl][wait30] Don't let any intruders near here~!」
 <<<window[1]:$0064-$0074>>>
-[msg][special]「ヒッヒーーー!」
+[msg][special]「Hee-heee!」
 
 <<$1129115:81[$1139599]>>
 <<<window[0]:$0059-$008D>>>
-[msg][special]「ふはは、ネズミが　ワナにかかったようだな。[nl][wait30]　はさみうちに　してくれるわ!」[FFFE00]
+[msg][special]「Hahaha, looks like the rats walked into a trap.[nl][wait30] We'll surround them!」[FFFE00]
 
 <<$1129115:82[$1139746]>>
 <<<window[0]:$0015-$002E>>>
-[FF7F00]激しい雨で、水たまりが　できました。
+[FF7F00]Heavy rain has created puddles.
 <<<window[1]:$00CB-$00D8>>>
 
 <<<window[2]:$010B-$010C>>>
@@ -658,9 +658,9 @@
 
 <<$1129115:83[$1140962]>>
 <<<window[0]:$0027-$003C>>>
-[msg][special]「みんな　壊してやる‥‥」
+[msg][special]「I'll destroy everything...」
 <<<window[1]:$0138-$014C>>>
-[FF7F01]家が破壊されました。[FFFE00]
+[FF7F01]A house was destroyed.[FFFE00]
 <<<window[2]:$0158-$015B>>>
 
 <<$1129115:84[$1141327]>>
@@ -681,16 +681,16 @@
 
 <<$1129115:91[$1141455]>>
 <<<window[0]:$000C-$001B>>>
-[FF7F00]扉が　開きました。
+[FF7F00]The door has opened.
 <<<window[1]:$001E-$0027>>>
 
 <<<window[2]:$002C-$0035>>>
 
 <<$1129115:92[$1141516]>>
 <<<window[0]:$000C-$001B>>>
-[FF7F00]扉が　開きました。
+[FF7F00]The door has opened.
 <<<window[1]:$0049-$0075>>>
-[msg][special]「ものども、であえーい!」[nl][wait30][FFFD00]敵の増援が　あらわれました。
+[msg][special]「Men, to arms!」[nl][wait30][FFFD00]Enemy reinforcements have appeared.
 
 <<$1129115:93[$1141703]>>
 
@@ -698,13 +698,13 @@
 
 <<$1129115:95[$1141750]>>
 <<<window[0]:$001F-$0039>>>
-[msg][special]「わが半身よ、よみがえれーーー!」
+[msg][special]「My other half, be reborn!」
 <<<window[1]:$005E-$0077>>>
-[msg][special]「ふっかぁ～～つ![wait20]　ヒャハ!」
+[msg][special]「I'm baaack![wait20] Hyaha!」
 <<<window[2]:$007B-$0091>>>
-[FF7F00]魔物が　復活しました。[FFFE00]
+[FF7F00]The monster has been revived.[FFFE00]
 <<<window[3]:$00A8-$00C2>>>
-[msg][special]「わが半身よ、よみがえれーーー!」
+[msg][special]「My other half, be reborn!」
 
 <<$1129115:96[$1141989]>>
 

@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Translation formatting fixes.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="committing a ton of event script changes, etc">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/event-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/event-text.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-text.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-text.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/battle-text/86479.bin" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/battle-text/86479.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/unit-classes.csv" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/unit-classes.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -344,7 +340,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775928974134</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="committing a ton of event script changes, etc">
+      <option name="closed" value="true" />
+      <created>1775981258210</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1775981258210</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -365,7 +369,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Updated disassembly documentation. Changed Charley's name spelling. Changed Kurukuru to Spiral for obvious reasons. Updated various documents." />
     <MESSAGE value="static rendering is working for VWF! Still work to do, but it's progress!" />
     <MESSAGE value="Committing some changes. Relly annoyed that the vwf patch is fully broken once more. Renamed the current version for archival and rolling back to 4.2 (last commit)" />
     <MESSAGE value="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies." />
@@ -390,6 +393,7 @@
     <MESSAGE value="encoding fixup" />
     <MESSAGE value="fixed encoding for event-text script" />
     <MESSAGE value="Translation formatting fixes." />
-    <option name="LAST_COMMIT_MESSAGE" value="Translation formatting fixes." />
+    <MESSAGE value="committing a ton of event script changes, etc" />
+    <option name="LAST_COMMIT_MESSAGE" value="committing a ton of event script changes, etc" />
   </component>
 </project>
