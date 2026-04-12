@@ -39,46 +39,46 @@
 <<$1129115:7[$1131610]>>
 <<<window[0]:$0024-$0028>>>
 
-<<<window[1]:$002E-$0062>>>
-[msg][special]「It's come to this, time for my last resort-nya![nl][wait0A]　I'll borrow your strength-nya!」
+<<<window[1]:$0034-$0062>>>
+「It's come to this, time for my last resort-nya![nl][wait0A]　I'll borrow your strength-nya!」
 <<<window[2]:$0081-$0082>>>
 
-<<<window[3]:$00BD-$00D6>>>
-[msg][special]「Beat them up-nyaaa!」
+<<<window[3]:$00C3-$00D6>>>
+「Beat them up-nyaaa!」
 <<<window[4]:$00D8-$00F3>>>
 
 
 <<$1129115:8[$1131901]>>
-<<<window[0]:$001C-$002F>>>
-[msg]「A star has been summoned!」
+<<<window[0]:$001F-$002F>>>
+「A star has been summoned!」
 
 <<$1129115:9[$1131976]>>
 <<<window[0]:$0020-$0021>>>
 
-<<<window[1]:$004C-$0060>>>
-[msg][special]「I'll get you-nya!」
+<<<window[1]:$0052-$0060>>>
+「I'll get you-nya!」
 <<<window[2]:$006F-$0095>>>
 示ぁ[P]呼甘‥[R]憂ぁ[R]呼甘‥[E][d][G]ぁ[E]呼[r.]囲ョ猪[r.]紋ぁ[02]
-<<<window[3]:$0099-$00B7>>>
-[msg][special]「Look![wait20] It's the same shape as the manuscript」
-<<<window[4]:$00BB-$00D6>>>
-[msg][special]「Liam,[wait20] the rainbow magic stone!」
-<<<window[5]:$00E0-$00F5>>>
-[msg][special]「Okay,[wait20] I'll try」
+<<<window[3]:$009F-$00B7>>>
+「Look![wait20] It's the same shape as the manuscript」
+<<<window[4]:$00C1-$00D6>>>
+「Liam,[wait20] the rainbow magic stone!」
+<<<window[5]:$00E6-$00F5>>>
+「Okay,[wait20] I'll try」
 
 <<$1129115:10[$1136733]>>
 
 <<$1129115:11[$1132232]>>
 <<<window[0]:$001A-$0027>>>
 
-<<<window[1]:$0031-$003F>>>
-[msg]「Heave-ho, heave-ho」
+<<<window[1]:$0034-$003F>>>
+「Heave-ho, heave-ho」
 <<<window[2]:$0070-$0082>>>
 [FF7F01]The moon has appeared.
 
 <<$1129115:12[$1132419]>>
-<<<window[0]:$0013-$0026>>>
-[msg][special]「Well, this is a problem-nya」
+<<<window[0]:$0019-$0026>>>
+「Well, this is a problem-nya」
 
 <<$1129115:13[$1132479]>>
 <<<window[0]:$0006-$0008>>>
@@ -101,8 +101,8 @@
 <<$1129115:17[$1132893]>>
 
 <<$1129115:18[$1133125]>>
-<<<window[0]:$0017-$0032>>>
-[msg][special]「Here goes, Snow Spark Blizzard!」
+<<<window[0]:$001D-$0032>>>
+「Here goes, Snow Spark Blizzard!」
 <<<window[1]:$0035-$0037>>>
 [03]
 <<<window[2]:$0040-$0041>>>
@@ -161,16 +161,16 @@
 
 <<<window[9]:$0192-$01A6>>>
 [FF7F00]The die shows 5.[FFFE00]
-<<<window[10]:$01B5-$01EB>>>
-[msg][special]「Everyone, dance! [wait30]Yeaaah!」[nl][FFFD00]Everyone's positions are swapped.
+<<<window[10]:$01BB-$01EB>>>
+「Everyone, dance! [wait30]Yeaaah!」[nl][FFFD00]Everyone's positions are swapped.
 <<<window[11]:$020F-$0213>>>
 
 <<<window[12]:$0217-$0239>>>
 [FF7F00]The die shows 6.[FFFE00][nl]Nothing happens.[FFFE00]
 
 <<$1129115:21[$1134110]>>
-<<<window[0]:$001B-$0031>>>
-[msg][special]「Hehehe... prepare yourself」
+<<<window[0]:$0021-$0031>>>
+「Hehehe... prepare yourself」
 <<<window[1]:$0041-$0042>>>
 
 <<<window[2]:$0047-$0048>>>
@@ -179,12 +179,12 @@
 
 <<<window[4]:$0051-$0054>>>
 
-<<<window[5]:$0069-$0086>>>
-[msg][special]「La la la~~~~.[wait20] Lu lu lu~~~~~★」
+<<<window[5]:$006F-$0086>>>
+「La la la~~~~.[wait20] Lu lu lu~~~~~★」
 <<<window[6]:$00B6-$00C0>>>
 
-<<<window[7]:$00C7-$00E3>>>
-[msg][special]「Hehehe.[wait20] How did you like my song?」
+<<<window[7]:$00CD-$00E3>>>
+「Hehehe.[wait20] How did you like my song?」
 <<<window[8]:$00EE-$00EF>>>
 
 <<<window[9]:$00F0-$00F1>>>
@@ -197,30 +197,30 @@
 <<$1129115:23[$1134436]>>
 <<<window[0]:$0009-$001E>>>
 [FF7F08]The belt moves.[nl]And so do we.
-<<<window[1]:$0050-$0072>>>
-[msg][special] From somewhere, D[r.]. Skull's voice can be heard.[FFFE00]
-<<<window[2]:$0073-$0094>>>
-[msg][special]「How's the conveyor ride?[wait20] Hmm?」
-<<<window[3]:$0098-$00C7>>>
-[msg][special]「Just standing on it won't get you[nl][wait20] to where I am」
-<<<window[4]:$00CB-$00EB>>>
-[msg][special]「Better use your heads.[wait30] Hyaha!」[FFFE00]
+<<<window[1]:$0056-$0072>>>
+ From somewhere, D[r.]. Skull's voice can be heard.[FFFE00]
+<<<window[2]:$0079-$0094>>>
+「How's the conveyor ride?[wait20] Hmm?」
+<<<window[3]:$009E-$00C7>>>
+「Just standing on it won't get you[nl][wait20] to where I am」
+<<<window[4]:$00D1-$00EB>>>
+「Better use your heads.[wait30] Hyaha!」[FFFE00]
 
 <<$1129115:24[$1134677]>>
-<<<window[0]:$0009-$0016>>>
-[msg]「Sliiiiide!」
-<<<window[1]:$003C-$004D>>>
-[msg]「Whoa! I'm sliiiding!」
+<<<window[0]:$000C-$0016>>>
+「Sliiiiide!」
+<<<window[1]:$003F-$004D>>>
+「Whoa! I'm sliiiding!」
 
 <<$1129115:25[$1134772]>>
-<<<window[0]:$0052-$0068>>>
-[msg][special]「What's this panel?」
-<<<window[1]:$0072-$0089>>>
-[msg][special]「There are two pictures on it」
-<<<window[2]:$0093-$00BC>>>
-[msg][special]「We gotta[wait20] do something about this,[wait20] moo-moo」
-<<<window[3]:$00D1-$00E7>>>
-[msg][special]「I'll guard the panel-chu!」
+<<<window[0]:$0058-$0068>>>
+「What's this panel?」
+<<<window[1]:$0078-$0089>>>
+「There are two pictures on it」
+<<<window[2]:$0099-$00BC>>>
+「We gotta[wait20] do something about this,[wait20] moo-moo」
+<<<window[3]:$00D7-$00E7>>>
+「I'll guard the panel-chu!」
 
 <<$1129115:26[$1135020]>>
 <<<window[0]:$005E-$005F>>>
@@ -283,10 +283,10 @@
 [FF7F09]Bu~rn, baby, bu~rn.
 
 <<$1129115:33[$1135936]>>
-<<<window[0]:$0023-$0060>>>
-[msg][special]「Arrgh, I told you not to move![nl][wait30] You lot![wait20] You've made me angry!」
-<<<window[1]:$0064-$0096>>>
-[msg][special]「I'll summon a tornado to blow you away![nl][wait30] Come, Hurricane Caaall!」
+<<<window[0]:$0029-$0060>>>
+「Arrgh, I told you not to move![nl][wait30] You lot![wait20] You've made me angry!」
+<<<window[1]:$006A-$0096>>>
+「I'll summon a tornado to blow you away![nl][wait30] Come, Hurricane Caaall!」
 <<<window[2]:$0098-$009D>>>
 
 
@@ -335,8 +335,8 @@
 <<$1129115:46[$1136396]>>
 
 <<$1129115:47[$1136410]>>
-<<<window[0]:$0037-$0064>>>
-[msg][special]「We'll come with you too.[nl][wait30] Please take us along.[wait30] Rabi rabi」
+<<<window[0]:$003D-$0064>>>
+「We'll come with you too.[nl][wait30] Please take us along.[wait30] Rabi rabi」
 <<<window[1]:$0068-$007E>>>
 [FF7F00]New allies have joined.
 <<<window[2]:$008F-$0094>>>
@@ -347,10 +347,10 @@
 <<$1129115:48[$1136626]>>
 
 <<$1129115:49[$1136649]>>
-<<<window[0]:$000E-$0026>>>
-主人「What's wrong with ya. Pathetic」[FFFE00]
-<<<window[1]:$0037-$004D>>>
-主人「That was one heck of an earthquake」[FFFE00]
+<<<window[0]:$0012-$0026>>>
+「What's wrong with ya. Pathetic」[FFFE00]
+<<<window[1]:$003B-$004D>>>
+「That was one heck of an earthquake」[FFFE00]
 
 <<$1129115:50[$1136740]>>
 
@@ -361,8 +361,8 @@
 
 <<<window[2]:$005B-$005C>>>
 
-<<<window[3]:$005D-$0075>>>
-[msg][special]「Hmm... I have a bad feeling about this...」
+<<<window[3]:$0063-$0075>>>
+「Hmm... I have a bad feeling about this...」
 <<<window[4]:$0078-$007A>>>
 
 <<<window[5]:$0084-$0086>>>
@@ -421,16 +421,16 @@
 
 <<<window[32]:$0530-$0534>>>
 
-<<<window[33]:$0540-$0555>>>
-[msg][special]「We did it, Professor!」
-<<<window[34]:$055C-$058A>>>
-[msg][special]「Yes, this time I've truly found it.[nl] If this ancient manuscript is genuine,
-<<<window[35]:$058F-$05C7>>>
-[msg][special] it would be the ultimate proof[nl] of the Prisma treasure of legend. We did it!」
+<<<window[33]:$0546-$0555>>>
+「We did it, Professor!」
+<<<window[34]:$0562-$058A>>>
+「Yes, this time I've truly[nl]found it.[wait20][cls]If this ancient manuscript is genuine,
+<<<window[35]:$0595-$05C7>>>
+ it would be the ultimate proof[nl] of the Prisma treasure of legend. [wait20]We did it!」
 <<<window[36]:$05D2-$05D9>>>
 
-<<<window[37]:$05DD-$05F1>>>
-[msg][special]「Whoa, an earthquake!!」
+<<<window[37]:$05E3-$05F1>>>
+「Whoa, an earthquake!!」
 <<<window[38]:$0600-$060A>>>
 <<<window[39]:$061D-$062F>>>
 「Aaaaaaahhh!!」
@@ -481,24 +481,24 @@
 
 <<<window[63]:$0810-$0814>>>
 
-<<<window[64]:$0843-$086B>>>
-[msg][special]「This is bad, the entrance[nl] has been blocked off~~~~~!」
-<<<window[65]:$0883-$089B>>>
-[cls][special]Knock knock....[wait0A]Knock knock....
-<<<window[66]:$08C2-$08EA>>>
-[msg][special]「Ah! We're saved![nl] Professor, it looks like help has arrived!」
-<<<window[67]:$08F1-$0905>>>
-[msg][special]「But, that way is...」
-<<<window[68]:$0909-$092D>>>
-[msg][special]「Hey, over here, over here![nl] Help us~!」
-<<<window[69]:$095F-$0974>>>
-[msg][special]「Eeeeeeeeek!」
+<<<window[64]:$0849-$086B>>>
+「This is bad, the entrance[nl] has been blocked off~~~~!」
+<<<window[65]:$0889-$089B>>>
+Knock knock....[wait0A]Knock knock....
+<<<window[66]:$08C8-$08EA>>>
+「Ah! We're saved![nl] Professor, it looks like help has arrived!」
+<<<window[67]:$08F7-$0905>>>
+「But, that way is...」
+<<<window[68]:$090F-$092D>>>
+「Hey, over here, over here![nl] Help us~!」
+<<<window[69]:$0965-$0974>>>
+「Eeeeeeeeek!」
 <<<window[70]:$099E-$099F>>>
 
-<<<window[71]:$09A1-$09BF>>>
-[msg][special]「Someone! Anyone! Help meeeee!!」
-<<<window[72]:$09DE-$09ED>>>
-[cls]「Waaaaahhh!!」
+<<<window[71]:$09A7-$09BF>>>
+「Someone! Anyone! Help meeeee!!」
+<<<window[72]:$09E1-$09ED>>>
+「Waaaaahhh!!」
 <<<window[73]:$09F2-$09FA>>>
 
 <<<window[74]:$09FB-$0A03>>>
@@ -511,8 +511,8 @@
 
 <<<window[78]:$0A1F-$0A27>>>
 
-<<<window[79]:$0A65-$0A79>>>
-[msg][special]「You're safe now!」
+<<<window[79]:$0A6B-$0A79>>>
+「You're safe now!」
 <<<window[80]:$0A82-$0A87>>>
 
 
@@ -526,7 +526,7 @@
 
 <<$1129115:55[$1129991]>>
 <<<window[0]:$0036-$004E>>>
-[FF060E]Liam and friends head for Lineark Castle
+[FF060E]Liam and friends head for Linark Castle
 <<<window[1]:$0062-$0098>>>
 [FF030C]Along the way, Prof. Radock's assistant[FF060F]Peacock must be escorted to Pazta Village
 <<<window[2]:$00F6-$00F7>>>
@@ -539,28 +539,28 @@
 
 <<<window[6]:$0130-$0136>>>
 
-<<<window[7]:$0165-$017D>>>
-[msg][special]「Liam![wait20] Are you okay?」
-<<<window[8]:$018B-$01A6>>>
-[msg][special]「Yeah,[wait20] but more importantly, the professor」
-<<<window[9]:$01B0-$01BB>>>
-[msg][special]「Right」
+<<<window[7]:$016B-$017D>>>
+「Liam![wait20] Are you okay?」
+<<<window[8]:$0191-$01A6>>>
+「Yeah,[wait20] but more importantly, the professor」
+<<<window[9]:$01B6-$01BB>>>
+「Right」
 <<<window[10]:$01CB-$01D0>>>
 
-<<<window[11]:$01D4-$0204>>>
-[msg][special]「Oh,[wait20] TamTam.[wait30] Take a look at this.[nl][wait30] I finally found it」
-<<<window[12]:$020E-$023A>>>
-[msg][special]「Come on,[wait20] we can talk later.[nl][wait20] Please hold still」
+<<<window[11]:$01DA-$0204>>>
+「Oh,[wait20] TamTam.[wait30] Take a look at this.[nl][wait30] I finally found it」
+<<<window[12]:$0214-$023A>>>
+「Come on,[wait20] we can talk later.[nl][wait20] Please hold still」
 <<<window[13]:$0283-$0291>>>
 
 <<<window[14]:$0297-$029B>>>
 
 <<<window[15]:$02A2-$02A6>>>
 
-<<<window[16]:$02AA-$02DD>>>
-[msg][special]「Oh, thanks.[nl][wait30] But more importantly, this is huge.[wait30] It was true after all」
-<<<window[17]:$02E1-$030E>>>
-[msg][special]「Look at this ancient manuscript.[nl][wait30] See,[wait20] this part right here」
+<<<window[16]:$02B0-$02DD>>>
+「Oh, thanks.[nl][wait30] But more importantly, this is huge.[wait30] It was true after all」
+<<<window[17]:$02E7-$030E>>>
+「Look at this ancient manuscript.[nl][wait30] See,[wait20] this part right here」
 
 <<$1129115:56[$1136757]>>
 
@@ -611,14 +611,14 @@
 <<$1129115:79[$1136757]>>
 
 <<$1129115:80[$1139459]>>
-<<<window[0]:$0024-$0060>>>
-[msg][special]「Orders from Lord Fang and Lord Trump![nl][wait30] Don't let any intruders near here~!」
-<<<window[1]:$0064-$0074>>>
-[msg][special]「Hee-heee!」
+<<<window[0]:$002A-$0060>>>
+「Orders from Lord Fang and Lord Trump![nl][wait30] Don't let any intruders near here~!」
+<<<window[1]:$006A-$0074>>>
+「Hee-heee!」
 
 <<$1129115:81[$1139599]>>
-<<<window[0]:$0059-$008D>>>
-[msg][special]「Hahaha, looks like the rats walked into a trap.[nl][wait30] We'll surround them!」[FFFE00]
+<<<window[0]:$005F-$008D>>>
+「Hahaha, looks like the rats walked into a trap.[nl][wait30] We'll surround them!」[FFFE00]
 
 <<$1129115:82[$1139746]>>
 <<<window[0]:$0015-$002E>>>
@@ -657,8 +657,8 @@
 
 
 <<$1129115:83[$1140962]>>
-<<<window[0]:$0027-$003C>>>
-[msg][special]「I'll destroy everything...」
+<<<window[0]:$002D-$003C>>>
+「I'll destroy everything...」
 <<<window[1]:$0138-$014C>>>
 [FF7F01]A house was destroyed.[FFFE00]
 <<<window[2]:$0158-$015B>>>
@@ -689,22 +689,22 @@
 <<$1129115:92[$1141516]>>
 <<<window[0]:$000C-$001B>>>
 [FF7F00]The door has opened.
-<<<window[1]:$0049-$0075>>>
-[msg][special]「Men, to arms!」[nl][wait30][FFFD00]Enemy reinforcements have appeared.
+<<<window[1]:$004F-$0075>>>
+「Men, to arms!」[nl][wait30][FFFD00]Enemy reinforcements have appeared.
 
 <<$1129115:93[$1141703]>>
 
 <<$1129115:94[$1141726]>>
 
 <<$1129115:95[$1141750]>>
-<<<window[0]:$001F-$0039>>>
-[msg][special]「My other half, be reborn!」
-<<<window[1]:$005E-$0077>>>
-[msg][special]「I'm baaack![wait20] Hyaha!」
+<<<window[0]:$0025-$0039>>>
+「My other half, be reborn!」
+<<<window[1]:$0064-$0077>>>
+「I'm baaack![wait20] Hyaha!」
 <<<window[2]:$007B-$0091>>>
 [FF7F00]The monster has been revived.[FFFE00]
-<<<window[3]:$00A8-$00C2>>>
-[msg][special]「My other half, be reborn!」
+<<<window[3]:$00AE-$00C2>>>
+「My other half, be reborn!」
 
 <<$1129115:96[$1141989]>>
 
