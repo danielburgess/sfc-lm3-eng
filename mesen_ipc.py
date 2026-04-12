@@ -1,7 +1,21 @@
 """Mesen2-Diz IPC helper for debugger communication."""
 import socket, json, sys
 
-PIPE_PATH = '/tmp/CoreFxPipe_Mesen2Diz_DebuggerIpc'
+def _find_pipe():
+    """Auto-detect Mesen IPC pipe in /tmp/."""
+    import glob
+    candidates = glob.glob('/tmp/CoreFxPipe_Mesen2Diz_*')
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        # Prefer one matching lm3
+        for c in candidates:
+            if 'lm3' in c:
+                return c
+        return candidates[0]
+    return '/tmp/CoreFxPipe_Mesen2Diz_DebuggerIpc'  # fallback
+
+PIPE_PATH = _find_pipe()
 
 def connect():
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)

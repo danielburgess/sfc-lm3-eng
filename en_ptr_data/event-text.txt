@@ -342,7 +342,7 @@
 <<<window[2]:$008F-$0094>>>
 
 <<<window[3]:$00A6-$00CB>>>
-[FF080C]Having parted with Peacock,[FF0A0F]the heroes head for Lineark Castle
+[FF080C]Having parted with Peacock,[FF0A0F]the heroes head for Linark Castle
 
 <<$1129115:48[$1136626]>>
 
@@ -424,15 +424,16 @@
 <<<window[33]:$0546-$0555>>>
 「We did it, Professor!」
 <<<window[34]:$0562-$058A>>>
-「Yes, this time I've truly[nl]found it.[wait20][cls]If this ancient manuscript is genuine,
+「Yes, this time I've truly[nl]found it![wait20][cls]If this ancient manuscript[nl]is genuine...
 <<<window[35]:$0595-$05C7>>>
- it would be the ultimate proof[nl] of the Prisma treasure of legend. [wait20]We did it!」
+It would be the proof[nl]I've been looking for![wait20][cls]The Prisma treasure of[nl]legend exists! [wait20][cls]We did it!」
 <<<window[36]:$05D2-$05D9>>>
 
 <<<window[37]:$05E3-$05F1>>>
 「Whoa, an earthquake!!」
 <<<window[38]:$0600-$060A>>>
-<<<window[39]:$061D-$062F>>>
+
+<<<window[39]:$061F-$062F>>>
 「Aaaaaaahhh!!」
 <<<window[40]:$0645-$0653>>>
 <<<window[41]:$0655-$065F>>>
@@ -486,9 +487,9 @@
 <<<window[65]:$0889-$089B>>>
 Knock knock....[wait0A]Knock knock....
 <<<window[66]:$08C8-$08EA>>>
-「Ah! We're saved![nl] Professor, it looks like help has arrived!」
+「Ah! We're saved![wait20][cls]Professor, it seems that[nl]help has arrived!」
 <<<window[67]:$08F7-$0905>>>
-「But, that way is...」
+「But, that isn't the way ou...」
 <<<window[68]:$090F-$092D>>>
 「Hey, over here, over here![nl] Help us~!」
 <<<window[69]:$0965-$0974>>>
@@ -496,7 +497,7 @@ Knock knock....[wait0A]Knock knock....
 <<<window[70]:$099E-$099F>>>
 
 <<<window[71]:$09A7-$09BF>>>
-「Someone! Anyone! Help meeeee!!」
+「Someone! Anyone![nl]Help meeeee!!」
 <<<window[72]:$09E1-$09ED>>>
 「Waaaaahhh!!」
 <<<window[73]:$09F2-$09FA>>>
@@ -522,7 +523,7 @@ Knock knock....[wait0A]Knock knock....
 
 <<$1129115:54[$1131552]>>
 <<<window[0]:$000A-$001A>>>
-[FF0D1A]Surveying the map
+[FF0D1A]Surveying the map...
 
 <<$1129115:55[$1129991]>>
 <<<window[0]:$0036-$004E>>>

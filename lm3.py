@@ -1607,16 +1607,10 @@ def encode_script_file(script_file: str, table_filename: str,
 
     name = os.path.splitext(os.path.basename(script_file))[0]
 
-    # Compute checksum over script + table file + all encoder source files.
-    # Any change to the build/encoding logic invalidates every cache entry.
+    # Compute checksum over script + table file.
+    # Use --force to invalidate cache after encoder logic changes.
     h = hashlib.sha256()
-    src_dir = os.path.dirname(os.path.abspath(__file__))
-    source_files = [
-        os.path.join(src_dir, 'lm3.py'),
-        os.path.join(src_dir, 'retrotool', 'script.py'),
-        os.path.join(src_dir, 'retrotool', 'snes.py'),
-    ]
-    for path in [script_file, table_filename] + source_files:
+    for path in [script_file, table_filename]:
         with open(path, 'rb') as f:
             h.update(f.read())
     if sub_table_filter is not None:
