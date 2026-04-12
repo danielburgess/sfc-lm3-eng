@@ -576,6 +576,86 @@ def dump_event_script(filename, dict_data, tbl, deduplicate=True):
     tbl.dump_script(filename, dict_data, deduplicate)
 
 
+def _find_text_windows(bin_data, ctrl_lengths):
+    """
+    Scan event-script binary data for text windows: regions between
+    [P] (0x10, enters text mode) and [end] (0x00, exits text mode).
+
+    Returns list of (start, end) tuples where start is the offset of 0x10
+    and end is the offset of the terminating 0x00.
+    """
+    windows = []
+    pos = 0
+    in_text = False
+    text_start = None
+    while pos < len(bin_data):
+        b = bin_data[pos]
+        if b == 0xFF and pos + 1 < len(bin_data):
+            sub = bin_data[pos + 1]
+            cl = ctrl_lengths.get(sub, 2)
+            pos += cl
+        elif b == 0x10 and not in_text:
+            in_text = True
+            text_start = pos
+            pos += 1
+        elif b == 0x00 and in_text:
+            windows.append((text_start, pos))
+            in_text = False
+            pos += 1
+        elif b == 0x00:
+            pos += 1
+        else:
+            pos += 1
+    # Window that extends to end of entry (no explicit [end])
+    if in_text:
+        windows.append((text_start, len(bin_data)))
+    return windows
+
+
+def dump_event_script_windowed(filename, dict_data, tbl, deduplicate=True):
+    """
+    Dump event script data in windowed format.  Each entry shows only its
+    text windows (between [P] and [end]).  Bytecodes are invisible.
+
+    Output format:
+        <<$TBLADDR:INDEX[$DATAADDR]>>
+        <<<window[0]:$START-$END>>>
+        [FF0A0C]LITTLE MASTER[pink]EPISODE 3
+        <<<window[1]:$START-$END>>>
+        PLANNER: TADATO KAWANO
+    """
+    ctrl = tbl.ctrl_lengths
+    nl = '\n'
+    line1 = True
+    dumped_addrs = []
+
+    with open(filename, 'w', encoding='utf-8') as of:
+        for data in dict_data:
+            of.write(f"{'' if line1 else nl}<<{data.get('id')}>>{nl}")
+            line1 = False
+
+            addr = data.get('addr', None)
+            if deduplicate and addr is not None:
+                if addr in dumped_addrs:
+                    continue
+                dumped_addrs.append(addr)
+
+            raw = data['data']
+            windows = _find_text_windows(raw, ctrl)
+
+            if not windows:
+                # Pure bytecode entry — blank (no windows to show)
+                continue
+
+            for wi, (tw_start, tw_end) in enumerate(windows):
+                # Decode only the text content (after [P], before [end])
+                text_data = raw[tw_start + 1:tw_end]
+                decoded = interpret_event_script(text_data, tbl)
+
+                of.write(f"<<<window[{wi}]:${tw_start:04X}-${tw_end:04X}>>>{nl}")
+                of.write(f"{decoded}{nl}")
+
+
 def _int_to_bytes_be(val):
     """Convert an integer to big-endian bytes (e.g. 0xFFF278 → b'\\xFF\\xF2\\x78')."""
     if val == 0:
@@ -1712,6 +1792,97 @@ def encode_script_file(script_file: str, table_filename: str,
     return encoded_entries
 
 
+def encode_event_script_windowed(script_file: str, table_filename: str,
+                                 fallback_table: str = None,
+                                 force: bool = False) -> list:
+    """
+    Encode a windowed event-script file.  Each entry may have zero or more
+    <<<window[N]:$START-$END>>> blocks containing translatable text.
+
+    Returns list of entries indexed by header :N.  Each entry is either:
+      - None (pure bytecode, no windows — skip during insertion)
+      - list of (start, end, encoded_bytes) tuples, one per window
+        start/end are original ROM offsets (relative to entry data start)
+        encoded_bytes is the text content encoded (WITHOUT [P] or [end])
+    """
+    import re
+
+    tbl = Table(table_filename)
+    fb_tbl = Table(fallback_table) if fallback_table else None
+
+    text = _read_script_text(script_file)
+
+    # Split on entry headers <<$...>> but NOT on <<<window...>>>.
+    # Use regex to find entry headers and split around them.
+    entry_header_re = re.compile(r'^(<<\$[^>]+>>)', re.MULTILINE)
+    parts = entry_header_re.split(text)
+
+    parsed = {}  # header_idx -> list of (start, end, text_content)
+    current_header = None
+    for part in parts:
+        header_match = entry_header_re.match(part)
+        if header_match:
+            current_header = part
+            continue
+        if current_header is None:
+            continue
+        # part is the content after the header
+        header = current_header
+        rest = part
+        idx_match = re.search(r':(\d+)', header)
+        if not idx_match:
+            current_header = None
+            continue
+        header_idx = int(idx_match.group(1))
+
+        # Parse window blocks
+        windows = []
+        window_pattern = re.compile(
+            r'<<<window\[(\d+)\]:\$([0-9A-Fa-f]+)-\$([0-9A-Fa-f]+)>>>\s*\n(.*?)(?=<<<window|<<\$|$)',
+            re.DOTALL
+        )
+        for m in window_pattern.finditer(rest):
+            wi = int(m.group(1))
+            start = int(m.group(2), 16)
+            end = int(m.group(3), 16)
+            content = m.group(4).rstrip('\n\r\t ')
+            windows.append((start, end, content))
+
+        if windows:
+            parsed[header_idx] = windows
+        # else: pure bytecode, parsed[idx] stays absent → None
+        current_header = None
+
+    # Encode each window's text content
+    result = []
+    if parsed:
+        max_idx = max(parsed)
+        for entry_idx in range(max_idx + 1):
+            if entry_idx not in parsed:
+                result.append(None)
+                continue
+            encoded_windows = []
+            for start, end, content in parsed[entry_idx]:
+                if not content:
+                    # Empty window — no text to encode
+                    encoded_windows.append((start, end, b''))
+                    continue
+                encoded = encode_text(content, tbl, fallback_tbl=fb_tbl)
+                if isinstance(encoded, tuple):
+                    encoded_bytes = encoded[0]
+                else:
+                    encoded_bytes = encoded
+                # Strip trailing 0x00 terminator — we don't want it in the
+                # overflow since the redirect-back FFC0 points to the original
+                # ROM's [end] byte.
+                if encoded_bytes.endswith(b'\x00'):
+                    encoded_bytes = encoded_bytes[:-1]
+                encoded_windows.append((start, end, encoded_bytes))
+            result.append(encoded_windows)
+
+    return result
+
+
 def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
                           ptr_tbl_pos: int, tbl_len: int,
                           ptr_bank: int = None, ptr_addr_type=None,
@@ -1929,6 +2100,49 @@ def _collect_ffc0_pins(en_folder: str = 'en_ptr_data') -> set:
     return pins
 
 
+def _find_last_overflow_text_window(encoded: bytes, max_inline: int,
+                                    ctrl_lengths: dict, reserve: int = 5):
+    """
+    For event_script entries that overflow, find the last text window where
+    we can place an FFC0 redirect.  A text window is [P](0x10) ... [end](0x00).
+
+    The redirect needs: [P] + FF C0 + 3-byte addr = 6 bytes inline at the
+    window start.  The [end] at window end stays in ROM (untouched).
+
+    Returns (tw_start, tw_end) — byte offsets of [P] and [end], or (None, None).
+    """
+    # Walk the encoded data to find all text windows.
+    windows = []
+    pos = 0
+    in_text = False
+    text_start = None
+    while pos < len(encoded):
+        b = encoded[pos]
+        if b == 0xFF and pos + 1 < len(encoded):
+            sub = encoded[pos + 1]
+            cl = ctrl_lengths.get(sub, 2)
+            pos += cl
+        elif b == 0x10 and not in_text:
+            in_text = True
+            text_start = pos
+            pos += 1
+        elif b == 0x00 and in_text:
+            windows.append((text_start, pos))
+            in_text = False
+            pos += 1
+        elif b == 0x00 and not in_text:
+            pos += 1
+        else:
+            pos += 1
+
+    # Find the last window where [P] + FFC0 (6 bytes) fits within the inline budget.
+    # tw_start must be such that tw_start + 1 + reserve <= max_inline.
+    for tw_start, tw_end in reversed(windows):
+        if tw_start + 1 + reserve <= max_inline:
+            return (tw_start, tw_end)
+    return (None, None)
+
+
 def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
                      event_script: bool = False, reserve: int = 4) -> int:
     """
@@ -1953,6 +2167,8 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
     # Walk through the encoded bytes tracking character boundaries.
     pos = 0
     last_safe = 0
+    in_text_mode = False       # event_script: True between 0x10 [P] and 0x00 [end]
+    last_text_safe = 0         # event_script: last safe split inside a text window
     while pos < len(encoded):
         b = encoded[pos]
         if b == 0xFF and pos + 1 < len(encoded):
@@ -1960,25 +2176,43 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
             ctrl_len = ctrl_lengths.get(sub, 2)  # default 2 if unknown
             if pos + ctrl_len <= budget:
                 last_safe = pos + ctrl_len
+                if event_script and in_text_mode:
+                    last_text_safe = pos + ctrl_len
                 pos += ctrl_len
             else:
                 break  # can't fit this control code inline
         elif b == 0x00:
-            if event_script and pos + 1 < len(encoded) and encoded[pos + 1] != 0x00:
+            if event_script:
+                # 0x00 ends text mode → back to event bytecodes.
                 if pos + 1 <= budget:
+                    if in_text_mode:
+                        in_text_mode = False
                     last_safe = pos + 1
                     pos += 1
                 else:
                     break
             else:
+                # Non-event: 0x00 is final terminator → stop.
                 break
-        else:
+        elif event_script and b == 0x10:
+            # [P] — enters text display mode.
+            in_text_mode = True
             if pos + 1 <= budget:
                 last_safe = pos + 1
                 pos += 1
             else:
                 break
+        else:
+            if pos + 1 <= budget:
+                last_safe = pos + 1
+                if event_script and in_text_mode:
+                    last_text_safe = pos + 1
+                pos += 1
+            else:
+                break
 
+    if event_script:
+        return last_text_safe
     return last_safe
 
 
@@ -2112,27 +2346,71 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
             # Overflow — split with FFC0 redirect to expansion space.
             # FFC0 permanently redirects the text pointer.  The entire tail
             # goes to expansion space in bank $C6.  No custom ASM needed.
-            split = _find_safe_split(encoded, max_size, ctrl_lengths,
-                                     event_script=event_script, reserve=5)
-            if split == 0:
-                # Original slot is smaller than a 5-byte FFC0 redirect —
-                # can't overflow, preserve original JP bytes.  Not a warning:
-                # these slots were never meant to hold meaningful text.
-                continue
 
-            inline_part = encoded[:split]
+            if event_script:
+                # Event-script overflow: find the last text window whose text
+                # we can redirect.  Layout:
+                #   Inline: encoded[:tw_start+1] + FF C0 (placeholder)
+                #           [P] stays inline, FFC0 right after it
+                #   Overflow: encoded[tw_start+1:tw_end] + FF C0 → back to ROM [end]
+                #           text content in $C6, then redirect back for [end]
+                # Bytecodes are NEVER overwritten — [end] and everything after
+                # remain intact in original ROM.
+                tw_start, tw_end = _find_last_overflow_text_window(
+                    encoded, max_size, ctrl_lengths, reserve=5)
+                if tw_start is None:
+                    print(f'  SKIP entry {i}: no text window found for overflow')
+                    continue
 
-            # Build FFC0 redirect: inline_part + FF C0 + placeholder (3 bytes).
-            redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
-            assert len(redirect) <= max_size, (
-                f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
+                # Split right after [P] (tw_start is the 0x10 position).
+                split = tw_start + 1
+                inline_part = encoded[:split]
 
-            # Write inline portion + redirect (no padding — banks are shared).
-            rom[pc:pc + len(redirect)] = redirect
+                # Build redirect: inline up to [P], then FF C0 placeholder.
+                redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
+                assert len(redirect) <= max_size, (
+                    f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
+                rom[pc:pc + len(redirect)] = redirect
+                ffc0_fixup_pc = pc + len(inline_part) + 2
 
-            # Record the fixup position and the overflow tail.
-            ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
-            overflow_tail = encoded[split:]  # includes the final 0x00 terminator
+                # Overflow tail: text content (without [P] and without [end]),
+                # plus FF C0 redirect back to [end] in original ROM.
+                text_content = encoded[split:tw_end]  # text between [P] and [end]
+                # Build return redirect: FF C0 + SNES addr of (pc + tw_end)
+                return_pc = pc + tw_end
+                return_snes = SFCAddress(return_pc).get_address(SFCAddressType.LOROM1)
+                return_addr = bytes([
+                    return_snes & 0xFF,
+                    (return_snes >> 8) & 0xFF,
+                    (return_snes >> 16) & 0xFF
+                ])
+                overflow_tail = text_content + b'\xFF\xC0' + return_addr
+
+                print(f'  SPLIT entry {i}: encoded={len(encoded)} max={max_size} '
+                      f'tw={tw_start}-{tw_end} split={split} '
+                      f'text={len(text_content)}b overflow={len(overflow_tail)}b '
+                      f'return→${return_snes:06X}')
+            else:
+                split = _find_safe_split(encoded, max_size, ctrl_lengths,
+                                         event_script=False, reserve=5)
+                if split == 0 and max_size < 5:
+                    # Original slot is smaller than a 5-byte FFC0 redirect —
+                    # can't overflow, preserve original JP bytes.
+                    continue
+
+                inline_part = encoded[:split]
+
+                # Build FFC0 redirect: inline_part + FF C0 + placeholder (3 bytes).
+                redirect = inline_part + b'\xFF\xC0\xFF\xFF\xFF'
+                assert len(redirect) <= max_size, (
+                    f'Entry {i}: FFC0 redirect ({len(redirect)}) > max_size ({max_size})')
+
+                # Write inline portion + redirect (no padding — banks are shared).
+                rom[pc:pc + len(redirect)] = redirect
+
+                # Record the fixup position and the overflow tail.
+                ffc0_fixup_pc = pc + len(inline_part) + 2  # offset of the 3-byte addr
+                overflow_tail = encoded[split:]  # includes the final 0x00 terminator
 
             # Track which fixups land in the overflow tail (tail-relative offset).
             tail_fixups = []
@@ -2260,6 +2538,93 @@ def write_dte_expansion(rom: bytearray, dte_results: list[dict]):
 # ---------------------------------------------------------------------------
 
 FFC0_OVERFLOW_DATA_PC = DTE_TABLE1_DATA_PC   # reuse DTE table 1 data area
+
+
+def insert_event_script_windowed(rom: bytearray, script_file: str,
+                                 table_filename: str, ptr_tbl_pos: int,
+                                 tbl_len: int, source_rom: bytes,
+                                 fallback_table: str = None,
+                                 force: bool = False) -> dict:
+    """
+    Insert event-script text using the windowed format.  For each text window
+    in each entry, writes [P] + FFC0 redirect at the window's original ROM
+    position, puts the encoded EN text + FFC0-back in $C6 expansion space.
+
+    Bytecodes are never touched — only the text within windows is replaced.
+
+    Returns dict with 'ffc0_overflow' list for write_ffc0_overflow().
+    """
+    from retrotool.snes import SFCAddress, SFCAddressType
+
+    num_ptrs = tbl_len // 2
+
+    # Read original pointers from source ROM.
+    ptr_table_addr = SFCAddress(ptr_tbl_pos)
+    ptr_bank = ptr_table_addr.get_bank_byte(SFCAddressType.LOROM1)
+
+    orig_pcs = []
+    for i in range(num_ptrs):
+        off = ptr_tbl_pos + i * 2
+        addr16 = source_rom[off] | (source_rom[off + 1] << 8)
+        snes = (ptr_bank << 16) | addr16
+        pc = SFCAddress(snes, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
+        orig_pcs.append(pc)
+
+    # Encode windowed script file.
+    windowed_entries = encode_event_script_windowed(
+        script_file, table_filename,
+        fallback_table=fallback_table, force=force)
+
+    ffc0_overflow = []
+    window_count = 0
+
+    for i, entry_windows in enumerate(windowed_entries):
+        if entry_windows is None or i >= num_ptrs:
+            continue
+
+        pc = orig_pcs[i]
+
+        for start, end, encoded_text in entry_windows:
+            if not encoded_text:
+                continue  # empty window, skip
+
+            # Need 6 bytes minimum: [P](1) + FF C0(2) + addr(3).
+            # If window is too small, the FFC0 overwrites [end] and bytecodes.
+            window_size = end - start
+            if window_size < 6:
+                continue  # too small, likely false 0x10 positive
+
+            # Compare encoded text to original ROM bytes.  If identical,
+            # skip the redirect — no point rewriting unchanged text, and
+            # false-positive 0x10 windows would corrupt bytecodes.
+            orig_text = bytes(source_rom[pc + start + 1 : pc + end])
+            if encoded_text == orig_text:
+                continue  # unchanged, skip redirect
+
+            # Write [P] + FF C0 + placeholder at the window start in ROM.
+            # [P] (0x10) is already at pc + start in original ROM — keep it.
+            # Write FFC0 right after it: pc + start + 1.
+            ffc0_pc = pc + start + 1
+            rom[ffc0_pc:ffc0_pc + 5] = b'\xFF\xC0\xFF\xFF\xFF'
+
+            # Build overflow tail: encoded text + FF C0 + return addr.
+            # Return FFC0 points back to the [end] (0x00) at pc + end.
+            return_pc = pc + end
+            return_snes = SFCAddress(return_pc).get_address(SFCAddressType.LOROM1)
+            return_addr = bytes([
+                return_snes & 0xFF,
+                (return_snes >> 8) & 0xFF,
+                (return_snes >> 16) & 0xFF
+            ])
+            overflow_tail = encoded_text + b'\xFF\xC0' + return_addr
+
+            # Record: (entry_idx, fixup_pc, overflow_tail, tail_fixups)
+            # fixup_pc = location of the 3-byte addr placeholder in the forward FFC0
+            ffc0_overflow.append((i, ffc0_pc + 2, overflow_tail, []))
+            window_count += 1
+
+    print(f'  event-text windowed: {window_count} windows redirected')
+    return {'ffc0_overflow': ffc0_overflow}
 
 
 def write_ffc0_overflow(rom: bytearray, dte_results: list[dict]):
@@ -2886,28 +3251,41 @@ def insert_all_scripts(rom_path: str,
     for tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl in jobs:
         name = tbl_info['name']
 
-        result = insert_dte_table(
-            rom, script_file, tbl_file,
-            tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
-            source_rom=orig_rom,
-            data_start_pc=tbl_info.get('data_start_pc'),
-            cache_dir=cache_dir, force=force,
-            fallback_table=fb_tbl,
-            event_script=tbl_info.get('event_script', False),
-            word_wrap=tbl_info.get('word_wrap'),
-            textbuf_limit=tbl_info.get('textbuf_limit'),
-            ffc0_pins=ffc0_pins,
-        )
-        all_results.append(result)
-        oc = result['overflow_count']
-        ffc0_count = len(result.get('ffc0_overflow', []))
-        total = result['total_entries']
-        if ffc0_count:
-            print(f'  {name}: {total} entries, {ffc0_count} overflow → FFC0{lang_tag}')
-        elif oc:
-            print(f'  {name}: {total} entries, {oc} overflow (preserved JP){lang_tag}')
+        if tbl_info.get('event_script', False):
+            # Windowed insertion for event-script tables.
+            result = insert_event_script_windowed(
+                rom, script_file, tbl_file,
+                tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+                source_rom=orig_rom,
+                fallback_table=fb_tbl,
+                force=force,
+            )
+            all_results.append(result)
+            ffc0_count = len(result.get('ffc0_overflow', []))
+            print(f'  {name}: {ffc0_count} window redirects → FFC0{lang_tag}')
         else:
-            print(f'  {name}: {total} entries, all inline{lang_tag}')
+            result = insert_dte_table(
+                rom, script_file, tbl_file,
+                tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+                source_rom=orig_rom,
+                data_start_pc=tbl_info.get('data_start_pc'),
+                cache_dir=cache_dir, force=force,
+                fallback_table=fb_tbl,
+                event_script=False,
+                word_wrap=tbl_info.get('word_wrap'),
+                textbuf_limit=tbl_info.get('textbuf_limit'),
+                ffc0_pins=ffc0_pins,
+            )
+            all_results.append(result)
+            oc = result['overflow_count']
+            ffc0_count = len(result.get('ffc0_overflow', []))
+            total = result['total_entries']
+            if ffc0_count:
+                print(f'  {name}: {total} entries, {ffc0_count} overflow → FFC0{lang_tag}')
+            elif oc:
+                print(f'  {name}: {total} entries, {oc} overflow (preserved JP){lang_tag}')
+            else:
+                print(f'  {name}: {total} entries, all inline{lang_tag}')
 
     # Write FFC0 overflow data to bank $C6.
     if all_results:

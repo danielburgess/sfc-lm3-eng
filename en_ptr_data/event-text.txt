@@ -1,94 +1,307 @@
 <<$1129115:0[$1129332]>>
-2姉へ〃2番，Qね[end][end]2盤ヲ，[end]N環[end]，ぅね[end][end][r.]（飲Qね[end][end]，Qね[end][end]2番[P][FF0A0C]LITTLE　MASTER[pink][FF0C0E]EPISODE　Ⅲ[white][FF0810]JEWELS　OF　RAINBOW[end]，ぅね[end][end]‼（飲Qね[end][end]＝×[E]，くね県，Qね[end][end]2番[P][pink][FF090C]PLANNER：[white][FF0B0F]TADATO　KAWANO[end]，ぅね[end][end][r.]A飲Qね[end][end]，くね迅，Qね[end][end]2番[P][pink][FF030C]PROGRAM　CODING：[white][FF050F]ONITAMA　（YASUSHI　TAKEDA）[end]，ぅね[end][end][r.]A飲Qね[end][end]，くね柱＝導，Qね[end][end]2番[P][pink][FF070B]PIXEL　ARTS：[white][FF090E]TSUTOMU　SEKIMOTO[FF0910]HIROSHI　YAMAMOTO[end]，ぅね[end][end][r.]A飲Qね[end][end]＝，[E]，くね飯＝旬，Qね[end][end]2番[P][pink][FF060C]SYSTEM　COORDINATOR：[white][FF0C0F]SHIGERU　GOTO[end]，ぅね[end][end][r.]A飲Qね[end][end]＝Ⅲ[E]9クシ〃，Qね[end][end]2番[P][pink][FF080C]SOUND　DESIGNER：[white][FF0B0F]YUJI　YAMADA[end]，ぅね[end][end][r.]A飲Qね[end][end]9バソ〃，Qね[end][end]2番[P][pink][FF090C]DIRECTOR：[white][FF0B0F]TADATO　KAWANO[end]，ぅね[end][end][r.]A飲Qね[end][end]＝暦，Qね[end][end]2番，ぅね[end][end][r.][P]飲Qね[end][end][P][pink][FF080C]PRODUCER：[white][FF0A0F]FUMIO　NAKAMURA[end]，ぅね[end][end][r.]A飲Qね[end][end][end]，Qね[end][end]2[FF002C]Qね[end][end]2番，ぅね[end][end]ぉ〃[end][r.]＃飲Qね[end][end][end]
+<<<window[0]:$002C-$0063>>>
+[FF0A0C]LITTLE　MASTER[pink][FF0C0E]EPISODE 3[white][FF0810]THE　RAINBOW　JEWELS
+<<<window[1]:$0081-$00A3>>>
+[pink][FF090C]PLANNER:[white][FF0B0F]TADATO KAWANO
+<<<window[2]:$00BE-$00F2>>>
+[pink][FF030C]PROGRAM CODING:[white][FF050F]ONITAMA (YASUSHI TAKEDA)
+<<<window[3]:$0110-$014B>>>
+[pink][FF070B]PIXEL ARTS:[white][FF090E]TSUTOMU SEKIMOTO[FF0910]HIROSHI YAMAMOTO
+<<<window[4]:$016C-$0198>>>
+[pink][FF060C]SYSTEM COORDINATOR:[white][FF0C0F]SHIGERU GOTO
+<<<window[5]:$01B5-$01DC>>>
+[pink][FF080C]SOUND DESIGNER:[white][FF0B0F]YUJI YAMADA
+<<<window[6]:$01F6-$0219>>>
+[pink][FF090C]DIRECTOR:[white][FF0B0F]TADATO KAWANO
+<<<window[7]:$0238-$023D>>>
+
+<<<window[8]:$023F-$0263>>>
+[pink][FF080C]PRODUCER:[white][FF0A0F]FUMIO NAKAMURA
+
 <<$1129115:1[$1130778]>>
-＝県1悪看5[FF2602]＆ぇぉボ[end][E]唄む〃＆育ぇ飯Zむ〃，Qね[end][end][end]
+
 <<$1129115:2[$1130815]>>
-，Qね[end][end]1悪看5[FF2601]＃ぇ＆一ぇ＆基ぇ[r.]甘[P][FF7F0E]主人「Thanks for your business. Come again」
+<<<window[0]:$001B-$0037>>>
+[FF7F0E]主人「まいどあり。次もひいきにしておくれ」
+
 <<$1129115:3[$1130876]>>
-＝環1謙資6[FF2602]＆ぇぉベ[end][E]会む〃＆育ぇ飯ねむ〃，Qね[end][end][end]
+
 <<$1129115:4[$1130913]>>
-，Qね[end][end]1謙資6[FF2601]％ぇ＆基ぇ[r.]甘[P][FF7F0E]医者「Take care of yourself」
+<<<window[0]:$0017-$0026>>>
+[FF7F0E]医者「おだいじに」
+
 <<$1129115:5[$1130957]>>
-＝県1悪看7[FF2602]＆ぇぉパ[end][E]冠む〃＆育ぇ飯ぅめ〃，Qね[end][end][end]
+
 <<$1129115:6[$1130994]>>
-，Qね[end][end]1悪看7[FF2601]＃ぇ＆一ぇ＆基ぇ[r.]甘[P][FF7F0E]「Thank you very much. Please come again」
+<<<window[0]:$001B-$0033>>>
+[FF7F0E]「どうもありがとう。またきてくださいね」
+
 <<$1129115:7[$1131610]>>
-＃[end][end]おB[u]×延ゆ〃＆カヒ[Y]2沈★[u]ぃヲ＆[end][end][end][end][end]）幾ぅね[end][end][r.][P]案★[end]，[u]か[end][end][P][msg][FFFD02]「It's come to this, time for my last resort-nya![nl]
-[FFF20A] I'll borrow your strength-nya!」[FFFD02]「Beat them up-nyaaa!」
+<<<window[0]:$0024-$0028>>>
+
+<<<window[1]:$002E-$0062>>>
+[msg][special]「こーなったら最後の手段だニャーン。[nl][wait0A]　お前たちの力を借りるニャー!」
+<<<window[2]:$0081-$0082>>>
+
+<<<window[3]:$00BD-$00D6>>>
+[msg][special]「あいつらを、やっつけるニャーー!」
+<<<window[4]:$00D8-$00F3>>>
+
+
 <<$1129115:8[$1131901]>>
-＃☆[u][E]☆ボゆ〃飯らゆ〃）枯」ズ×ぅらゆ〃，[u]か[end][end][P][msg]「A star has been summoned!」
+<<<window[0]:$001C-$002F>>>
+[msg]「ほし　が　召還された!」
+
 <<$1129115:9[$1131976]>>
-＃[end][end]おB[u]×獲よ〃＆角[Y]＆－ろ[Y]＃ィズ＋悶＆[end]タ[Y]）固[P][end]胃[R][end]胃[S][end]胃[E][end]胃☆腸）喜超洋ぅね[end][end][r.][r.]案☆[end]‼甘，[u]か[end][end][P][msg][FFFD02]「I'll get you-nya!」[FFFD02]「Look![FFF220] It's the same shape as the manuscript」[FFFD02]「Liam,[FFF220] the rainbow magic stone!」[FFFD02]「Okay,[FFF220] I'll try」
+<<<window[0]:$0020-$0021>>>
+
+<<<window[1]:$004C-$0060>>>
+[msg][special]「やっつけてやるニャー!」
+<<<window[2]:$006F-$0095>>>
+示ぁ[P]呼甘‥[R]憂ぁ[R]呼甘‥[E][d][G]ぁ[E]呼[r.]囲ョ猪[r.]紋ぁ[02]
+<<<window[3]:$0099-$00B7>>>
+[msg][special]「みて![wait20]　古文書と同じ形だわ」
+<<<window[4]:$00BB-$00D6>>>
+[msg][special]「リイム、[wait20]虹色の魔石を!」
+<<<window[5]:$00E0-$00F5>>>
+[msg][special]「うん、[wait20]やってみるよ」
+
 <<$1129115:10[$1136733]>>
-＃ペズ弧[end][end]
+
 <<$1129115:11[$1132232]>>
-＃・ズ[E][end]ばら〃試[end]9きコ〃）喜丁裕[d]育[end][P]ダツヲ＃閑ダトヲ〉☆〈[end]★☆～廊[end]び[end]☆[P][msg]「Heave-ho, heave-ho」The moon has appeared.
+<<<window[0]:$001A-$0027>>>
+
+<<<window[1]:$0031-$003F>>>
+[msg]「よいしょよいしょ」
+<<<window[2]:$0070-$0082>>>
+[FF7F01]つき　が　姿を現わした。
+
 <<$1129115:12[$1132419]>>
-[r.]陣〈ビ[end]リサ〃[r.]陣Ⅲ猪観☆[end][P][msg][FFFD02]「Well, this is a problem-nya」
+<<<window[0]:$0013-$0026>>>
+[msg][special]「こりゃまいったニャー」
+
 <<$1129115:13[$1132479]>>
-★[FF2F0A]＃[end][P][E][end]‼り〃＆回ズ[P][FF7F01]Made a mistake. You'll be removed.[nl]
-「Whoa, it's a pitfall~」
+<<<window[0]:$0006-$0008>>>
+
+<<<window[1]:$0010-$003B>>>
+[FF7F01]間違えてしまいました。退場してもらいます。[nl]「うわっ、おとしあなだ～」
+
 <<$1129115:14[$1132479]>>
 
 <<$1129115:15[$1132572]>>
-Ⅲ杉裕陣[K]秩[end]屋[end]（[end][end]で[end]ヲ（[end][end][end]詩〈飯Xシ〃〈[d][end]8シ〃（ゾ[end][end][P]（[S]監[P][3B]漬ヤ★ズ－孤列[end]カ違[P][FF7F00]From somewhere... a mysterious orb...[FFFE00]
+<<<window[0]:$002A-$003B>>>
+
+<<<window[1]:$003F-$0058>>>
+[FF7F00]どこからか‥不思議な玉が‥。[FFFE00]
+
 <<$1129115:16[$1132699]>>
-Ⅲ図裕陣[A][K]ヲ![end][end][end][end]為![end][end]役井試パ井陣ピ井注プ井挽ペ井誌[nl]井酢。井虫「井晩」井資・井図を井駐ァ井番ィ井雌ェ井吹ォ井猪ャ井盤ュ井飼ッ井垂ー井著あ井蛮い井歯え井推お井貯か井卑き井事け井水こ井丁さ井否し瓜[FF0000]〃[P][FF7F08]CRASH!
+<<<window[0]:$00A8-$00B5>>>
+[FF7F08]ガシャーーーーン。
+
 <<$1129115:17[$1132893]>>
-＃[end][end]おズズ[d]亜[E][end]Dれ〃＋詩[E]飴れ〃[E]警る〃[E]裁る〃（：[FF6B00]9Qコ〃![u][A]ノ[end]![u][G]ホ[end]＆[u]持＆[A]随9いケ〃![u][A]F[end]![u][G]K[end]飯0れ〃（だ[FF6B00]9Qコ〃!費ネ[end]!避ヘ[end]＆盤ぇ＆[A]随9いケ〃!費れ[end]!避![end]飯0れ〃（ェ[FF6B00]9Qコ〃!世ヌ[end]!瀬フ[end]＆吹ぇ＆[G]随9いケ〃!世★[end]!瀬L[end]飯0れ〃（タ[FF6B00]9Qコ〃!丸ニ[end]!含ヒ[end]＆竿ぇ＆[A]随9いケ〃!丸ヴ[end]!含H[end]〃ヲ[cls][end][end][end]ヲ[cls][end][end]憂[end][r.]ぉ亜
+
 <<$1129115:18[$1133125]>>
-＃・ズ陣[end]×字ろ〃★★Ⅲ[end][end]裕陣ぁ★[end][P][msg][FFFD02]「Here goes, Snow Spark Blizzard!」
+<<<window[0]:$0017-$0032>>>
+[msg][special]「いくぞ、スノースパーク・ブリザード!」
+<<<window[1]:$0035-$0037>>>
+[03]
+<<<window[2]:$0040-$0041>>>
+
+<<<window[3]:$0049-$004A>>>
+
+<<<window[4]:$004D-$0050>>>
+
+<<<window[5]:$005E-$0061>>>
+
+<<<window[6]:$0067-$006A>>>
+
+<<<window[7]:$0073-$0076>>>
+
+<<<window[8]:$007C-$007F>>>
+
+<<<window[9]:$0086-$008C>>>
+
+<<<window[10]:$008E-$008F>>>
+
+<<<window[11]:$0092-$0098>>>
+
+<<<window[12]:$009E-$00A1>>>
+
+<<<window[13]:$00A4-$00A7>>>
+
+<<<window[14]:$00AA-$00B0>>>
+
+<<<window[15]:$00B3-$00C4>>>
+
+<<<window[16]:$00D9-$00E4>>>
+
+<<<window[17]:$00F1-$00F4>>>
+
+
 <<$1129115:19[$1133437]>>
-＆吹ぇ＆[A]随／[u]＃[end][end]×蔵ろ〃9わク〃＆盤ぇ＆ぅ随／[u]＃[end][end]×村ろ〃9わク〃＆竿ぇ＆[u]随／[u]＃[end][end]×泰ろ〃9わク〃＆ぇ持＆ぁ随／[u]＃[end][end]×狸ろ〃9わク〃[end]
+
 <<$1129115:20[$1133526]>>
-）頑★Ⅲ[end][end]裕陣[P][FF7F09]Cyclops throws the dice.[nl]
-What will it land on?[nl]
-The dice rolls...The die shows 1.[FFFE00][nl]
-Everyone's HP is restored. L-Lucky?The die shows 2.[FFFE00][nl]
-Nothing happens.[FFFE00]The die shows 3.[FFFE00][nl]
-Everyone is paralyzed. Yikes!The die shows 4.[FFFE00][nl]
-Nothing happens.[FFFE00]The die shows 5.[FFFE00][FFFD02]「Everyone, dance! [FFF230]Yeaaah!」[nl]
-[FFFD00]Everyone's positions are swapped.The die shows 6.[FFFE00][nl]
-Nothing happens.[FFFE00]
+<<<window[0]:$000B-$0036>>>
+[FF7F09]サイコロプスがサイコロを投げます。[nl]なにがでるかな。[nl]サイコロ、コロコロ‥。
+<<<window[1]:$0050-$0051>>>
+
+<<<window[2]:$008C-$008F>>>
+
+<<<window[3]:$00AE-$00DC>>>
+[FF7F00]サイコロの目は、1です。[FFFE00][nl]全員の体力を回復します。ラ、ラッキー？
+<<<window[4]:$00EB-$010D>>>
+[FF7F00]サイコロの目は、2です。[FFFE00][nl]なにもおこりません。[FFFE00]
+<<<window[5]:$0118-$0140>>>
+[FF7F00]サイコロの目は、3です。[FFFE00][nl]全員がパラライズされます。どひー。
+<<<window[6]:$014F-$0171>>>
+[FF7F00]サイコロの目は、4です。[FFFE00][nl]なにもおこりません。[FFFE00]
+<<<window[7]:$0174-$0178>>>
+
+<<<window[8]:$018E-$0191>>>
+
+<<<window[9]:$0192-$01A6>>>
+[FF7F00]サイコロの目は、5です。[FFFE00]
+<<<window[10]:$01B5-$01EB>>>
+[msg][special]「みんな、おどるのだーー。[wait30]イェーーーイ」[nl][FFFD00]全員の位置が入れ替わります。
+<<<window[11]:$020F-$0213>>>
+
+<<<window[12]:$0217-$0239>>>
+[FF7F00]サイコロの目は、6です。[FFFE00][nl]なにもおこりません。[FFFE00]
+
 <<$1129115:21[$1134110]>>
-＃[end][end]おズズ[d]亜[E]院＊〃[end]★★Ⅲ[end][end]辞[d]案★[end][P][msg][FFFD02]「Hehehe... prepare yourself」[FFFD02]「La la la~~~~.[FFF220] Lu lu lu~~~~~★」[FFFD02]「Hehehe.[FFF220] How did you like my song?」
+<<<window[0]:$001B-$0031>>>
+[msg][special]「ふふふ‥覚悟するがいい」
+<<<window[1]:$0041-$0042>>>
+
+<<<window[2]:$0047-$0048>>>
+
+<<<window[3]:$004B-$004E>>>
+
+<<<window[4]:$0051-$0054>>>
+
+<<<window[5]:$0069-$0086>>>
+[msg][special]「ラララ～～～～。[wait20]ルルル～～～～～★」
+<<<window[6]:$00B6-$00C0>>>
+
+<<<window[7]:$00C7-$00E3>>>
+[msg][special]「ふふふ。[wait20]わしの歌はどうじゃった」
+<<<window[8]:$00EE-$00EF>>>
+
+<<<window[9]:$00F0-$00F1>>>
+
+<<<window[10]:$00F4-$00F7>>>
+
+
 <<$1129115:22[$1134366]>>
-おB[u]×殴§〃＆ゃぁ[G]＆ゃ＋[G]＆ゃK[G]＆ゃぢ[G]＆ゃパ[G]＆ゃさ[G]＆ゃろ[G]＆ゅヒ[G]＆ゅぁ[Y]＆ゅ＋[Y]＆ゅK[Y]＆ゅぢ[Y]＆ゅパ[Y]＆ゅさ[Y]，ぅね[end][end][end]
+
 <<$1129115:23[$1134436]>>
-★[end]Ⅲ[end][end]式紋[P][FF7F08]The belt moves.[nl]
-And so do we.[FFFD02] From somewhere, D[r.]r. Skull's voice can be heard.[FFFE00][FFFD02]「How's the conveyor ride?[FFF220] Hmm?」[FFFD02]「Just standing on it won't get you[nl]
-[FFF220] to where I am」[FFFD02]「Better use your heads.[FFF230] Hyaha!」[FFFE00]
+<<<window[0]:$0009-$001E>>>
+[FF7F08]ベルトがまわる。[nl]ぼくらもうごく。
+<<<window[1]:$0050-$0072>>>
+[msg][special]　どこからか　D[r.]．スカルの声がきこえてくる。[FFFE00]
+<<<window[2]:$0073-$0094>>>
+[msg][special]「コンベアの乗りごこちは　どうかね？[wait20]　ん？」
+<<<window[3]:$0098-$00C7>>>
+[msg][special]「ただ　のっかってるだけじゃ、[nl][wait20]　我輩のところには　たどりつけないよ」
+<<<window[4]:$00CB-$00EB>>>
+[msg][special]「よーく頭を使うことだね。[wait30]ヒャハ」[FFFE00]
+
 <<$1129115:24[$1134677]>>
-★★Ⅲ[end][end]辞陣[P][msg]「Sliiiiide!」「Whoa! I'm sliiiding!」
+<<<window[0]:$0009-$0016>>>
+[msg]「すべれーーーー」
+<<<window[1]:$003C-$004D>>>
+[msg]「うわっ。すべるーーーー」
+
 <<$1129115:25[$1134772]>>
-＃[end][end]おB[u]×界ア〃＆[end]タ[Y]）虎げぁ[G]＆げ＋[G]＆げK[G]＆げぢ[G]＆げパ[G]＆げさ[G]＆げろ[G]＆げヒ[G]）喜張雄‥[end]胃～[end]飲ぅね[end][end][r.][r.]案[end][end]‼甘，[u]か[end][end][P][msg][FFFD02]「What's this panel?」[FFFD02]「There are two pictures on it」[FFFD02]「We gotta[FFF220] do something about this,[FFF220] moo-moo」[FFFD02]「I'll guard the panel-chu!」
+<<<window[0]:$0052-$0068>>>
+[msg][special]「このパネルは　何だろう？」
+<<<window[1]:$0072-$0089>>>
+[msg][special]「2つの絵が　描いてあるわ」
+<<<window[2]:$0093-$00BC>>>
+[msg][special]「これを、[wait20]どーにかしなきゃ　ならないようだな[wait20]　モーモー」
+<<<window[3]:$00D1-$00E7>>>
+[msg][special]「パネルを　守るでチュー!」
+
 <<$1129115:26[$1135020]>>
-＃[end][end]![u][u][~][FF1316]さア〃4す．![end][end][FFFF23][end][end]!約[~][FF1316]9イ〃5垂謙－[end][E][end]ヒア〃5垂謙．[end][E][end]ヒア〃飯9イ〃9テウ〃Ⅲ貯式[r.]磯[u][u]式紋!約[G][end]!垂[R][end]!著[P][end]!蛮[R][end]!推[P][end]!貯[R][end]!卑[P][end]!水[R][end]!丁[P][end]!否[R][end]〃‼[r.]育をズ注[end]＃[end][end]![d][08][~][FF1316]ちイ〃5ぁ図娯[end][E][end]げイ〃5ぁ図後[end][E][end]げイ〃飯ちイ〃9テウ〃Ⅲぃ猪‼[r.]磯[u][u]式紋![d]有[end]!ぁ数[end]!ぃ崇[end]!ぅ数[end]!ぁ挑[end]!ぃ朝[end]!ぅ挑[end]!ぁ碑[end]!ぃ皮[end]!ぅ碑[end]〃‼[r.]育をズ虫[end]＃[end][end]!訳[~][FF1316]）ウ〃5衰謙－[end][E][end]サイ〃5衰謙．[end][E][end]サイ〃飯）ウ〃9テウ〃Ⅲ張式[r.]磯[u][u]式紋!訳[G][end]!衰[R][end]!弔[P][end]!扉[R][end]!遂[P][end]!張[R][end]!批[P][end]!酔[R][end]!彫[P][end]!披[R][end]〃‼[r.]育をズ猪[end]＃[end][end]![d][d][~][FF1316]あウ〃5ぁぁ謙－[end][E][end]Sウ〃5ぁぁ謙．[end][E][end]Sウ〃飯あウ〃9テウ〃Ⅲぃぃ式[r.]磯[u][u]式紋![d][d][G][end]!ぁぁ[R][end]!ぃぁ[P][end]!ぅぁ[R][end]!ぁぃ[P][end]!ぃぃ[R][end]!ぅぃ[P][end]!ぁぅ[R][end]!ぃぅ[P][end]!ぅぅ[R][end]〃‼[r.]育をズ兆[end]＃をズ[E]ぉにウ〃＃‥[u]×[P]なウ〃Ⅲ[FFFF08][end][P][FF7F00]The temple guardian has appeared!Yes! The pictures are matched.
+<<<window[0]:$005E-$005F>>>
+
+<<<window[1]:$0068-$0069>>>
+
+<<<window[2]:$0072-$0073>>>
+
+<<<window[3]:$007C-$007D>>>
+
+<<<window[4]:$00D6-$00D7>>>
+
+<<<window[5]:$00E0-$00E1>>>
+
+<<<window[6]:$00EA-$00EB>>>
+
+<<<window[7]:$00F4-$00F5>>>
+
+<<<window[8]:$014E-$014F>>>
+
+<<<window[9]:$0158-$0159>>>
+
+<<<window[10]:$0162-$0163>>>
+
+<<<window[11]:$016C-$016D>>>
+
+<<<window[12]:$01C6-$01C7>>>
+
+<<<window[13]:$01D0-$01D1>>>
+
+<<<window[14]:$01DA-$01DB>>>
+
+<<<window[15]:$01E4-$01E5>>>
+
+<<<window[16]:$0201-$0209>>>
+
+<<<window[17]:$020A-$0221>>>
+[FF7F00]神殿の番人が姿をあらわした!
+<<<window[18]:$0237-$0247>>>
+[FF7F00]よし。絵が揃ったぞ。
+
 <<$1129115:27[$1135605]>>
-おB[u][E][end][G]エ〃（亜ャズ＃[end][end]ダをズ｀訳りみジ）午ぅね[end][end][end]＆[end]タ[Y]）午ぅね[end][end]，[u]か[end][end]
+
 <<$1129115:28[$1135654]>>
-＃[end][end]おャズ[E][end]2エ〃[end]おェズ[E][FF31D4]〃[P][FF7F08]A bird comes flying.
+<<<window[0]:$0014-$0022>>>
+[FF7F08]鳥がとんできます。
+
 <<$1129115:29[$1135766]>>
-＃[end][end]おズズ[d]亜[E][end]アエ〃[P][FF7F09]A tornado has appeared.[nl]
-Touch it and you'll be blown away.[nl]
-And it's a double.
+<<<window[0]:$000E-$0038>>>
+[FF7F09]たつまきが発生しました。[nl]さわるとはじきとばされますよ。[nl]しかもダブル。
+
 <<$1129115:30[$1135826]>>
-Ⅲ[end][end]唯[FF7F09]Stepped on the seesaw.[nl]
-「Boiiiiing!」
+<<<window[0]:$0004-$001F>>>
+[FF7F09]シーソーをふみました。[nl]「ぴょ～～～～～～ん」
+
 <<$1129115:31[$1135897]>>
-3[end][end]府[end]
+
 <<$1129115:32[$1135903]>>
-＃[end][end]ダズズ[d]亜[E][end]？オ〃[P][FF7F09]Bu~rn, baby, bu~rn.
+<<<window[0]:$000E-$001D>>>
+[FF7F09]も～えろよ、もえろ～。
+
 <<$1129115:33[$1135936]>>
-＃[end][end]おズズ[E]炎オ〃[d]亜[E]威カ〃[end]）磯[d]ぁ辞紋ぁ★[end][r.]試[P][msg][FFFD02]「Arrgh, I told you not to move![nl]
-[FFF230] You lot![FFF220] You've made me angry!」[FFFD02]「I'll summon a tornado to blow you away![nl]
-[FFF230] Come, Hurricane Caaall!」
+<<<window[0]:$0023-$0060>>>
+[msg][special]「うおーーーー、動くなと言ってるだろ～～![nl][wait30]　おまえら![wait20]　このワシを怒らせたようじゃな!」
+<<<window[1]:$0064-$0096>>>
+[msg][special]「竜巻を呼んで　けちらしてやる![nl][wait30]　カモン、ハリケーーーン、コーーール!」
+<<<window[2]:$0098-$009D>>>
+
+
 <<$1129115:34[$1136156]>>
-3[end][end]軌[end]
+
 <<$1129115:35[$1136156]>>
 
 <<$1129115:36[$1136162]>>
-[r.]ぃ飲Qね[end][end]，Qね[end][end]2番[P][FF070C]ボンバーズを撃退した勇者軍は[FF0A0F]マテドラル城にむかいます[end]‼[c]飲5ね県‼ズ運☆[E]，くね／飲くね0育ゾズ公[end]＃プズ試[end]，Qね[end][end]2番[P][FF070C]勇者軍は　シャルルの案内で[FF090F]ジャングルの遺跡にむかう[end]‼[c]飲5ね県‼ズ飲Qね[end][end]2番[P][FF090C]まだみぬマテドラルの地で[FF090F]勇者軍を待つものは？[end]‼[c]飲5ね県‼ズ飲Qね[end][end][end]
+<<<window[0]:$0010-$0037>>>
+[FF070C]ボンバーズを撃退した勇者軍は[FF0A0F]マテドラル城にむかいます
+<<<window[1]:$0064-$008B>>>
+[FF070C]勇者軍は　シャルルの案内で[FF090F]ジャングルの遺跡にむかう
+<<<window[2]:$009F-$00C1>>>
+[FF090C]まだみぬマテドラルの地で[FF090F]勇者軍を待つものは？
+
 <<$1129115:37[$1136162]>>
 
 <<$1129115:38[$1136162]>>
@@ -102,43 +315,253 @@ And it's a double.
 <<$1129115:42[$1136162]>>
 
 <<$1129115:43[$1136373]>>
-[r.]ぃ飲Qね[end][end]＝‥[E]，くねだ[end]＃プズ試[end][end]
+
 <<$1129115:44[$1131051]>>
-，Qね[end][end]2番，ぅね[end][end]2[u][r.]り飲Qね[end][end]，Qね[end][end]2番[P][FF0A0E]PRESENTED　BY[end]，ぅね[end][end][r.]（飲Qね[end][end]，Qね[end][end]2盤ヲ，[end]N環[end]，ぅね[end][end][r.]（飲Qね[end][end]，Qね[end][end]2番[P][FF0A0E]DEVELOPED　BY[end]，ぅね[end][end][r.]（飲Qね[end][end]，Qね[end][end]2盤ヲ－[end]ブ県[end]，ぅね[end][end]＃[end][P][r.]り圧亜[E]ぉアめ〃飯むめ〃，Qね[end][end]，Qね[end][end]2番[P][pink][FF020C]GOOD　BYE．．．[white][FF020E]NOW　WE　BRING　YOU　A　SECRET[FF0210]WORDS　OF　GAME．PLEASE　NOTICE[FF0212]S39　OF　13，AND　S43　SOMEWHERE．[end]，ぅね[end][end][r.]2飲Qね[end][end]9ホへ〃[end]，Qね[end][end]2番[P][FF0507]戦いは終わった。最後の敵を倒した[FF0509]勇者は、心に過去の戦闘の[FF050B]記憶が、よみがえってくるのを感じていた。[FF050D]そして、こう思わずにはいられなかった。[FF050F]これまでの戦いで最強の魔物、それは、[FF0511]サイコロだったのではないだろうか‥‥。[FF0E13]おしまい[FF0815]テストプレイごくろうさまでした。[end]，5ね飯[r.]ミ飲5ね[end][end]
+<<<window[0]:$001F-$002F>>>
+[FF0A0E]PRESENTED　BY
+<<<window[1]:$0061-$0071>>>
+[FF0A0E]DEVELOPED　BY
+<<<window[2]:$0095-$009B>>>
+
+<<<window[3]:$00B3-$0121>>>
+[pink][FF020C]GOOD　BYE．．．[white][FF020E]NOW　WE　BRING　YOU　A　SECRET[FF0210]WORDS　OF　GAME．PLEASE　NOTICE[FF0212]S39　OF　13，AND　S43　SOMEWHERE．
+<<<window[4]:$013C-$01E7>>>
+[FF0507]戦いは終わった。最後の敵を倒した[FF0509]勇者は、心に過去の戦闘の[FF050B]記憶が、よみがえってくるのを感じていた。[FF050D]そして、こう思わずにはいられなかった。[FF050F]これまでの戦いで最強の魔物、それは、[FF0511]サイコロだったのではないだろうか‥‥。[FF0E13]おしまい[FF0815]テストプレイごくろうさまでした。
+
 <<$1129115:45[$1131857]>>
-＆ェり[Y]＆形[Y]ぁ☆写[u]か[end][end][P][FF7F00]Recovered HP on their own.
+<<<window[0]:$0010-$0027>>>
+[FF7F00]体力を自分で回復しました。
+
 <<$1129115:46[$1136396]>>
-，Qね[end][end]＝）[E]，くねる[end][end]
+
 <<$1129115:47[$1136410]>>
-Ⅲ愛室[end][end]肩[end]｀訳みみジ[R][end]圧[end][end]ぁズ枯[end][end]謙[end]｀訳みみジ[R][end]見[end][end]ぁズ呼甘ぁ詩‼甘[P][msg][FFFD02]「We'll come with you too.[nl]
-[FFF230] Please take us along.[FFF230] Rabi rabi」New allies have joined.
+<<<window[0]:$0037-$0064>>>
+[msg][special]「ぼくたちも　おともします。[nl][wait30]　つれていってください。[wait30]ラビラビ」
+<<<window[1]:$0068-$007E>>>
+[FF7F00]新しい仲間が　加わりました。
+<<<window[2]:$008F-$0094>>>
+
+<<<window[3]:$00A6-$00CB>>>
+[FF080C]ピーコックと別れた勇者軍は[FF0A0F]ライナーク城にむかいます
+
 <<$1129115:48[$1136626]>>
-[R]県[end][end][end]＆衆[K]＆〃げ[K]＆Cべ[K]＆Cぼ[K][end]
+
 <<$1129115:49[$1136649]>>
-＝柱1図駐5[FF2602]＆ぇ[P]主人「なんだおめ(ぇ)。なっちゃいねえ」[FFFE00][end]，Qね[end][end]1番夜5[FF2602]＆ぇ[P]主人「すごい地震だったんだ」[FFFE00][end]，Qね[end][end][end]
+<<<window[0]:$000E-$0026>>>
+主人「なんだおめ(ぇ)。なっちゃいねえ」[FFFE00]
+<<<window[1]:$0037-$004D>>>
+主人「すごい地震だったんだ」[FFFE00]
+
 <<$1129115:50[$1136740]>>
-おB[u]×下ク〃＃[end][end]己[end]／亜
+
 <<$1129115:51[$1136757]>>
-＃U[d]県[end]★[FF2300]ぇ[E][end]ぬク〃Ⅲ[end][end]預[end][P][E][end]すク〃[E]禁ク〃／用飯ぬク〃＆閑ぇ．）験ズ緩[end]ぬク〃ぁズぇ＃油ダ8ぇ．＃U[d]試[end]×　らク〃飯グク〃Ⅲ約詩｀U[d][d][P][end][P][msg][FFFD02]「Hmm... I have a bad feeling about this...」A mysterious space appeared[nl]
-on the church floor.A hero army unit was sucked in!Intense light is pouring from[nl]
-the stained glass.ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FFFD02]「We did it, Professor!」[FFFD02]「Yes, this time I've truly found it.[nl]
- If this ancient manuscript is genuine,[FFFD02] it would be the ultimate proof[nl]
- of the Prisma treasure of legend. We did it!」[FFFD02]「Whoa, an earthquake!!」[FFFD02]「This is bad, the entrance[nl]
- has been blocked off~~~~~!」[FFFD02]「Ah! We're saved![nl]
- Professor, it looks like help has arrived!」[FFFD02]「But, that way is...」[FFFD02]「Hey, over here, over here![nl]
- Help us~!」[FFFD02]「Eeeeeeeeek!」[FFFD02]「Someone! Anyone! Help meeeee!!」[FFFD02]「You're safe now!」
+<<<window[0]:$0016-$0018>>>
+
+<<<window[1]:$002B-$0034>>>
+
+<<<window[2]:$005B-$005C>>>
+
+<<<window[3]:$005D-$0075>>>
+[msg][special]「ん‥なんか、いやな予感が‥」
+<<<window[4]:$0078-$007A>>>
+
+<<<window[5]:$0084-$0086>>>
+
+<<<window[6]:$00A8-$00AB>>>
+
+<<<window[7]:$00AE-$00B1>>>
+
+<<<window[8]:$00C9-$00CC>>>
+
+<<<window[9]:$00DD-$00DE>>>
+
+<<<window[10]:$00DF-$00E0>>>
+
+<<<window[11]:$00E3-$00E6>>>
+
+<<<window[12]:$00F3-$00F6>>>
+
+<<<window[13]:$00F9-$00FF>>>
+
+<<<window[14]:$010D-$0114>>>
+
+<<<window[15]:$0115-$0116>>>
+
+<<<window[16]:$011E-$011F>>>
+
+<<<window[17]:$0125-$0129>>>
+
+<<<window[18]:$0150-$0171>>>
+[FF7F01]教会の床に不思議な空間が[nl]現われました。
+<<<window[19]:$0184-$0186>>>
+
+<<<window[20]:$0190-$0192>>>
+
+<<<window[21]:$01B7-$01CF>>>
+[FF7F01]勇者軍のユニットが吸いこまれた!
+<<<window[22]:$01E3-$0201>>>
+[FF7F01]ステンドグラスに、強烈な光が[nl]あふれています。
+<<<window[23]:$0214-$0219>>>
+
+<<<window[24]:$03EC-$0403>>>
+
+<<<window[25]:$040C-$040D>>>
+
+<<<window[26]:$0416-$0417>>>
+
+<<<window[27]:$0424-$0425>>>
+
+<<<window[28]:$042E-$042F>>>
+
+<<<window[29]:$043A-$043D>>>
+
+<<<window[30]:$0444-$0447>>>
+
+<<<window[31]:$045E-$0461>>>
+
+<<<window[32]:$0530-$0534>>>
+
+<<<window[33]:$0540-$0555>>>
+[msg][special]「やったっスね、教授!」
+<<<window[34]:$055C-$058A>>>
+[msg][special]「うむ、今度こそみつけたぞ。[nl]　この古文書が、本物であるならば、
+<<<window[35]:$058F-$05C7>>>
+[msg][special]　カラードの　秘宝伝承を裏付ける、[nl]　なによりの証拠になるじゃろう。やったぞい!」
+<<<window[36]:$05D2-$05D9>>>
+
+<<<window[37]:$05DD-$05F1>>>
+[msg][special]「うおっ、地震か!!」
+<<<window[38]:$0600-$060A>>>
+<<<window[39]:$061D-$062F>>>
+「うわーーーーーーーーっ!!」
+<<<window[40]:$0645-$0653>>>
+<<<window[41]:$0655-$065F>>>
+
+<<<window[42]:$0661-$0672>>>
+
+<<<window[43]:$0674-$067F>>>
+
+<<<window[44]:$0687-$0695>>>
+
+<<<window[45]:$0697-$06A1>>>
+
+<<<window[46]:$06A3-$06B5>>>
+
+<<<window[47]:$06B7-$06C8>>>
+
+<<<window[48]:$06CA-$06D6>>>
+
+<<<window[49]:$06EC-$06FE>>>
+
+<<<window[50]:$0700-$0705>>>
+
+<<<window[51]:$07AE-$07B1>>>
+
+<<<window[52]:$07B3-$07BA>>>
+
+<<<window[53]:$07BC-$07BF>>>
+
+<<<window[54]:$07C1-$07C8>>>
+
+<<<window[55]:$07CA-$07CD>>>
+
+<<<window[56]:$07CF-$07D6>>>
+
+<<<window[57]:$07D8-$07DB>>>
+
+<<<window[58]:$07DD-$07E4>>>
+
+<<<window[59]:$07E6-$07E9>>>
+
+<<<window[60]:$07EB-$07F2>>>
+
+<<<window[61]:$07F4-$07F7>>>
+
+<<<window[62]:$07F9-$080E>>>
+
+<<<window[63]:$0810-$0814>>>
+
+<<<window[64]:$0843-$086B>>>
+[msg][special]「やべえっス、入り口が、[nl]　ふさがっちまったっス～～～～～!」
+<<<window[65]:$0883-$089B>>>
+[cls][special]ゴンゴン‥‥。[wait0A]ゴンゴン‥‥。
+<<<window[66]:$08C2-$08EA>>>
+[msg][special]「あっ!　助かった![nl]　教授、助けが来たみたいっスよ!」
+<<<window[67]:$08F1-$0905>>>
+[msg][special]「しかし、そっちは‥‥‥」
+<<<window[68]:$0909-$092D>>>
+[msg][special]「おーい、こっちだ、こっちだ。[nl]　助けてほしいっス～!」
+<<<window[69]:$095F-$0974>>>
+[msg][special]「ひーーーーーーーーーーー」
+<<<window[70]:$099E-$099F>>>
+
+<<<window[71]:$09A1-$09BF>>>
+[msg][special]「だれか!　だれかー!　助けてーーーー!!」
+<<<window[72]:$09DE-$09ED>>>
+[cls]「うおーーーーー!!」
+<<<window[73]:$09F2-$09FA>>>
+
+<<<window[74]:$09FB-$0A03>>>
+
+<<<window[75]:$0A04-$0A0C>>>
+
+<<<window[76]:$0A0D-$0A15>>>
+
+<<<window[77]:$0A16-$0A1E>>>
+
+<<<window[78]:$0A1F-$0A27>>>
+
+<<<window[79]:$0A65-$0A79>>>
+[msg][special]「もう大丈夫だぜ!」
+<<<window[80]:$0A82-$0A87>>>
+
+
 <<$1129115:52[$1136757]>>
 
 <<$1129115:53[$1136757]>>
 
 <<$1129115:54[$1131552]>>
-2洪や〃，けお[end][end][P][FF0D1A]マップをみわたしています[end]Ⅲ愛辞[d]磯げ哀Ⅲげげ喜殴喜愛巌[d]磯[FFFF08][end]
+<<<window[0]:$000A-$001A>>>
+[FF0D1A]マップをみわたしています
+
 <<$1129115:55[$1129991]>>
-2[end]2裁ほ〃＝☆[E]，くね[u][end]9のほ〃，Qね[end][end]，くねぁ[end]9Fみ〃，Qね[end][end]＝![E]，くねぅ[end]，Qね[end][end]2番[P][FF060E]リイム達は　ライナーク城を目指す[end]‼[c]飲5ね県‼[c]飲Qね[end][end]2番[P][FF030C]途中、ラドック教授の助手〃ピーコック〃を[FF060F]パズタ村まで　送りとどけることになった[end]‼[c]飲5ね県‼ズ飲Qね[end][end]＝バ記柱2亜，ツき[3B][end]＆[end]デズ2疑★　[end][end][end][end][end]：6[end][end][end][end][end][end]（扱訳｀訳[R]みジ，ネズ[end][end]‥[end][end]雲[end]L[end]‥亜雲遺[end]‥缶滴顔[end]‥[P][end]雲[P]：[end]‥[R][end]雲[R]6[end]，[u]か[end][end][P][msg][end]，ぅね[end][end][r.][P]胃[P]図ぇ[nl]水＆ミ[end]ヲ[r.]紋‥[R]図ぇ。推＆ミ[P]ヲ[r.][P]胃[end]図ぇ[end]垂ぇ[end]著ぇズ貯‥扱原扱随圧随ゼ歯[r.]試ぇ緩直甘ぁ環‼甘[P][msg][FFFD02]「Liam![FFF220] Are you okay?」[FFFD02]「Yeah,[FFF220] but more importantly, is the professor?」[FFFD02]「Right」[FFFD02]「Oh,[FFF220] TamTam.[FFF230] Take a look at this.[nl]
-[FFF230] I finally found it」[FFFD02]「Come on,[FFF220] we can talk later.[nl]
-[FFF220] Please hold still」[FFFD02]「Oh, thanks.[nl]
-[FFF230] But more importantly, this is huge.[FFF230] It was true after all」[FFFD02]「Look at this ancient manuscript.[nl]
-[FFF230] See,[FFF220] this part right here」
+<<<window[0]:$0036-$004E>>>
+[FF060E]リイム達は　ライナーク城を目指す
+<<<window[1]:$0062-$0098>>>
+[FF030C]途中、ラドック教授の助手〃ピーコック〃を[FF060F]パズタ村まで　送りとどけることになった
+<<<window[2]:$00F6-$00F7>>>
+
+<<<window[3]:$00FA-$00FC>>>
+
+<<<window[4]:$010A-$010E>>>
+
+<<<window[5]:$0115-$0121>>>
+
+<<<window[6]:$0130-$0136>>>
+
+<<<window[7]:$0165-$017D>>>
+[msg][special]「リイム![wait20]　だいじょうぶ？」
+<<<window[8]:$018B-$01A6>>>
+[msg][special]「うん、[wait20]それよりも教授たちを」
+<<<window[9]:$01B0-$01BB>>>
+[msg][special]「ええ」
+<<<window[10]:$01CB-$01D0>>>
+
+<<<window[11]:$01D4-$0204>>>
+[msg][special]「おお、[wait20]タムタムか。[wait30]これを　見てくれ。[nl][wait30]　ついに　みつけたぞ」
+<<<window[12]:$020E-$023A>>>
+[msg][special]「もう、[wait20]話は　あとで聴きますから[nl][wait20]　じっとしててください」
+<<<window[13]:$0283-$0291>>>
+
+<<<window[14]:$0297-$029B>>>
+
+<<<window[15]:$02A2-$02A6>>>
+
+<<<window[16]:$02AA-$02DD>>>
+[msg][special]「おお、ありがとよ。[nl][wait30]　それよりも大変じゃ。[wait30]やはり本当だったんじゃ」
+<<<window[17]:$02E1-$030E>>>
+[msg][special]「この古文書を見るのじゃ。[nl][wait30]　ほれ、[wait20]ここの部分じゃ」
+
 <<$1129115:56[$1136757]>>
 
 <<$1129115:57[$1136757]>>
@@ -188,45 +611,105 @@ the stained glass.ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7FFF]ジ[FF7
 <<$1129115:79[$1136757]>>
 
 <<$1129115:80[$1139459]>>
-＃[end][end]おB[u]×課テ〃）喜愛洋ぅね[end][end][r.][r.]案★[end]‼甘，[u]か[end][end][P][msg][FFFD02]「Orders from Lord Fang and Lord Trump![nl]
-[FFF230] Don't let any intruders near here~!」[FFFD02]「Hee-heee!」
+<<<window[0]:$0024-$0060>>>
+[msg][special]「そうげつ様とトランプ様の御命令だ![nl][wait30]　邪魔者を　ここに近づけるんじゃねえぞ～!」
+<<<window[1]:$0064-$0074>>>
+[msg][special]「ヒッヒーーー!」
+
 <<$1129115:81[$1139599]>>
-Ⅲぇ[d]式紋ぉ5[end][R][nl]ぅ[d][end][end]ぁズ弦[nl]ぉ[d][end][end]ぁズ弦「ぅぃ[end][end]ぁズ弦。ぅぁ[end][end]ぁズ弦。ぉぁ[end][end]ぁズ呼[r.]聴HL[G]＆Hづ[G]＆Aし[Y]＆Bフ[Y]★★Ⅲ[end][end]式紋ぁ★[end]‼甘[P][msg][FFFD02]「Hahaha, looks like the rats walked into a trap.[nl]
-[FFF230] We'll surround them!」[FFFE00]
+<<<window[0]:$0059-$008D>>>
+[msg][special]「ふはは、ネズミが　ワナにかかったようだな。[nl][wait30]　はさみうちに　してくれるわ!」[FFFE00]
+
 <<$1129115:82[$1139746]>>
-＃[end][end]おズズ[d]亜[E]課テ〃Ⅲ愛式紋[P][FF7F00]Heavy rain has created puddles.
+<<<window[0]:$0015-$002E>>>
+[FF7F00]激しい雨で、水たまりが　できました。
+<<<window[1]:$00CB-$00D8>>>
+
+<<<window[2]:$010B-$010C>>>
+
+<<<window[3]:$010E-$010F>>>
+
+<<<window[4]:$0147-$0148>>>
+
+<<<window[5]:$01DB-$01E8>>>
+
+<<<window[6]:$020C-$020D>>>
+
+<<<window[7]:$020F-$0210>>>
+
+<<<window[8]:$0239-$023A>>>
+
+<<<window[9]:$02AF-$02BC>>>
+
+<<<window[10]:$02E5-$02E6>>>
+
+<<<window[11]:$02E8-$02E9>>>
+
+<<<window[12]:$0317-$0318>>>
+
+<<<window[13]:$03BF-$03CC>>>
+
+<<<window[14]:$03FF-$0400>>>
+
+<<<window[15]:$0402-$0403>>>
+
+<<<window[16]:$043B-$043C>>>
+
+
 <<$1129115:83[$1140962]>>
-＃[end][end]おズズ[d]亜[E]課テ〃＃・ズ[E][u]ペテ〃）頑★Ⅲ[end][end]式紋ぁ★[end]‼甘[P][msg][FFFD02]「I'll destroy everything...」A house was destroyed.[FFFE00]
+<<<window[0]:$0027-$003C>>>
+[msg][special]「みんな　壊してやる‥‥」
+<<<window[1]:$0138-$014C>>>
+[FF7F01]家が破壊されました。[FFFE00]
+<<<window[2]:$0158-$015B>>>
+
 <<$1129115:84[$1141327]>>
-＃[end][end]おB[u]×課テ〃＆Uぁ[G]＆V＋[G][end]
+
 <<$1129115:85[$1141347]>>
-＆D，[G]＆Dぃ[Y]＆D，[Y]＆Dフ[Y][end]
+
 <<$1129115:86[$1141364]>>
-＆Dぃ[G]＆Dピ[G]＆Dし[G]＆DL[Y]＆Dづ[Y]＆Dピ[Y]＆Dし[Y][end]
+
 <<$1129115:87[$1141393]>>
-＃[end][end]おB[u]×課テ〃＆Xろ[Y][end]
+
 <<$1129115:88[$1141409]>>
-＆[P]わ[G]＆[P]フ[G]＆[P]フ[Y][end]
+<<<window[0]:$0001-$000C>>>
+
+
 <<$1129115:89[$1141422]>>
-＃[end][end]おB[u]×課テ〃＆Zぢ[Y][end]
+
 <<$1129115:90[$1141438]>>
-＆くわ[G]＆[end]ん[G]＆くフ[G]＆[end]ヘ[G][end]
+
 <<$1129115:91[$1141455]>>
-＃・ズ試[end][E]妙ハ〃[end][P][FF7F00]The door has opened.
+<<<window[0]:$000C-$001B>>>
+[FF7F00]扉が　開きました。
+<<<window[1]:$001E-$0027>>>
+
+<<<window[2]:$002C-$0035>>>
+
 <<$1129115:92[$1141516]>>
-＃をズ試[end][E]飛ヒ〃[end][P][FF7F00]The door has opened.[FFFD02]「Men, to arms!」[nl]
-[FFF230][FFFD00]Enemy reinforcements have appeared.
+<<<window[0]:$000C-$001B>>>
+[FF7F00]扉が　開きました。
+<<<window[1]:$0049-$0075>>>
+[msg][special]「ものども、であえーい!」[nl][wait30][FFFD00]敵の増援が　あらわれました。
+
 <<$1129115:93[$1141703]>>
-＃[end][end]おB[u]×課テ〃＆[end]タ[Y]）午ぅね[end][end][end]
+
 <<$1129115:94[$1141726]>>
-＃[end][end]おB[u]×課テ〃＆がさ[Y]＆ぎろ[Y]＆[end]・ズ[end]
+
 <<$1129115:95[$1141750]>>
-＃・ズ[E]使フ〃[E]驚フ〃[E][end]ペテ〃Ⅲぁ猪‼紋ぁ☆[end]‼甘[P][msg][FFFD02]「My other half, be reborn!」[FFFD02]「I'm baaack![FFF220] Hyaha!」The monster has been revived.[FFFE00][FFFD02]「My other half, be reborn!」
+<<<window[0]:$001F-$0039>>>
+[msg][special]「わが半身よ、よみがえれーーー!」
+<<<window[1]:$005E-$0077>>>
+[msg][special]「ふっかぁ～～つ![wait20]　ヒャハ!」
+<<<window[2]:$007B-$0091>>>
+[FF7F00]魔物が　復活しました。[FFFE00]
+<<<window[3]:$00A8-$00C2>>>
+[msg][special]「わが半身よ、よみがえれーーー!」
+
 <<$1129115:96[$1141989]>>
-＃・ズ注[end]飯ヨフ〃
+
 <<$1129115:97[$1142000]>>
-＃・ズ虫[end][E]使フ〃[end]
+
 <<$1129115:98[$1142012]>>
-★[G]＃油×（～ヘ〃＃ァズ[E]衣ヘ〃注[end]＆ダL[G]＆ダづ[G]＆ゾわ[G]★～＃油×（ペテ〃＃ィズ[E]課テ〃注[end]＆ダフ[G]＆ダぃ[Y]＆ダ，[Y]＆ダL[Y]＆ダづ[Y]＆ダピ[Y]＆ゾし[Y][end]
+
 <<$1129115:99[$1142095]>>
-＃・ズ試[end][E]努ヘ〃[end]＆Aぃ[Y]＆A，[Y]＆AL[Y]＆Aづ[Y][end]こくこここいここボこハくここここここここいこいこここ×こここいくせ××こここボこここれ[d]こここここくこここボこボこいネボせここボくめここくここくこボ×ボツここここゾこいこいここゾこボハ×こ×さゾここ（ボくここくここせブここボここボこここここここさこいここボ×ボくこボここ×こここ×ねいここハェペこ×こ××ここここゾここレハくくこ×ブここここだこせペボここここハここいこハこここくハこせ×こせこここここボここここいボこいこここさこここここヒここ×い×ここさこペこここここくく[d]ここいこしこつこ[d]ここここせしこハハさ××こ×せこボこここハボハこいこはこここ×ここボこここボここここボボ[d]くこくい〃こ〃ハこボ[d]×こブさここいこここだくこここ×ボ[end]バ（こいこここせ[d]こボこここここ×く×〃くこここボこネこここ×せボこボここここいこここボボここボボここせこここ×くいここここハこここここ〃ボこここここ×ここいこここここさこここハこハこへこここここ×こここいボここいここここはこ×ェボここボこせこここせほぬ×こパさこハ×レ×ここここパこここハはせこブこさここここここ×こはくはここ×こハこここボここせ×こくしブさここここはハはこつこ2ボここせはここ×こここここここここハこはこボ×こ×こ×ここ[d]こハブだこゾここハボ[d]×せブこボこれここくこくこ[d]くこブこいこここボこここボここくこく×ここボこここここはここここハいこー〃ここここいこここここブここここここここいいこハボいここここここここ×くいこここここここここここいネここここここここボい〃ダボこーいけはボ××ブここボこ×こ×〃[d]いここ×こくこ／ブはボゾさ×こいぇ「こせ×こいここ×こさペ（こボゾ×ハボ××くボこ（ゾ〃れこはい×ボこ　こいここボここここくこここボねくーこ[d]×こクこボハつこゾ　ここ8こいィせこ＋×〃いここツこいこブこツこいこホこまれせこれハぽベこさこハこツハこここ8はせボハこホさこここくささここ×くこハこホこホせせペはこひさいパこはこされこはここここハいさホこホここ×ここせさボこさゾさここここハここボは＋ここ××ねくリこここいここさいささせここはこはこレはこボネここここさハせゾこ×ここここ××こここ××ボくハ嗅こェ〃ボいツ×〃こい×〃い〃こペ[d]こ　こボくいこ×こ×　いくせ×こハ〃×こ[d]ボこ〃いここ2ここ[d]こい〃[d]ゾひこボい．ハかここいこせ×〃〃〃〃こ××こ×ボこいこ×いい2×こタ〃××：×こ××こ（こいこここここ×こさここ×ハこJこここハ×こここペ×さツこボここここせ×ここ×ここボひハボく[d]ここいこここZボは×こかこく＋こここヴここここいだボこ×．こここここ×こかボ：こ×こここ苦こべこくゾこツせこここここいボこ×ネギボいハツこーいここぇはさつい××こかこボこほ×ねこくはここくはここ苦こ＋こボこ×こ×　×こゾさここ〃ここくこ×こゾ×いこゾこボ〃×こボここ〃ここ×こボ故ゾ×こ×こ×こH）×はここここ×いこ〃こ〃こい×はこ×Ⅲ×こ×ゾここハこここボこはこ．こせHここいこれ〃×J×（こ苦××ここ×ここけ×こせェここだボいい×こ××ボは[r.]こ．い2こ〃はこここさ×こ：こうこせボ×ネこハついこ旧こさここここここいこボはこ×だ〃×こさボここ×こいしいさハこい×ボはハこはせこ×かはここだしこここ〃ボこェボこゾこハこ×さ×はこ[d]×ここかこかボこボここ××いハこいここ「いここここここ×　こゾこいボここここここ〃いここいこい×いくせゾこここさ×．いゾ×こズボくい〃ーここ×くこ×こボいここここピゾボ×こ×ここここ××：こ〃×××くこいだいここ〃×こ×こ×〃こ：こここここ××こくここけこここ苦いこいこ×こ[S]くハェ×＋つは×〃こここここだこ××こ〃こねこ×いい×こいくはこ×こハボぐは×せく　こ×ここ×ボこ×こせさこハロこボ×ここさここ×いいこいこハ×ボこボこせこいいハここ〃こ（ここけくひこはいいい．ここ×いせボこうここゾ××ここせさこけこここ（ここふい××く[d]いいこ〃こいこ××[d]いあここここここここて〃こここけ×こェこここ[d]ここボはく〃こ×はく[d]ボボブ×こくぁツこここペレここく（こここここ×ェ×いここペここ×ここ〃ボこボこせブここボここハここいこボこくこここここいこここ×：せさこさゾここしはこいネこいこベここボ×こボボ×はこハくこ[d]こ×ボここ　さこここ[d]ここここハせこ×ェこいほここボここほボここくさハこさこ×こここハこネく×こボこだこくこここくペはここここここハこせボさここそこさハこハいハこここここここせ〃ーこさボここくい（さねこかボさうここせパここ×はけさネこここいこせここここいブ＋こ×くハここレはいここくここここいェい×いねこここここさ×いこゾねこいこボこ：くはい[d]パ．×ボ×こハボこここ×こここボこここツ．いここここいハ[d]ボボ×ホここブ（こここ[d]ここペ[d]ここここい（こはこ：ここくここはこ×：ボこくここは×いこここいこここボ[d]ボボボここここく×せいここボくこハこここはここてここここハこほこここボくこ×ここハこねこ[d]こハここはこさこここさここここ×こ[d]せこハ×ここここハこいこいここ×[d]×こいここここボここ×こ×ここここれこ×こくさ〃か×こハさここハこブさこここつこ（くここハさこここボこ×：いこここせくくハここここ×ここいはこここ（こくくここハこボ：こここ：ボくせこここここボこさ×ボこいここ××こェここ×　こハいだこ×こくこここボこここレボここボパさハボこれ×ボ×はさこ×こゾ[d]こいこ〃こ×はここ×こゾこここここここいこここはこここここここいこくここさここいこははいここボこここ×ェこここここせここここボくこここいボせハゾこネここボこここハこ×こ×ボこここここさここボェボこここハこはこボこ××くここボこここここここ×こ×はこくこボひこ苦さブここ×ハここここせここれ×はこここボ〃しこハいハここここハハせこさこいこ[d]×ここここ〃ここハボ〃ェ〃[d]ここハここ×こハいくはこここく〃こ×ここい×こここれここくせせ（こここここ×はいくボこいせここさ×ここハボうこボ苦こボこいつゾここいこブ×せいこここここ[d]ハはけゾこはいくこここいこ×ここここはボここここここはくここいこさ×せここーくこここいこ〃こハはこここ×いボこここここハ×いこ×こリ×せ×ここここはこボこここボはいここいさこここここかはこここここここはハハここくせく＋こくこふここここネこここ[d]こくここハこせこハネこ×こボボさハこここハいこここはそヒハホこここツこさこゾさこいこここはくハネ8Jこネここヒこいこここひこい〃こボくこここここェゾこしボ[d]ブくこうくネこせ×ハ2ホここくこ×こここはぐ×[d]くボこくこここボここボく×〃こここここここ×いこせはハこ××はここ×こ×いこくここく×こだ×こく×つボこブボこ×こつこここここここ×ここそボいここハこうボこはボこここくささいここここせはボこここくゾここここここう（ハくここここせここボこくこホここハここここボ×こせいこくここ×せははこここボこ×ギボハこ（ここボこボこここ×こーボせほこいこハここボハこせこせヒここひ×ペここここ[d]ここここ[d]くこくこ×ここここボこここここさハここボこくここだこここ×こボ苦××ここ×ーここボこボボここここくこここハいここここボこここ．ハ（こブこくくここ×こハここ×こせこツこボこ×ハここここハ×こくこ×ここか×いぁこここここ＋ここボこハこボ×こいこボこボくハこ2ボさここボこいここレこせボくタ×こひいここここはにいこせこここせこさこレさこせこハこはこさこボハボ×こここハこはここレハこここェツボこはこはこせいハ嗅くはえここ×こボここくささこさこいくこはパここはこここホここボこくここここせはこせはこボここボこはこさくこだブこ×ボ×ハこここここここボここボはこくここさボいボ（ハここここ．ここツここハ〃ここくこ×ボこはボ×こここ×ーここここブこボここはこ×こくーハここここさハはくついこここ×こハここボこここさこパブ×ここ×：×ボこハこここ[d]こボこ[d]こここくはこけここここいここここボこはハさこハこここボここここここここ×ネこここいレここここせボハこせここさこここさいボこここだこハここここはこねこ：つこせボハハホこくこいせいこボれ：はこせこくブ×ここいくうツハ（ぇこほいこくさこハレここここせこくこネせさこいここほくこぉボさこいここいここパハいこくこくここいこだここここここだこボこさせくボここツこさツここブせこここここくくここさこいこせ（いくここここツJここボこゾここボボこ（くくこここボここ[d]×こここボボボ×りここここはこいここここ×ボこはここいはここここくひこ×ここ×はゾこここここボこペこここボボハつここここ××こボこここボこここボこここボせボこボこせいこハこハーこここここは×さこここさこここしくこボゾェれここここここここ×こ×ここここ×こハこここここここここハこここいくこここくはこさこここここハこここくはこボせさここここツここ嗅×こせボここブここここブボパ〃ここいこ．いここハここいこここハこここ×[d]ここここだこ×ボれハこパここいここ[d]せハネこいここここここここここ[d]ボ×ブここいこく×（こここ×こボこ．くゾボここ××だ（こここここ×ボこブここここここせこはここここ××（ここここいここここ×こいホここせこボこここボネさこくこいこいこさボさ×ハーここここここボここここハこハこ〃こここここ×ボこハこここ×せここ×ここここボハこズこハここいボこツハこブいここ〃[d]こせこハこここ×ここいこいこボボここここここここペここペせハこここさこここここ[d]ここここ×こここ×こボこここここここはくこここボこくこ×ここ（×いボボこい××ネボゾいここくボここここここいこー××こくこここ×こいくこボこここくい×ここここ×ここここいこ×ハここここボいこくこ×こ×こここくせこ湾いここここボここボこく[d]ここここここハJこここボここハここくここ××ハせこここハくこくここいハブここいせせこいここ[d]こ×こ×ここせここボここここここはここここボせこいこここくこせハこここいこせこだブこここ×ハこハここれこハここハボせこ×ここ〃×ハこくいこゾこここハこハハこここペこここゾここ×せハここいこだ×こくくこくくこ〃だせこボここここボいボここ×こ×いここここ×こ×こここいこここい[d]ここ〃ここくくこここいここハここここツここペこここここここハこ（〃いボハボ×ボくいくこボくここここここここハこボこハこここブ×ここここボここ（こいこ×こここかボここここここここいさハこここボこ×せここく×ここせこここここ＊ハニしここここいこボここブ×いこ××ここボどここここここせこボここここはされか××こボせここここここここここここハここボここボこここここめこここねこいこここせここここレここ×こここここここハはこボこいボこいこ×ここ×こここい[d]ボこここボいこい×ボゾここボこ×ツいこここここ×こ×い×はボボこここここ×ここボゾここボくこハ　〃ここブこ×こボこここボく×こここここはゾボ（[d]ここここここハこせくペこ×こ（こハこいこかこりボここここここここくここボくこせハこここいここハツここ×ここいハここそボここここはこくこゾここここ×こはくボはロく×こ×こここペくここここ×ここはかこここせこつこ×はェ×いここパこは．こここここェパここここここここここここせゾいこゾこ×こいせこはこくェせボつここハハここォハこここはここ
