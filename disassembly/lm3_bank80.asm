@@ -7,7 +7,7 @@
         db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 ; [LevelLoad] Loads game data from ROM. Entry: A=data ID to load. Sets up data pointers at $22/$24, stores data at $0958-$095A, handles special cases for values $FFFF. Returns A=0 on success.
-loadGameData:
+loadGameData: ; $008060
         REP #$20
         STA.B $00
         LDA.W #$8000
@@ -31,9 +31,9 @@ loadGameData:
         JSR.W findDataEntry
         BNE CODE_8080A3
         db $A9,$FF,$FF,$6B
-CODE_80809A:
+CODE_80809A: ; $00809A
         db $A5,$22,$18,$69,$10,$00,$8D,$86,$09
-CODE_8080A3:
+CODE_8080A3: ; $0080A3
         STA.W $096C
         LDY.W #$0002
         LDA.B [$22],Y
@@ -47,25 +47,25 @@ CODE_8080A3:
         CMP.B #$FF
         BEQ CODE_8080C5
         STA.L $7FC003
-CODE_8080C5:
+CODE_8080C5: ; $0080C5
         LDY.W #$0007
         LDA.B [$22],Y
         CMP.B #$FF
         BEQ CODE_8080D2
         STA.L $7EEA84
-CODE_8080D2:
+CODE_8080D2: ; $0080D2
         REP #$20
         LDA.W #$0000
         RTL
 ; [Memory] Searches data table for matching entry. Entry: $00=search value, $22/$24=data table pointer. Returns A=1 if found (sets $096C=index, $22=entry pointer, $096E=entry data), A=0 if not found.
-findDataEntry:
+findDataEntry: ; $0080D8
         LDY.W #$0000
         STZ.B $08
-CODE_8080DD:
+CODE_8080DD: ; $0080DD
         LDA.B [$22],Y
         BNE CODE_8080E2
         RTS
-CODE_8080E2:
+CODE_8080E2: ; $0080E2
         STA.B $02
         INY
         INY
@@ -75,16 +75,35 @@ CODE_8080E2:
         STA.B $04
         LDA.B [$22],Y
         STA.B $06
+; [Helper]
+TEST: ; $0080F0
         LDA.B $04
+; [Helper]
+DSPADDR: ; $0080F2
         CMP.B $00
-        BEQ CODE_8080FE
+; [Helper]
+CPUIO0: ; $0080F4
+        BEQ T1OUT
+; [Helper]
+CPUIO2: ; $0080F6
         INC.B $08
+; [Helper]
+RAMREG1: ; $0080F8
         INY
+; [Helper]
+RAMREG2: ; $0080F9
         INY
+; [Helper]
+T0TARGET: ; $0080FA
         INY
+; [Helper]
+T1TARGET: ; $0080FB
         INY
+; [Helper]
+T2TARGET: ; $0080FC
         BRA CODE_8080DD
-CODE_8080FE:
+; [Helper]
+T1OUT: ; $0080FE
         LDA.B $08
         STA.W $096C
         LDA.B $02
@@ -102,7 +121,7 @@ CODE_8080FE:
         LDA.W #$0001
         RTS
 ; [Memory] Sets up data structure from loaded game data. Uses $0986/$0988 as base pointers, calls sub_00E155 for processing. Entry: expects data pointers set. Returns via RTL.
-setupDataStructure:
+setupDataStructure: ; $008122
         REP #$20
         LDA.W $0986
         SEC
@@ -121,7 +140,7 @@ setupDataStructure:
         LDA.B [$22]
         STA.W $098A
         PLA
-        JSL.L testGraphics
+        JSL.L initEntityFromData
         LDA.W $098A
         CLC
         ADC.W #$0104
@@ -130,8 +149,8 @@ setupDataStructure:
         CMP.W #$0000
         BEQ CODE_80815F
         LDY.W #$0080
-        JSL.L calculateSlope
-CODE_80815F:
+        JSL.L setTextScrollParams
+CODE_80815F: ; $00815F
         RTL
         db $C2,$20,$C9,$00,$00,$F0,$03,$8D,$9C,$09,$86,$30,$84,$2E,$64,$26
         db $64,$28,$AD,$9A,$09,$4A,$4A,$4A,$4A,$29,$07,$00,$85,$2C,$A5,$2C
@@ -245,11 +264,11 @@ CODE_80815F:
         db $26,$38,$E9,$00,$01,$85,$26,$A5,$4E,$29,$80,$00,$F0,$02,$E6,$28
         db $A5,$4E,$29,$00,$80,$F0,$02,$C6,$28,$A5,$4E,$29,$40,$00,$F0,$02
         db $E6,$2A,$A5,$4E,$29,$00,$40,$F0,$02
-; Draws title screen logo graphics to VRAM. Entry: loads logo tiles and palette.
-drawTitleLogo:
+; [Init]
+drawTitleLogo: ; $008859
         db $C6,$2A,$6B
 ; [GameState] Game mode dispatcher - jumps to different game mode handlers based on A value (0-5). Entry: A=game mode index. Uses jump table at $8869.
-dispatchGameMode:
+dispatchGameMode: ; $00885C
         REP #$20
         ASL A
         ASL A
@@ -262,7 +281,7 @@ dispatchGameMode:
         db $EA
         JMP.W $889E
         db $EA
-        JMP.W $8A00
+        JMP.W textLineWidth
         db $EA
         JMP.W $8A52
         db $EA
@@ -301,8 +320,8 @@ dispatchGameMode:
         STA.B $00
         LDA.W #$0005
         STA.B $02
-        JSL.L enableInterrupts
-        JSL.L updateShadowEffect
+        JSL.L unpackTileProperties
+        JSL.L waitForModeSync
         REP #$20
         JSR.W calculateTileOffset
         LDA.W #$002E
@@ -311,7 +330,7 @@ dispatchGameMode:
         STA.B $12
         LDX.W #$1800
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         JSR.W updateOAMEntries
         LDA.B [$12]
         STA.B $00
@@ -325,15 +344,15 @@ dispatchGameMode:
         INC A
         LDX.W #$2000
         LDY.W #$0000
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $0A4A
         STA.W $0A48
         PLP
         RTL
 ; [VRAM] Calculates tile offset for graphics data. Entry: X=index. Reads from $7FCE00 table, multiplies by $A0, adds base offset $8000. Returns Y=calculated offset.
-calculateTileOffset:
+calculateTileOffset: ; $008919
         STZ.B $22
-CODE_80891B:
+CODE_80891B: ; $00891B
         LDX.B $22
         SEP #$20
         LDA.B #$2C
@@ -343,7 +362,7 @@ CODE_80891B:
         BCC CODE_80892F
         INC.B $14
         AND.B #$7F
-CODE_80892F:
+CODE_80892F: ; $00892F
         STA.W $4202
         LDA.B #$A0
         STA.W $4203
@@ -371,7 +390,7 @@ CODE_80892F:
         PHA
         TAX
         LDY.W #$00A0
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.B $12
         CLC
         ADC.W #$00A0
@@ -381,7 +400,7 @@ CODE_80892F:
         ADC.W #$0100
         TAX
         LDY.W #$00A0
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         INC.B $22
         LDA.B $22
         CMP.W #$0024
@@ -393,7 +412,7 @@ CODE_80892F:
         db $00,$01,$05,$01,$0A,$01,$20,$01,$25,$01,$2A,$01,$40,$01,$45,$01
         db $4A,$01,$60,$01,$65,$01,$6A,$01
 ; [OAM] Clears OAM buffer by setting all entries to off-screen. Entry: none. Sets Y=$F0 for all OAM entries.
-clearOAMBuffer:
+clearOAMBuffer: ; $0089C8
         REP #$20
         JSR.W updateOAMEntries
         LDA.L $7EEA84
@@ -407,7 +426,7 @@ clearOAMBuffer:
         STA.B $12
         RTL
 ; [OAM] Updates OAM entries with sprite data. Entry: expects sprite data pointers set. Writes to OAM via $2104.
-updateOAMEntries:
+updateOAMEntries: ; $0089E0
         REP #$20
         LDA.L $7FC003
         AND.W #$00FF
@@ -424,11 +443,15 @@ updateOAMEntries:
         ADC.B $00
         STA.B $12
         RTS
+; [Text]
+textLineWidth: ; $008A00
         PHP
         REP #$20
         STZ.B $6F
         JSR.W mainGameLoop
         SEP #$20
+; [Text]
+textExtendedVariable: ; $008A0A
         LDA.B #$02
         STA.W $2130
         LDA.B #$14
@@ -437,6 +460,8 @@ updateOAMEntries:
         STA.B $75
         REP #$20
         LDX.W #$2000
+; [Text]
+textSpecialMode1: ; $008A1C
         LDY.W #$1000
         LDA.W #$0000
         JSL.L executeMapScript
@@ -459,8 +484,8 @@ updateOAMEntries:
         REP #$20
         STZ.B $6F
         SEP #$20
-        JSL.L updateMotionBlur
-        JSL.L checkMapTrigger
+        JSL.L initMapScene
+        JSL.L setupVramBG3Write
         LDA.B #$81
         STA.W $4200
         LDA.B #$00
@@ -476,6 +501,8 @@ updateOAMEntries:
         LDA.W #$002E
         STA.B $14
         LDA.W #$8000
+; [Debug] Non-zero enables debug mode features
+debugModeFlag: ; $008A87
         STA.B $12
         LDX.W #$3000
         LDY.W #$0100
@@ -493,7 +520,7 @@ updateOAMEntries:
         LDA.W #$E800
         LDX.W #$0000
         LDY.W #$0080
-CODE_808AB8:
+CODE_808AB8: ; $008AB8
         STA.W $0100,X
         INX
         INX
@@ -507,14 +534,14 @@ CODE_808AB8:
         STA.B $12
         LDX.W #$1800
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$002E
         STA.B $14
         LDA.W #$A000
         STA.B $12
         LDX.W #$5000
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A1A0
@@ -533,18 +560,18 @@ CODE_808AB8:
         PLP
         RTL
 ; [Interrupt] V-Blank interrupt handler. Updates scroll registers, transfers OAM, handles DMA transfers. Entry: called from NMI.
-handleVBlank:
+handleVBlank: ; $008B17
         REP #$20
         LDX.W #$0000
         LDA.W #$0000
         STA.B $00
         LDY.W #$0020
-CODE_808B24:
+CODE_808B24: ; $008B24
         PHY
         LDA.W #$0000
         STA.B $02
         LDY.W #$0020
-CODE_808B2D:
+CODE_808B2D: ; $008B2D
         LDA.B $02
         AND.W #$0007
         CLC
@@ -571,7 +598,7 @@ CODE_808B2D:
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         RTS
         PHP
         REP #$20
@@ -601,7 +628,7 @@ CODE_808B2D:
         STA.B $12
         LDX.W #$1800
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A1D2
@@ -634,7 +661,7 @@ CODE_808B2D:
         STA.B $12
         LDX.W #$1800
         LDY.W #$0800
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A2F2
@@ -669,7 +696,7 @@ CODE_808B2D:
         STA.B $12
         LDX.W #$1800
         LDY.W #$0800
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A4F2
@@ -692,7 +719,7 @@ CODE_808B2D:
         STA.B $12
         LDX.W #$1800
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A3F2
@@ -705,40 +732,40 @@ CODE_808B2D:
         LDA.W #$0009
         LDX.W #$0300
         LDY.W #$0000
-        JSL.L calculateSlope
+        JSL.L setTextScrollParams
         LDX.W #$0000
         LDY.W #$02E0
         LDA.W #$1100
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         LDX.W #$0540
         LDY.W #$0020
         LDA.W #$3D76
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         LDX.W #$0580
         LDY.W #$00E0
         LDA.W #$0900
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         LDX.W #$0040
         LDY.W #$0020
         LDA.W #$0900
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         LDX.W #$0080
         LDY.W #$0020
         LDA.W #$0900
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         LDX.W #$00C0
         LDY.W #$0020
         LDA.W #$0900
-        JSR.W setupPPURegisters
+        JSR.W fillTileBuffer9000
         PLP
         RTL
 ; [Helper] Waits for V-Blank by polling $4212. Entry: none. Loops until V-blank flag is set.
-waitForVBlank:
+waitForVBlank: ; $008CFD
         SEP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         LDA.B $72
         PHA
-        JSL.L updateMotionBlur
+        JSL.L initMapScene
         JSL.L waitForButton
         LDX.W #$7C00
         LDY.W #$0800
@@ -763,7 +790,7 @@ waitForVBlank:
         LDA.W #$F0FF
         LDX.W #$0000
         LDY.W #$0080
-CODE_808D4B:
+CODE_808D4B: ; $008D4B
         STA.W $0100,X
         INX
         INX
@@ -773,11 +800,11 @@ CODE_808D4B:
         BNE CODE_808D4B
         RTS
 ; [Effects] Enables screen display by setting brightness. Entry: A=brightness value (0-15). Writes to $2100.
-enableScreen:
+enableScreen: ; $008D56
         LDA.W #$E000
         LDX.W #$0000
         LDY.W #$0080
-CODE_808D5F:
+CODE_808D5F: ; $008D5F
         STA.W $0100,X
         INX
         INX
@@ -787,17 +814,17 @@ CODE_808D5F:
         BNE CODE_808D5F
         LDA.W #$FFFF
         LDY.W #$0010
-CODE_808D6F:
+CODE_808D6F: ; $008D6F
         STA.W $0100,X
         INX
         INX
         DEY
         BNE CODE_808D6F
         RTS
-; [Init] Initializes PPU registers for graphics mode. Sets BGMODE, tile/screen bases, mosaic, etc. Entry: called during init.
-setupPPURegisters:
+; Fills $7E:9000 tile buffer in loop.
+fillTileBuffer9000: ; $008D78
         REP #$20
-CODE_808D7A:
+CODE_808D7A: ; $008D7A
         STA.L $7E9000,X
         INX
         INX
@@ -826,21 +853,21 @@ CODE_808D7A:
         STA.B $00
         LDA.W #$0007
         STA.B $02
-        JSL.L enableInterrupts
+        JSL.L unpackTileProperties
         LDA.W #$0003
         STA.B $14
         LDA.W #$A612
         STA.B $12
         LDX.W #$0000
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$002E
         STA.B $14
         LDA.W #$C000
         STA.B $12
         LDX.W #$2000
         LDY.W #$1800
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         PLP
         RTL
         PHP
@@ -855,7 +882,7 @@ CODE_808D7A:
         INC A
         LDX.W #$0000
         LDY.W #$0004
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W #$0023
         STA.B $14
         LDA.W #$D000
@@ -924,7 +951,7 @@ CODE_808D7A:
         LDA.W #$CF00
         STA.B $16
         LDA.W #$0040
-        JSL.L updateColorMath
+        JSL.L memcpyWords
         LDA.W #$000C
         STA.B $00
         LDA.W #$0002
@@ -941,7 +968,7 @@ CODE_808D7A:
         LDA.W #$CF40
         STA.B $16
         LDA.W #$0040
-        JSL.L updateColorMath
+        JSL.L memcpyWords
         LDA.W #$000E
         STA.B $00
         LDA.W #$0002
@@ -953,7 +980,7 @@ CODE_808D7A:
         INC A
         LDX.W #$0000
         LDY.W #$0002
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $0E83
         AND.W #$003F
         CMP.W #$003F
@@ -961,8 +988,8 @@ CODE_808D7A:
         INC A
         LDX.W #$1000
         LDY.W #$0002
-        JSL.L cheatMaxStats
-CODE_808F1E:
+        JSL.L setupTilemapSource_Long
+CODE_808F1E: ; $008F1E
         JSL.L fadeToBlack
         JSR.W loadTileData
         LDA.W #$0003
@@ -971,28 +998,28 @@ CODE_808F1E:
         STA.B $12
         LDX.W #$0E80
         LDY.W #$0100
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$B312
         STA.B $12
         LDX.W #$0F80
         LDY.W #$0100
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$B432
         STA.B $12
         LDX.W #$1E80
         LDY.W #$0100
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$B472
         STA.B $12
         LDX.W #$1F80
         LDY.W #$0100
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$B412
@@ -1021,7 +1048,7 @@ CODE_808F1E:
         STA.W $2128
         LDA.B #$83
         STA.W $2129
-CODE_808FBE:
+CODE_808FBE: ; $008FBE
         LDA.B #$33
         STA.W $2124
         LDA.B #$BB
@@ -1049,7 +1076,7 @@ CODE_808FBE:
         PLP
         RTL
 ; [VRAM] Clears VRAM by filling with zeros. Uses DMA channel 0. Entry: none. Clears entire VRAM space.
-clearVRAM:
+clearVRAM: ; $008FFE
         REP #$20
         LDA.W #$001F
         STA.B $14
@@ -1062,7 +1089,7 @@ clearVRAM:
         LDA.W #$CF00
         STA.B $16
         LDA.W #$0040
-        JSL.L updateColorMath
+        JSL.L memcpyWords
         LDA.W #$007F
         STA.B $14
         LDA.W #$CF00
@@ -1072,35 +1099,35 @@ clearVRAM:
         LDA.W #$0002
         STA.B $02
         JSR.W setupHDMA
-        JSL.L enableInterrupts
+        JSL.L unpackTileProperties
         LDA.W $0E03
         AND.W #$003F
         INC A
         LDX.W #$0000
         LDY.W #$0002
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         RTL
 ; [VRAM] Loads tile graphics data to VRAM. Entry: $12/$14=source pointer, $2116=VRAM destination, $4305=length. Uses DMA.
-loadTileData:
+loadTileData: ; $00904E
         REP #$20
         LDA.W $0958
         CMP.W #$FFFF
         BNE CODE_80905B
         JMP.W $9135
-CODE_80905B:
+CODE_80905B: ; $00905B
         CMP.W #$0100
         BCC CODE_80907C
         LDX.W #$2104
         LDY.W #$0040
-        JSL.L calculateSlope
+        JSL.L setTextScrollParams
         LDA.W $095A
         BEQ CODE_809079
         LDX.W #$0104
         LDY.W #$0000
-        JSL.L calculateSlope
-CODE_809079:
+        JSL.L setTextScrollParams
+CODE_809079: ; $009079
         JMP.W $9135
-CODE_80907C:
+CODE_80907C: ; $00907C
         LDA.W $0958
         JSR.W startDMA
         STA.W $095C
@@ -1128,24 +1155,24 @@ CODE_80907C:
         INC A
         LDY.W #$0001
         LDX.W #$4000
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $095E
         INC A
         INC A
         LDY.W #$0003
         LDX.W #$48C0
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $0960
         INC A
         LDY.W #$0001
         LDX.W #$3000
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $0962
         INC A
         INC A
         LDY.W #$0003
         LDX.W #$38C0
-        JSL.L cheatMaxStats
+        JSL.L setupTilemapSource_Long
         LDA.W $09D8
         CMP.W #$0080
         BCS CODE_809103
@@ -1154,8 +1181,8 @@ CODE_80907C:
         ADC.W #$0079
         LDY.W #$0003
         LDX.W #$3C00
-        JSL.L cheatMaxStats
-CODE_809103:
+        JSL.L setupTilemapSource_Long
+CODE_809103: ; $009103
         LDA.W #$0002
         STA.B $00
         LDA.W $095C
@@ -1177,7 +1204,7 @@ CODE_809103:
         JSR.W loadPaletteData
         RTS
 ; [Palette] Loads palette data to CGRAM. Entry: $12/$14=source pointer, $2121=CGRAM address, $4305=length. Uses DMA.
-loadPaletteData:
+loadPaletteData: ; $009136
         REP #$20
         PHA
         LDA.W #$002F
@@ -1208,7 +1235,7 @@ loadPaletteData:
         INC.B $00
         RTS
 ; [DMA] Configures DMA channel for transfer. Entry: A=channel (0-7), X=DMAP/BBAD value, Y=A1T value. Sets up $43x0-$43x3.
-setupDMAChannel:
+setupDMAChannel: ; $00916C
         PHA
         AND.W #$00C0
         STA.B $00
@@ -1223,7 +1250,7 @@ setupDMAChannel:
         STA.B $12
         RTS
 ; [DMA] Starts DMA transfer on specified channels. Entry: A=channel mask (bits 0-7). Writes to $420B.
-startDMA:
+startDMA: ; $009183
         ASL A
         ASL A
         TAX
@@ -1234,7 +1261,7 @@ startDMA:
         CLC
         ADC.W #$0400
         TAX
-CODE_809195:
+CODE_809195: ; $009195
         LDA.L $2296E5,X
         STA.B $00
         AND.W #$007F
@@ -1246,7 +1273,7 @@ CODE_809195:
         AND.W #$003F
         RTS
 ; [DMA] Sets up HDMA channel for raster effects. Entry: A=channel, X=table pointer, Y=indirect pointer. Configures $43x0-$43x7.
-setupHDMA:
+setupHDMA: ; $0091AA
         LDA.B $02
         ASL A
         ASL A
@@ -1254,7 +1281,7 @@ setupHDMA:
         ASL A
         TAX
         LDY.W #$0000
-CODE_8091B4:
+CODE_8091B4: ; $0091B4
         LDA.B [$12],Y
         STA.B $05
         SEP #$20
@@ -1269,7 +1296,7 @@ CODE_8091B4:
         BNE CODE_8091B4
         RTS
 ; [OAM] Updates battle scene graphics including backgrounds and sprites. Entry: called during battle. Sets up multiple OAM entries.
-updateBattleGraphics:
+updateBattleGraphics: ; $0091CA
         PHP
         REP #$20
         LDX.W #$0104
@@ -1308,7 +1335,7 @@ updateBattleGraphics:
         JSR.W drawCharacterSprite
         LDX.W #$0104
         LDY.W #$001C
-CODE_809229:
+CODE_809229: ; $009229
         LDA.L $7FB000,X
         EOR.W #$8000
         STA.L $7FAFC0,X
@@ -1327,7 +1354,7 @@ CODE_809229:
         BNE CODE_809229
         LDX.W #$0084
         LDY.W #$0011
-CODE_809260:
+CODE_809260: ; $009260
         LDA.L $7FB000,X
         EOR.W #$4000
         STA.L $7FAFFE,X
@@ -1354,7 +1381,7 @@ CODE_809260:
         LDX.W #$039E
         LDY.W #$0003
         LDA.W #$19C0
-CODE_8092AB:
+CODE_8092AB: ; $0092AB
         STA.L $7FB000,X
         INC A
         STA.L $7FB002,X
@@ -1368,11 +1395,11 @@ CODE_8092AB:
         DEY
         BNE CODE_8092AB
         BRA CODE_8092E0
-CODE_8092C2:
+CODE_8092C2: ; $0092C2
         LDX.W #$039E
         LDY.W #$0003
         LDA.W #$59C0
-CODE_8092CB:
+CODE_8092CB: ; $0092CB
         STA.L $7FB002,X
         INC A
         STA.L $7FB000,X
@@ -1385,28 +1412,28 @@ CODE_8092CB:
         PLA
         DEY
         BNE CODE_8092CB
-CODE_8092E0:
+CODE_8092E0: ; $0092E0
         LDA.W #$7800
         STA.B $78
         SEP #$20
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         PLP
         RTS
 ; [OAM] Draws a single battle sprite with position and tile data. Entry: A=sprite data index, X=OAM slot, $28=base address.
-drawBattleSprite:
-        JSR.W getCharacterDataPointer
+drawBattleSprite: ; $0092F3
+        JSR.W getTileDataPointer
         LDA.B $24
         STA.B $00
-CODE_8092FA:
+CODE_8092FA: ; $0092FA
         LDY.B $22
         STX.B $04
-CODE_8092FE:
+CODE_8092FE: ; $0092FE
         LDA.B $28
         INC.B $28
-        JSR.W checkCharacterFlag
+        JSR.W checkTileFlag
         STA.L $7FB000,X
         INX
         INX
@@ -1421,22 +1448,22 @@ CODE_8092FE:
         BNE CODE_8092FA
         RTS
 ; [OAM] Draws character sprite with animation frames. Entry: A=character ID, X=OAM slot, $28=base address.
-drawCharacterSprite:
-        JSR.W getCharacterDataPointer
+drawCharacterSprite: ; $00931C
+        JSR.W getTileDataPointer
         LDA.B $24
         STA.B $00
         TXA
         CLC
         ADC.W #$001A
         TAX
-CODE_809329:
+CODE_809329: ; $009329
         LDY.B $22
         STX.B $04
-CODE_80932D:
+CODE_80932D: ; $00932D
         LDA.B $28
         INC.B $28
         EOR.W #$4000
-        JSR.W checkCharacterFlag
+        JSR.W checkTileFlag
         STA.L $7FB000,X
         DEX
         DEX
@@ -1457,8 +1484,8 @@ CODE_80932D:
         db $A5,$24,$85,$00,$A4,$22,$86,$04,$A5,$28,$E6,$28,$9F,$00,$B0,$7F
         db $E8,$E8,$88,$D0,$F3,$A5,$04,$18,$69,$40,$00,$AA,$C6,$00,$A5,$00
         db $D0,$E2,$60
-; [Entity] Calculates pointer to character data table. Entry: A=character ID. Returns $12/$14=pointer to character data (bank $21, base $C000 + ID*$28).
-getCharacterDataPointer:
+; [Tilemap] A=idx, returns $12/$14 ptr (bank $21, $C000+A*$28).
+getTileDataPointer: ; $009377
         PHA
         LDA.W #$0021
         STA.B $14
@@ -1478,8 +1505,8 @@ getCharacterDataPointer:
         LDA.W #$0001
         STA.B $06
         RTS
-; [Entity] Checks character flag bit in data structure. Entry: A=bit mask position, $12/$14=character data pointer. Returns A=adjusted value based on flag (adds $0400 if flag set).
-checkCharacterFlag:
+; [Tilemap] A=bit mask, $12/$14=ptr. Returns A+$0400 if flag.
+checkTileFlag: ; $009397
         STA.B $08
         LDA.B [$12]
         AND.B $06
@@ -1488,24 +1515,24 @@ checkCharacterFlag:
         CLC
         ADC.B $08
         STA.B $08
-CODE_8093A7:
+CODE_8093A7: ; $0093A7
         LDA.B $06
         ASL A
         CMP.W #$0100
         BNE CODE_8093B4
         INC.B $12
         LDA.W #$0001
-CODE_8093B4:
+CODE_8093B4: ; $0093B4
         STA.B $06
         LDA.B $08
         RTS
 ; [MainLoop] Main game loop - handles frame updates, input, game logic. Entry: called each frame. Calls input, sound, and game state updates.
-mainGameLoop:
+mainGameLoop: ; $0093B9
         PHP
         SEP #$20
-        JSL.L updateMotionBlur
+        JSL.L initMapScene
         SEP #$20
-        JSL.L checkMapTrigger
+        JSL.L setupVramBG3Write
         JSL.L waitForButton
         LDA.B #$81
         STA.W $4200
@@ -1525,17 +1552,17 @@ mainGameLoop:
         STA.B $14
         LDA.W #$9000
         STA.B $12
-CODE_8093F5:
+CODE_8093F5: ; $0093F5
         LDX.W #$6000
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$8340
         STA.B $12
         LDX.W #$6800
         LDY.W #$0800
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0000
         STA.B $14
         LDA.W #$0D80
@@ -1555,7 +1582,7 @@ CODE_8093F5:
         LDA.W #$E800
         LDX.W #$0000
         LDY.W #$0080
-CODE_809442:
+CODE_809442: ; $009442
         STA.W $0100,X
         INX
         INX
@@ -1570,7 +1597,7 @@ CODE_809442:
         PLP
         RTS
 ; [VRAM] Decompresses graphics data from ROM to RAM. Entry: $12/$14=source pointer, $16/$18=dest pointer, $02=compression type. Uses RLE-like decompression.
-decompressGraphics:
+decompressGraphics: ; $00945B
         PHP
         REP #$20
         LDA.W #$0000
@@ -1585,7 +1612,7 @@ decompressGraphics:
         ASL A
         TAX
         SEP #$20
-CODE_809474:
+CODE_809474: ; $009474
         LDA.B [$12],Y
         INY
         STA.B [$16],Y
@@ -1616,7 +1643,7 @@ CODE_809474:
         ASL A
         PHA
         REP #$20
-        JSR.W updateLensFlare
+        JSR.W uploadPaletteCGRAM
         TSC
         CLC
         ADC.W #$0005
@@ -1624,7 +1651,7 @@ CODE_809474:
         PLP
         RTL
 ; [Tilemap] Sets up background tilemap in VRAM. Entry: $12/$14=tilemap data pointer, $2116=VRAM destination. Writes 32x32 tilemap.
-setupTilemap:
+setupTilemap: ; $0094AB
         PHP
         SEP #$20
         LDA.B $14
@@ -1646,7 +1673,7 @@ setupTilemap:
         ASL A
         PHA
         REP #$20
-        JSR.W updateLensFlare
+        JSR.W uploadPaletteCGRAM
         TSC
         CLC
         ADC.W #$0005
@@ -1654,7 +1681,7 @@ setupTilemap:
         PLP
         RTL
 ; [Scrolling] Updates BG scroll registers based on camera position. Entry: $00=BG1HOFS, $02=BG1VOFS, etc. Writes to $210D-$2114.
-updateScrollRegisters:
+updateScrollRegisters: ; $0094D3
         SEI
         PHP
         REP #$20
@@ -1707,19 +1734,19 @@ updateScrollRegisters:
         CLI
         RTL
 ; [Timer] Increments a counter in RAM. Entry: A=counter value. Stores incremented value at $81.
-incrementCounter:
+incrementCounter: ; $00954E
         SEP #$20
         INC A
         STA.B $81
         REP #$20
         RTS
 ; [AI] Processes enemy AI logic for battle. Entry: reads enemy data from $7EEA8C, processes AI scripts from ROM table $0BE579.
-processEnemyAI:
+processEnemyAI: ; $009556
         REP #$20
         LDX.W #$0000
         LDA.L $7EEA8C
         STA.B $22
-CODE_809561:
+CODE_809561: ; $009561
         LDA.B $22
         BEQ CODE_8095AB
         LDA.L $0BE579,X
@@ -1732,36 +1759,36 @@ CODE_809561:
         AND.W #$FF00
         CMP.W #$F000
         BCS CODE_8095A3
-        JSR.W playSoundEffect
+        JSR.W doubleByteToIndex
         LDA.L $7F0000,X
         AND.W #$FC00
         ORA.W #$00A0
         STA.L $7F0000,X
         DEC.B $22
         BRA CODE_8095A3
-CODE_809594:
+CODE_809594: ; $009594
         PHX
-        JSR.W playSoundEffect
+        JSR.W doubleByteToIndex
         LDA.L $7F0000,X
         ORA.W #$2000
         STA.L $7F0000,X
-CODE_8095A3:
+CODE_8095A3: ; $0095A3
         PLA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_809561
-CODE_8095AB:
+CODE_8095AB: ; $0095AB
         STX.W $09C0
         RTL
 ; [Physics] Calculates damage in battle based on attacker/defender stats. Entry: A=attacker ID, X=defender ID. Returns A=damage amount.
-calculateBattleDamage:
+calculateBattleDamage: ; $0095AF
         REP #$20
         LDY.W #$0014
-CODE_8095B4:
+CODE_8095B4: ; $0095B4
         PHY
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         PLY
         DEY
         BNE CODE_8095B4
@@ -1771,7 +1798,7 @@ CODE_8095B4:
         ADC.W #$0004
         TAX
         STX.W $09C4
-CODE_8095CE:
+CODE_8095CE: ; $0095CE
         LDA.L $0BE579,X
         STA.B $00
         BEQ CODE_809607
@@ -1779,26 +1806,26 @@ CODE_8095CE:
         CMP.W #$8000
         BCS CODE_809607
         PHX
-        JSR.W playSoundEffect
+        JSR.W doubleByteToIndex
         LDA.L $7F0000,X
         ORA.W #$2000
         STA.L $7F0000,X
-        JSL.L testPathfinding
+        JSL.L evtScrollInitFullLong
         LDA.W #$0003
         JSR.W incrementCounter
         LDA.W #$0003
-        JSL.L updateReflection
+        JSL.L repeatModeSync
         PLA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_8095CE
-CODE_809607:
+CODE_809607: ; $009607
         LDA.L $7EEA8C
         INC A
         STA.L $7EEA8C
         JSL.L processEnemyAI
-        JSL.L testPathfinding
+        JSL.L evtScrollInitFullLong
         LDA.W #$0002
         JSR.W incrementCounter
         LDX.W $09C4
@@ -1806,17 +1833,17 @@ CODE_809607:
         BRA processEnemyAIData
         db $C2,$20,$5A,$22,$E9,$97,$00,$8A,$18,$69,$04,$00,$AA,$7A
 ; [AI] Processes enemy AI script data from ROM table $0BE579. Entry: X=AI data index, Y=direction (2=forward, else backward).
-processEnemyAIData:
+processEnemyAIData: ; $009634
         CPY.W #$0002
         BNE CODE_80963E
         LDY.W #$FFFC
         BRA CODE_809641
-CODE_80963E:
+CODE_80963E: ; $00963E
         LDY.W #$0004
-CODE_809641:
+CODE_809641: ; $009641
         STY.B $22
         STX.W $09D0
-CODE_809646:
+CODE_809646: ; $009646
         LDA.L $0BE579,X
         STA.B $00
         BEQ CODE_809673
@@ -1829,7 +1856,7 @@ CODE_809646:
         STA.L $7EEA82
         CPX.W $09D0
         BNE CODE_809673
-CODE_809668:
+CODE_809668: ; $009668
         PHX
         JSR.W handleItemUse
         PLA
@@ -1837,15 +1864,15 @@ CODE_809668:
         ADC.B $22
         TAX
         BRA CODE_809646
-CODE_809673:
+CODE_809673: ; $009673
         JSL.L updateMenuCursor
         LDA.B $04
         STA.B $00
         JSR.W handleItemUse
         RTL
 ; [Menu] Handles item usage in menu or battle. Entry: A=item ID, X=target. Processes item effects, updates inventory.
-handleItemUse:
-        JSR.W checkCollision
+handleItemUse: ; $00967F
+        JSR.W gridToPixelCoords
         LDA.B $00
         STA.W $1806
         LDA.B $02
@@ -1854,8 +1881,8 @@ handleItemUse:
         STZ.B $26
         LDX.B $24
         LDY.B $26
-        JSL.L cheatAllKeys
-        JSL.L checkSPCBusy
+        JSL.L scrollByDelta
+        JSL.L renderSprites
         STZ.B $24
         STZ.B $26
         STZ.B $28
@@ -1869,12 +1896,12 @@ handleItemUse:
         SBC.W #$0002
         INC.B $28
         BRA CODE_8096C3
-CODE_8096BA:
+CODE_8096BA: ; $0096BA
         LDY.W #$0028
         CLC
         ADC.W #$0002
         INC.B $28
-CODE_8096C3:
+CODE_8096C3: ; $0096C3
         STA.W $1802
         SEC
         SBC.B $60
@@ -1882,12 +1909,12 @@ CODE_8096C3:
         BCS CODE_8096D2
         DEC.B $24
         DEC.B $24
-CODE_8096D2:
+CODE_8096D2: ; $0096D2
         CMP.W #$008F
         BCC CODE_8096DB
         INC.B $24
         INC.B $24
-CODE_8096DB:
+CODE_8096DB: ; $0096DB
         LDA.W $1804
         CMP.W $1808
         BEQ CODE_80971A
@@ -1899,26 +1926,26 @@ CODE_8096DB:
         BNE CODE_8096F5
         LDY.W #$000C
         BRA CODE_80971A
-CODE_8096F5:
+CODE_8096F5: ; $0096F5
         CPY.W #$0028
         BNE CODE_8096FF
         LDY.W #$0024
         BRA CODE_80971A
-CODE_8096FF:
+CODE_8096FF: ; $0096FF
         LDY.W #$0020
         BRA CODE_80971A
-CODE_809704:
+CODE_809704: ; $009704
         CLC
         ADC.W #$0002
         INC.B $28
         CPY.W #$0008
         BNE CODE_809712
         LDY.W #$0004
-CODE_809712:
+CODE_809712: ; $009712
         CPY.W #$0028
         BNE CODE_80971A
         LDY.W #$002C
-CODE_80971A:
+CODE_80971A: ; $00971A
         STA.W $1804
         SEC
         SBC.B $62
@@ -1926,12 +1953,12 @@ CODE_80971A:
         BCS CODE_809729
         DEC.B $26
         DEC.B $26
-CODE_809729:
+CODE_809729: ; $009729
         CMP.W #$0071
         BCC CODE_809732
         INC.B $26
         INC.B $26
-CODE_809732:
+CODE_809732: ; $009732
         LDA.B $54
         AND.W #$0004
         STA.B $00
@@ -1941,16 +1968,16 @@ CODE_809732:
         BEQ CODE_809745
         CLC
         ADC.W #$0002
-CODE_809745:
+CODE_809745: ; $009745
         STA.W $180A
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         LDA.B $28
         BEQ CODE_809753
         JMP.W $9690
-CODE_809753:
+CODE_809753: ; $009753
         RTS
-; [SFX] Plays a sound effect via APU. Entry: A=sound effect ID. Writes to APU ports $2140-$2143.
-playSoundEffect:
+; ASL $00, LDA $00, TAX, RTS. Doubles byte value, returns in X as index.
+doubleByteToIndex: ; $009754
         SEP #$20
         ASL.B $00
         REP #$20
@@ -1958,40 +1985,40 @@ playSoundEffect:
         TAX
         RTS
 ; [Music] Plays background music. Entry: A=music track ID. Sends command to SPC700 via APU ports.
-playBGM:
-        JSL.L updateTransparency
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+playBGM: ; $00975E
+        JSL.L readJoypadNewPress
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         JSL.L updateMenuCursor
         LDA.B $50
         AND.W #$0100
         BEQ CODE_809779
         INC.B $04
         BRA CODE_8097A2
-CODE_809779:
+CODE_809779: ; $009779
         LDA.B $50
         AND.W #$0200
         BEQ CODE_809784
         DEC.B $04
         BRA CODE_8097A2
-CODE_809784:
+CODE_809784: ; $009784
         LDA.B $50
         AND.W #$0400
         BEQ CODE_80978F
         INC.B $05
         BRA CODE_8097A2
-CODE_80978F:
+CODE_80978F: ; $00978F
         LDA.B $50
         AND.W #$0800
         BEQ CODE_80979A
         DEC.B $05
         BRA CODE_8097A2
-CODE_80979A:
+CODE_80979A: ; $00979A
         LDA.B $50
         AND.W #$F0F0
         BEQ playBGM
         RTL
-CODE_8097A2:
+CODE_8097A2: ; $0097A2
         JSR.W fadeScreen
         CMP.W #$FFFF
         BEQ playBGM
@@ -2001,10 +2028,10 @@ CODE_8097A2:
         LDA.W #$0000
         RTL
 ; [Effects] Screen fade effect (in/out). Entry: A=0 for fade in, 1 for fade out. Updates $2100 brightness gradually.
-fadeScreen:
+fadeScreen: ; $0097B8
         REP #$20
         LDX.W #$0000
-CODE_8097BD:
+CODE_8097BD: ; $0097BD
         CPX.W $09C0
         BCS CODE_8097E5
         LDA.L $0BE579,X
@@ -2019,23 +2046,23 @@ CODE_8097BD:
         AND.W #$00FF
         TAY
         RTS
-CODE_8097DD:
+CODE_8097DD: ; $0097DD
         TXA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_8097BD
-CODE_8097E5:
+CODE_8097E5: ; $0097E5
         LDA.W #$FFFF
         RTS
 ; [Menu] Updates menu cursor position and animation. Entry: reads controller input, updates cursor sprite OAM.
-updateMenuCursor:
+updateMenuCursor: ; $0097E9
         REP #$20
         STZ.W $09B2
         LDA.L $7EEA82
         STA.B $00
         LDX.W #$0000
-CODE_8097F7:
+CODE_8097F7: ; $0097F7
         LDA.L $0BE579,X
         STA.B $04
         BEQ CODE_809837
@@ -2057,19 +2084,19 @@ CODE_8097F7:
         AND.W #$00FF
         STA.L $7EEA82
         STA.B $00
-CODE_80982F:
+CODE_80982F: ; $00982F
         TXA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_8097F7
-CODE_809837:
+CODE_809837: ; $009837
         LDA.B $04
         STA.B $00
-        JSR.W checkCollision
+        JSR.W gridToPixelCoords
         RTL
-; [Collision] Checks collision between two objects. Entry: $00-$03=object1 rect, $04-$07=object2 rect. Returns carry set if collision.
-checkCollision:
+; Convert two bytes at $00/$01 to pixel coords: val*8-4. Store results in $00/$02. RTS.
+gridToPixelCoords: ; $00983F
         REP #$20
         LDA.B $01
         AND.W #$00FF
@@ -2088,8 +2115,8 @@ checkCollision:
         SBC.W #$0004
         STA.B $00
         RTS
-; [Player] Moves character based on input and collision. Entry: A=character ID, reads controller, updates position.
-moveCharacter:
+; A*16=index into $1800 table, zero 16 bytes (8 words). Entity data clear.
+clearEntityEntry: ; $00985E
         REP #$20
         ASL A
         ASL A
@@ -2098,7 +2125,7 @@ moveCharacter:
         TAX
         PHX
         LDY.W #$0008
-CODE_809869:
+CODE_809869: ; $009869
         STZ.W $1800,X
         INX
         INX
@@ -2117,8 +2144,8 @@ CODE_809869:
         STA.W $1804,X
         STA.W $1808,X
         RTL
-; [Camera] Updates camera position to follow player. Entry: reads player position, calculates camera bounds, updates scroll.
-updateCamera:
+; Loop through byte table at $98CC, set sprite tile at $180A, renderSprites, wait 4 frames. Until $FF.
+playEntityAnimation: ; $009891
         SEP #$20
         LDA.B #$02
         STA.B $81
@@ -2126,7 +2153,7 @@ updateCamera:
         LDX.W #$0000
         LDA.W #$01F0
         STA.W $1800
-CODE_8098A2:
+CODE_8098A2: ; $0098A2
         LDA.L $0098CC,X
         AND.W #$00FF
         CMP.W #$00FF
@@ -2134,25 +2161,25 @@ CODE_8098A2:
         PHX
         ORA.W #$2000
         STA.W $180A
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         LDA.W #$0004
-        JSL.L updateReflection
+        JSL.L repeatModeSync
         PLX
         INX
         BRA CODE_8098A2
-CODE_8098C4:
+CODE_8098C4: ; $0098C4
         LDA.W #$000F
-        JSL.L updateReflection
+        JSL.L repeatModeSync
         RTL
         db $00,$04,$08,$0C,$20,$24,$28,$2C,$40,$42,$FF
 ; [Collision] Checks movement collision with environment. Entry: $09B4=offset, calls checkCollision, updates position.
-checkMovementCollision:
+checkMovementCollision: ; $0098D7
         REP #$20
         LDA.W $09B4
         CLC
         ADC.W #$0201
         STA.B $00
-        JSR.W checkCollision
+        JSR.W gridToPixelCoords
         LDA.B $60
         CLC
         ADC.B $00
@@ -2163,11 +2190,11 @@ checkMovementCollision:
         STA.B $02
         STZ.B $04
         LDA.W #$0000
-        JSL.L moveCharacter
-CODE_8098FC:
-        JSL.L updateTransparency
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L clearEntityEntry
+CODE_8098FC: ; $0098FC
+        JSL.L readJoypadNewPress
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         LDY.W $09B2
         LDA.B $50
         AND.W $09BA
@@ -2179,20 +2206,20 @@ CODE_8098FC:
         AND.W #$F0F0
         BNE CODE_809935
         BRA CODE_8098FC
-CODE_809922:
+CODE_809922: ; $009922
         TYA
         INC A
         CMP.W $09B8
         BEQ CODE_8098FC
         BRA CODE_80992F
-CODE_80992B:
+CODE_80992B: ; $00992B
         TYA
         BEQ CODE_8098FC
         DEC A
-CODE_80992F:
+CODE_80992F: ; $00992F
         STA.W $09B2
         LDA.W #$0000
-CODE_809935:
+CODE_809935: ; $009935
         RTL
         db $02,$00,$00,$00,$FD,$FF,$00,$00,$FE,$FF,$00,$00,$FE,$FF,$00,$00
         db $FF,$FF,$00,$00,$FF,$FF,$00,$00,$00,$00,$00,$00,$FF,$FF,$00,$00
@@ -2210,49 +2237,49 @@ CODE_809935:
         db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         db $00,$00,$FE,$FF,$00,$00,$FF,$FF
 ; [Dialogue] Draws text dialog box on screen. Entry: $12/$14=text pointer, $00/$02=screen position. Renders text with window effect.
-drawDialogBox:
+drawDialogBox: ; $009A1E
         REP #$20
         CPY.W #$0006
         BNE CODE_809A2B
         LDY.W #$00F0
         JMP.W $9D3A
-CODE_809A2B:
+CODE_809A2B: ; $009A2B
         CPY.W #$0007
         BNE CODE_809A36
         LDY.W #$0000
         JMP.W $9D3A
-CODE_809A36:
+CODE_809A36: ; $009A36
         CPY.W #$0008
         BNE CODE_809A3E
         JMP.W $9C26
-CODE_809A3E:
+CODE_809A3E: ; $009A3E
         CPY.W #$0009
         BNE CODE_809A46
         JMP.W $9B79
-CODE_809A46:
+CODE_809A46: ; $009A46
         CPY.W #$000A
         BNE CODE_809A4E
         JMP.W $9C47
-CODE_809A4E:
+CODE_809A4E: ; $009A4E
         CPY.W #$000B
         BNE CODE_809A56
         JMP.W $9B19
-CODE_809A56:
+CODE_809A56: ; $009A56
         CPY.W #$000C
         BNE CODE_809A5E
         JMP.W $9ABB
-CODE_809A5E:
+CODE_809A5E: ; $009A5E
         PHX
         STZ.B $24
         LDX.W #$99B6
         CPY.W #$0000
         BNE CODE_809A6C
         LDX.W #$9936
-CODE_809A6C:
+CODE_809A6C: ; $009A6C
         CPY.W #$0001
         BNE CODE_809A74
         db $A2,$82,$99
-CODE_809A74:
+CODE_809A74: ; $009A74
         STX.B $22
         LDA.B [$22]
         AND.W #$00FF
@@ -2260,9 +2287,9 @@ CODE_809A74:
         INC.B $22
         INC.B $22
         PLX
-CODE_809A82:
+CODE_809A82: ; $009A82
         LDY.W #$0000
-CODE_809A85:
+CODE_809A85: ; $009A85
         LDA.B [$22],Y
         CMP.W #$FFFF
         BEQ CODE_809AB6
@@ -2283,12 +2310,12 @@ CODE_809A85:
         CLC
         ADC.B $02
         STA.W $1804,X
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         PLX
         PLY
         BRA CODE_809A85
-CODE_809AB6:
+CODE_809AB6: ; $009AB6
         DEC.B $26
         BNE CODE_809A82
         RTL
@@ -2301,14 +2328,14 @@ CODE_809AB6:
         SBC.W #$0010
         BCS CODE_809AD1
         LDA.W #$0001
-CODE_809AD1:
+CODE_809AD1: ; $009AD1
         STA.W $1804,X
         LDA.W $1800,X
         ORA.W #$00F0
         STA.W $1800,X
-CODE_809ADD:
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+CODE_809ADD: ; $009ADD
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         LDX.W $09C8
         LDA.W $1804,X
         CLC
@@ -2323,12 +2350,12 @@ CODE_809ADD:
         ORA.W #$8000
         STA.W $1808,X
         BRA CODE_809ADD
-CODE_809B07:
+CODE_809B07: ; $009B07
         LDA.W $09CA
         STA.W $1804,X
         STZ.W $1808,X
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         RTL
         REP #$20
         STX.W $09C8
@@ -2339,9 +2366,9 @@ CODE_809B07:
         SBC.W #$0010
         BCS CODE_809B2F
         LDA.W #$0001
-CODE_809B2F:
+CODE_809B2F: ; $009B2F
         STA.W $09CA
-CODE_809B32:
+CODE_809B32: ; $009B32
         LDX.W $09C8
         LDA.W $1804,X
         CMP.W $09CA
@@ -2356,18 +2383,18 @@ CODE_809B32:
         SBC.B $00
         ORA.W #$8000
         STA.W $1808,X
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         BRA CODE_809B32
-CODE_809B5E:
+CODE_809B5E: ; $009B5E
         LDA.W $1800,X
         AND.W #$FF00
         STA.W $1800,X
         LDA.W $09CC
         STA.W $1804,X
         STZ.W $1808,X
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         RTL
         REP #$20
         LDA.W $1802,X
@@ -2394,27 +2421,27 @@ CODE_809B5E:
         LDA.W #$39EA
         LDY.W #$0004
         JSR.W updateHPBar
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         RTL
 ; [HUD] Updates HP bar display for character. Entry: A=character ID, X=current HP, Y=max HP. Draws bar in HUD.
-updateHPBar:
+updateHPBar: ; $009BC1
         STA.W $09C8
-CODE_809BC4:
+CODE_809BC4: ; $009BC4
         PHY
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         LDA.W $09CA
         STA.B $00
         LDA.W $09C8
         LDY.W #$0000
         JSR.W setupSpriteOAM
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         PLY
         DEY
         BNE CODE_809BC4
         RTS
 ; [OAM] Sets up OAM entries for a sprite with 4 tiles (2x2). Entry: A=tile number, $00=X pos, Y=OAM slot. Creates 4 OAM entries.
-setupSpriteOAM:
+setupSpriteOAM: ; $009BE0
         STA.W $0106,Y
         CLC
         ADC.W #$0002
@@ -2451,15 +2478,15 @@ setupSpriteOAM:
         RTS
         REP #$20
         LDY.W #$0010
-CODE_809C2B:
+CODE_809C2B: ; $009C2B
         PHY
         LDA.W $1802,X
         EOR.W #$0008
         STA.W $1802,X
         PHX
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         LDA.W #$0002
-        JSL.L updateReflection
+        JSL.L repeatModeSync
         PLX
         PLY
         DEY
@@ -2479,20 +2506,20 @@ CODE_809C2B:
         LDA.W $1804,X
         SEC
         SBC.B $62
-CODE_809C67:
+CODE_809C67: ; $009C67
         TAY
         SEC
         SBC.W #$0010
         BMI CODE_809C73
         INC.W $096C
         BRA CODE_809C67
-CODE_809C73:
+CODE_809C73: ; $009C73
         STY.B $01
         LDA.B $00
         STA.W $096E
         LDX.W #$0200
         LDA.W #$AAAA
-CODE_809C80:
+CODE_809C80: ; $009C80
         STA.W $0100,X
         INX
         INX
@@ -2501,7 +2528,7 @@ CODE_809C80:
         LDA.W $096C
         BEQ CODE_809CA9
         LDA.W #$0001
-CODE_809C92:
+CODE_809C92: ; $009C92
         PHA
         LDY.W #$0001
         JSR.W handleBattleAnimation
@@ -2512,14 +2539,14 @@ CODE_809C92:
         LDA.W $096C
         LDY.W #$0028
         JSR.W handleBattleAnimation
-CODE_809CA9:
-        JSL.L checkSPCBusy
+CODE_809CA9: ; $009CA9
+        JSL.L renderSprites
         RTL
 ; [Animation] Handles battle animation selection. Entry: A=animation type, Y=animation data. Selects between different animation sets.
-handleBattleAnimation:
+handleBattleAnimation: ; $009CAE
         STY.W $09C8
         STA.W $09CA
-CODE_809CB4:
+CODE_809CB4: ; $009CB4
         LDA.W $09CA
         CMP.W $096C
         BNE CODE_809CDC
@@ -2532,12 +2559,12 @@ CODE_809CB4:
         AND.W #$0004
         BEQ CODE_809CD5
         LDY.W #$2B6A
-CODE_809CD5:
+CODE_809CD5: ; $009CD5
         LDX.W $09CC
         TYA
         STA.W $180A,X
-CODE_809CDC:
-        JSL.L checkSPCBusy
+CODE_809CDC: ; $009CDC
+        JSL.L renderSprites
         LDY.W #$0000
         LDA.W $09CA
         STA.B $00
@@ -2550,13 +2577,13 @@ CODE_809CDC:
         SEC
         SBC.W #$0800
         STA.B $02
-CODE_809CFD:
+CODE_809CFD: ; $009CFD
         LDA.B $02
         STA.W $0100,Y
         CLC
         ADC.W #$1000
         STA.B $02
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$0006
         TAX
         LDA.W $9D32,X
@@ -2569,7 +2596,7 @@ CODE_809CFD:
         LDA.B $00
         BNE CODE_809CFD
         LDA.W #$0002
-        JSL.L updateReflection
+        JSL.L repeatModeSync
         DEC.W $09C8
         LDA.W $09C8
         BNE CODE_809CB4
@@ -2580,13 +2607,13 @@ CODE_809CFD:
         STX.W $09D4
         STZ.W $09D2
         LDX.W #$0000
-CODE_809D48:
+CODE_809D48: ; $009D48
         PHX
         LDA.W #$00F0
         CPX.W #$0000
         BNE CODE_809D54
         LDA.W #$0000
-CODE_809D54:
+CODE_809D54: ; $009D54
         EOR.W $09D0
         STA.B $00
         LDX.W $09D4
@@ -2594,8 +2621,8 @@ CODE_809D54:
         AND.W #$FF00
         ORA.B $00
         STA.W $1800,X
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         PLX
         INX
         LDA.W $09D2
@@ -2608,18 +2635,18 @@ CODE_809D54:
         BCC CODE_809D84
         LDX.W #$0000
         INC.W $09D2
-CODE_809D84:
+CODE_809D84: ; $009D84
         LDA.W $09D2
         CMP.W #$0028
         BNE CODE_809D48
         RTL
 ; [Effects] Animates battle visual effect (spell, attack). Entry: A=effect type. Updates OAM for effect animation over multiple frames.
-animateBattleEffect:
+animateBattleEffect: ; $009D8D
         REP #$20
         LDY.W #$0000
         CMP.W #$000E
         BEQ CODE_809DC7
-CODE_809D97:
+CODE_809D97: ; $009D97
         LDX.W #$0000
         JSR.W drawEffectTile
         INY
@@ -2632,7 +2659,7 @@ CODE_809D97:
         LDA.W $096E
         STA.W $096C
         LDY.W #$0032
-CODE_809DB6:
+CODE_809DB6: ; $009DB6
         LDX.W #$0000
         JSR.W drawEffectTile
         DEY
@@ -2641,7 +2668,7 @@ CODE_809DB6:
         LDA.B #$1D
         STA.B $81
         REP #$20
-CODE_809DC7:
+CODE_809DC7: ; $009DC7
         LDA.W $096E
         STA.W $096C
         LDA.W $096C
@@ -2651,22 +2678,22 @@ CODE_809DC7:
         LDX.W #$001F
         LDY.W #$0004
         LDA.W #$0008
-        JSL.L $00ABD5
+        JSL.L initWeatherSlots
         LDY.W #$0064
-CODE_809DE7:
+CODE_809DE7: ; $009DE7
         PHY
         TYA
         AND.W #$0007
         BNE CODE_809E27
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$0038
         CLC
         ADC.W #$1200
         TAX
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$000F
         STA.B $00
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$001F
         STA.B $01
         LDA.W $096C
@@ -2679,29 +2706,29 @@ CODE_809DE7:
         STA.W $0004,X
         LDA.W #$0000
         STA.W $0006,X
-CODE_809E27:
+CODE_809E27: ; $009E27
         LDX.W #$0008
         JSR.W updateBattleTimer
         PLY
         DEY
         BNE CODE_809DE7
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         RTL
 ; [Timer] Updates battle turn timer. Entry: reads timer value, decrements, checks for turn end. Returns carry set if turn ended.
-updateBattleTimer:
+updateBattleTimer: ; $009E3A
         PHX
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         PLX
         LDY.W #$0000
         JSL.L handleMenuNavigation
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         RTS
 ; [OAM] Draws a single effect animation tile. Entry: A=tile data, X=OAM slot, Y=animation frame. Updates OAM entry.
-drawEffectTile:
+drawEffectTile: ; $009E4C
         PHY
         PHX
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         LDA.W $096C
         STA.B $00
         LDA.W #$3BC0
@@ -2711,7 +2738,7 @@ drawEffectTile:
         BNE CODE_809E66
         PLX
         BRA CODE_809E7B
-CODE_809E66:
+CODE_809E66: ; $009E66
         LDA.B $54
         AND.W #$0002
         BEQ CODE_809E75
@@ -2719,41 +2746,41 @@ CODE_809E66:
         CLC
         ADC.W #$0005
         STA.B $02
-CODE_809E75:
+CODE_809E75: ; $009E75
         LDA.B $02
         PLY
         JSR.W setupSpriteOAM
-CODE_809E7B:
-        JSL.L updateShadowEffect
+CODE_809E7B: ; $009E7B
+        JSL.L waitForModeSync
         PLY
         RTS
 ; [AI] Processes one battle turn for a unit. Entry: A=unit ID. Handles AI for enemies, input for player, executes actions.
-processBattleTurn:
+processBattleTurn: ; $009E81
         REP #$20
         LDX.W #$0000
         LDA.W #$03E7
         STA.B $06
         STZ.W $096E
-CODE_809E8E:
+CODE_809E8E: ; $009E8E
         LDA.L $7FC0C8,X
         BNE CODE_809E95
         RTL
-CODE_809E95:
+CODE_809E95: ; $009E95
         STA.B $04
         LDA.L $7FC0CA,X
         CMP.W #$1800
         BEQ CODE_809EA8
-CODE_809EA0:
+CODE_809EA0: ; $009EA0
         TXA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_809E8E
-CODE_809EA8:
+CODE_809EA8: ; $009EA8
         PHX
         LDX.W #$0000
         STZ.B $08
-CODE_809EAE:
+CODE_809EAE: ; $009EAE
         LDA.B $08
         CMP.W $091C
         BEQ CODE_809EBF
@@ -2762,7 +2789,7 @@ CODE_809EAE:
         BNE CODE_809EBF
         PLX
         BRA CODE_809EA0
-CODE_809EBF:
+CODE_809EBF: ; $009EBF
         TXA
         CLC
         ADC.W #$0020
@@ -2781,10 +2808,10 @@ CODE_809EBF:
         SEC
         SBC.B $08
         BRA CODE_809EE4
-CODE_809EE1:
+CODE_809EE1: ; $009EE1
         SEC
         SBC.B $00
-CODE_809EE4:
+CODE_809EE4: ; $009EE4
         STA.B $0A
         LDA.B $05
         AND.W #$00FF
@@ -2795,10 +2822,10 @@ CODE_809EE4:
         SEC
         SBC.B $08
         BRA CODE_809EFB
-CODE_809EF8:
+CODE_809EF8: ; $009EF8
         SEC
         SBC.B $02
-CODE_809EFB:
+CODE_809EFB: ; $009EFB
         CLC
         ADC.B $0A
         CMP.B $06
@@ -2806,16 +2833,16 @@ CODE_809EFB:
         STA.B $06
         LDA.B $04
         STA.W $096E
-CODE_809F09:
+CODE_809F09: ; $009F09
         BRA CODE_809EA0
-; [Physics] Calculates hit rate for attack. Entry: A=attacker accuracy, X=defender evasion. Returns A=hit chance (0-100).
-calculateHitRate:
+; Marks battle grid cells within Manhattan distance range. Sets bit $20 in $7F:0001+X.
+markCellsInRange: ; $009F0B
         PHP
         REP #$20
         STZ.B $06
         LDA.W #$0102
         STA.B $12
-CODE_809F15:
+CODE_809F15: ; $009F15
         SEP #$20
         LDA.B $02
         CMP.B $06
@@ -2824,14 +2851,14 @@ CODE_809F15:
         SEC
         SBC.B $02
         BRA CODE_809F27
-CODE_809F24:
+CODE_809F24: ; $009F24
         SEC
         SBC.B $06
-CODE_809F27:
+CODE_809F27: ; $009F27
         STA.B $14
         STZ.B $04
         LDX.B $12
-CODE_809F2D:
+CODE_809F2D: ; $009F2D
         LDA.B $00
         CMP.B $04
         BCS CODE_809F3A
@@ -2839,10 +2866,10 @@ CODE_809F2D:
         SEC
         SBC.B $00
         BRA CODE_809F3D
-CODE_809F3A:
+CODE_809F3A: ; $009F3A
         SEC
         SBC.B $04
-CODE_809F3D:
+CODE_809F3D: ; $009F3D
         CLC
         ADC.B $14
         CMP.B $0A
@@ -2852,7 +2879,7 @@ CODE_809F3D:
         LDA.L $7F0001,X
         ORA.B #$20
         STA.L $7F0001,X
-CODE_809F52:
+CODE_809F52: ; $009F52
         INX
         INX
         INX
@@ -2871,11 +2898,11 @@ CODE_809F52:
         INC.B $13
         INC.B $13
         BRA CODE_809F15
-CODE_809F74:
+CODE_809F74: ; $009F74
         PLP
         RTL
-; [Entity] Applies status effect to character. Entry: A=character ID, X=status effect type. Updates character status flags.
-applyStatusEffect:
+; [Memory] Fills $7F:A000 ($1000B) zero, then lookupTilemapEntry.
+clearObjectBuffer: ; $009F76
         REP #$20
         LDA.W #$007F
         STA.B $14
@@ -2883,8 +2910,8 @@ applyStatusEffect:
         STA.B $12
         LDA.W #$1000
         LDX.W #$0000
-        JSL.L updateBlendEffect
-        JSR.W saveGame
+        JSL.L memfillWords
+        JSR.W lookupTilemapEntry
         LDA.B $04
         INC A
         STA.L $7FA000,X
@@ -2897,7 +2924,7 @@ applyStatusEffect:
         CMP.W #$0010
         BCS CODE_809FAD
         LDX.W #$0200
-CODE_809FAD:
+CODE_809FAD: ; $009FAD
         LDA.W $1400,X
         AND.W #$00FF
         BEQ CODE_809FD1
@@ -2908,11 +2935,11 @@ CODE_809FAD:
         AND.W #$00FF
         STA.B $02
         PHX
-        JSR.W loadGame
+        JSR.W calcTilemapIndex
         LDA.W #$0100
         STA.L $7FA000,X
         PLX
-CODE_809FD1:
+CODE_809FD1: ; $009FD1
         TXA
         CLC
         ADC.W #$0020
@@ -2920,7 +2947,7 @@ CODE_809FD1:
         DEC.B $06
         BNE CODE_809FAD
         JSR.W checkPartyAlive
-        JSR.W reviveCharacter
+        JSR.W searchTilemapTable
         JSR.W checkPartyAlive
         LDA.L $7FC013
         STA.B $06
@@ -2928,7 +2955,7 @@ CODE_809FD1:
         STZ.B $02
         STZ.B $0E
         LDX.W #$0000
-CODE_809FF3:
+CODE_809FF3: ; $009FF3
         LDA.W $0E28
         CMP.B $0E
         BEQ CODE_80A03B
@@ -2945,14 +2972,14 @@ CODE_809FF3:
         LDA.B $0E
         CMP.W #$0010
         BCC CODE_80A03B
-CODE_80A01A:
+CODE_80A01A: ; $00A01A
         SEP #$20
         LDA.B $01
         STA.B $02
         STZ.B $01
         REP #$20
         PHX
-        JSR.W loadGame
+        JSR.W calcTilemapIndex
         SEP #$20
         LDA.L $7FA000,X
         STA.L $7FA001,X
@@ -2960,7 +2987,7 @@ CODE_80A01A:
         STA.L $7FA000,X
         REP #$20
         PLX
-CODE_80A03B:
+CODE_80A03B: ; $00A03B
         TXA
         CLC
         ADC.W #$0020
@@ -2971,7 +2998,7 @@ CODE_80A03B:
         BNE CODE_809FF3
         RTL
 ; [GameState] Checks if any party members are still alive. Entry: scans party data at $1400. Returns carry clear if all dead.
-checkPartyAlive:
+checkPartyAlive: ; $00A04B
         LDA.W $0E28
         CMP.W #$0010
         BCS CODE_80A0A3
@@ -2982,7 +3009,7 @@ checkPartyAlive:
         LDX.W #$0000
         LDA.W #$0010
         STA.B $06
-CODE_80A066:
+CODE_80A066: ; $00A066
         LDA.W $1400,X
         AND.W #$00FF
         BEQ CODE_80A099
@@ -2997,22 +3024,22 @@ CODE_80A066:
         AND.W #$00FF
         STA.B $02
         PHX
-        JSR.W loadGame
+        JSR.W calcTilemapIndex
         LDA.L $7F9000,X
         EOR.W #$8000
         STA.L $7F9000,X
         PLX
-CODE_80A099:
+CODE_80A099: ; $00A099
         TXA
         CLC
         ADC.W #$0020
         TAX
         DEC.B $06
         BNE CODE_80A066
-CODE_80A0A3:
+CODE_80A0A3: ; $00A0A3
         RTS
-; [Entity] Revives a KO'd character with partial HP. Entry: A=character ID. Restores HP to 25% of max.
-reviveCharacter:
+; [Tilemap] Iterates $7FA000 vs $22, toggles bit15 of $7F9000,X.
+searchTilemapTable: ; $00A0A4
         STZ.B $02
         INC.B $02
         LDX.W #$0082
@@ -3025,15 +3052,15 @@ reviveCharacter:
         PHX
         STX.B $28
         LDA.W #$0002
-        JSR.W gainExperience
+        JSR.W readTilemapValue
         LDA.W #$FFFE
-        JSR.W gainExperience
+        JSR.W readTilemapValue
         LDA.W #$0080
-        JSR.W gainExperience
+        JSR.W readTilemapValue
         LDA.W #$FF80
-        JSR.W gainExperience
+        JSR.W readTilemapValue
         PLX
-CODE_80A0D5:
+CODE_80A0D5: ; $00A0D5
         INX
         INX
         INC.B $00
@@ -3041,7 +3068,7 @@ CODE_80A0D5:
         CMP.W #$0029
         BEQ CODE_80A0E3
         JMP.W $A0B1
-CODE_80A0E3:
+CODE_80A0E3: ; $00A0E3
         LDA.B $26
         CLC
         ADC.W #$0080
@@ -3051,77 +3078,149 @@ CODE_80A0E3:
         CMP.W #$001F
         BEQ CODE_80A0F6
         JMP.W $A0AB
-CODE_80A0F6:
+CODE_80A0F6: ; $00A0F6
         DEC.B $22
         LDA.B $22
         CMP.W #$0001
-        BEQ CODE_80A102
-        JMP.W reviveCharacter
-CODE_80A102:
+        BEQ OAMADDL
+        JMP.W searchTilemapTable
+; [Helper] OAM Address Registers (Low)
+OAMADDL: ; $00A102
         RTS
-; [Entity] Awards experience points to character. Entry: A=character ID, X=XP amount. Updates level if threshold reached.
-gainExperience:
+; [Tilemap] A+$28 offset, reads $7F9000,X, checks bit 15.
+readTilemapValue: ; $00A103
         CLC
+; [Helper] OAM Data Write Register
+OAMDATA: ; $00A104
         ADC.B $28
+; [Helper] Mosaic Register
+MOSAIC: ; $00A106
         TAX
+; [Helper] BG Tilemap Address Registers (BG1)
+BG1SC: ; $00A107
         PHX
+; [Helper] BG Tilemap Address Registers (BG2)
+BG2SC: ; $00A108
         LDA.L $7F9000,X
+; [Helper] BG Character Address Registers (BG3&4)
+BG34NBA: ; $00A10C
         CMP.W #$8000
+; [Helper] BG Scroll Registers (BG2)
+BG2HOFS: ; $00A10F
         BCS CODE_80A14E
+; [Helper] BG Scroll Registers (BG3)
+BG3HOFS: ; $00A111
         AND.W #$01FF
+; [Helper] BG Scroll Registers (BG4)
+BG4VOFS: ; $00A114
         ASL A
+; [Helper] Video Port Control Register
+VMAIN: ; $00A115
         ASL A
+; [Helper] VRAM Address Registers (Low)
+VMADDL: ; $00A116
         TAX
+; [Helper] VRAM Address Registers (High)
+VMADDH: ; $00A117
         LDA.L $7FE000,X
+; [Helper] Mode 7 Matrix Registers
+M7A: ; $00A11B
         PHA
+; [Helper] Mode 7 Matrix Registers
+M7B: ; $00A11C
         AND.W #$000F
+; [Helper] Mode 7 Matrix Registers
+M7X: ; $00A11F
         STA.B $04
+; [Helper] CGRAM Address Register
+CGADD: ; $00A121
         PLA
+; [Helper] CGRAM Data Write Register
+CGDATA: ; $00A122
         AND.W #$00F0
+; [Helper] Window Mask Settings Registers
+WOBJSEL: ; $00A125
         CMP.B $0C
-        BEQ CODE_80A12B
+; [Helper] Window Position Registers (WH1)
+WH1: ; $00A127
+        BEQ WOBJLOG
+; [Helper] Window Position Registers (WH3)
+WH3: ; $00A129
         BCS CODE_80A155
-CODE_80A12B:
+; [Helper] Window Mask Logic registers (OBJ)
+WOBJLOG: ; $00A12B
         LDA.B $0C
+; [Helper] Screen Destination Registers
+TS: ; $00A12D
         CMP.W #$0020
+; [Helper] Color Math Registers
+CGWSEL: ; $00A130
         BEQ CODE_80A14E
-CODE_80A132:
+; [Helper] Color Math Registers
+COLDATA: ; $00A132
         LDA.B $22
+; [Helper] Multiplication Result Registers
+MPYL: ; $00A134
         SEC
+; [Helper] Multiplication Result Registers
+MPYM: ; $00A135
         SBC.B $04
-        BCS CODE_80A13C
+; [Helper] Software Latch Register
+SLHV: ; $00A137
+        BCS OPHCT
+; [Helper] VRAM Data Read Register (Low)
+VMDATALREAD: ; $00A139
         LDA.W #$0000
-CODE_80A13C:
+; [Helper] Scanline Location Registers (Horizontal)
+OPHCT: ; $00A13C
         STA.B $06
+; [Helper] PPU Status Register
+STAT77: ; $00A13E
         PLX
+; [Helper] PPU Status Register
+STAT78: ; $00A13F
         LDA.L $7FA000,X
+; [Helper] APU IO Registers
+APUIO3: ; $00A143
         CMP.B $06
         BCS CODE_80A14D
         LDA.B $06
         STA.L $7FA000,X
-CODE_80A14D:
+CODE_80A14D: ; $00A14D
         RTS
-CODE_80A14E:
+CODE_80A14E: ; $00A14E
         LDA.W #$0002
         STA.B $04
-        BRA CODE_80A132
-CODE_80A155:
+        BRA COLDATA
+CODE_80A155: ; $00A155
         PLX
         RTS
-; [Entity] Handles character level up. Entry: A=character ID. Increases stats, learns new abilities if any.
-levelUpCharacter:
+; [Helper] TAY, BNE skip, RTL.
+skipIfZero: ; $00A157
         REP #$20
         TAY
         BNE CODE_80A15D
         RTL
-CODE_80A15D:
+CODE_80A15D: ; $00A15D
         db $A2,$00,$00,$BF,$00,$F0,$7F,$F0,$3B,$4A,$4A,$4A,$4A,$85,$00,$64
         db $02,$A9,$00,$00,$18,$6D,$3E,$0E,$C6,$01,$D0,$F8,$85,$04,$C0,$03
-        db $00,$F0,$1A,$BF,$00,$F0,$7F,$29,$FF,$0F,$38,$E5,$04,$B0,$03,$A9
-        db $00,$00,$C0,$02,$00,$D0,$01,$0A,$CD,$08,$0E,$90,$07,$A9,$00,$00
-        db $9F,$00,$A0,$7F,$E8,$E8,$E0,$00,$10,$D0,$B8,$6B
+        db $00,$F0,$1A
+; [Helper] WRAM Data Register
+WMDATA: ; $00A180
+        db $BF
+; [Helper] WRAM Address Registers
+WMADDL: ; $00A181
+        db $00
+; [Helper] WRAM Address Registers
+WMADDM: ; $00A182
+        db $F0
+; [Helper] WRAM Address Registers
+WMADDH: ; $00A183
+        db $7F,$29,$FF,$0F,$38,$E5,$04,$B0,$03,$A9,$00,$00,$C0,$02,$00,$D0
+        db $01,$0A,$CD,$08,$0E,$90,$07,$A9,$00,$00,$9F,$00,$A0,$7F,$E8,$E8
+        db $E0,$00,$10,$D0,$B8,$6B
 ; [Menu] Equips item to character. Entry: A=character ID, X=item ID. Updates equipment slots, applies stat bonuses.
-equipItem:
+equipItem: ; $00A1A9
         REP #$20
         LDA.W #$007F
         STA.B $14
@@ -3129,15 +3228,15 @@ equipItem:
         STA.B $12
         LDA.W #$1000
         LDX.W #$0000
-        JSL.L updateBlendEffect
+        JSL.L memfillWords
         LDX.W #$0000
         LDY.W #$0010
-CODE_80A1C5:
+CODE_80A1C5: ; $00A1C5
         PHY
         PHX
         TXA
         LDY.W #$0E00
-        JSL.L breakpointHandler
+        JSL.L updateEntityWrapper
         LDA.W $0E00
         AND.W #$00FF
         BEQ CODE_80A232
@@ -3155,17 +3254,17 @@ CODE_80A1C5:
         CLC
         ADC.W #$0001
         STA.B $04
-        JSR.W loadGame
+        JSR.W calcTilemapIndex
         LDA.B $04
         INC A
         STA.L $7FA000,X
         STA.B $22
-        JSR.W reviveCharacter
+        JSR.W searchTilemapTable
         LDA.W $0E56
         STA.B $06
         JSR.W buyItemShop
         LDX.W #$0000
-CODE_80A215:
+CODE_80A215: ; $00A215
         LDA.L $7FB000,X
         BEQ CODE_80A22B
         LDA.L $7FF000,X
@@ -3174,12 +3273,12 @@ CODE_80A215:
         CLC
         ADC.W #$1000
         STA.L $7FF000,X
-CODE_80A22B:
+CODE_80A22B: ; $00A22B
         INX
         INX
         CPX.W #$1000
         BNE CODE_80A215
-CODE_80A232:
+CODE_80A232: ; $00A232
         PLX
         PLY
         INX
@@ -3187,13 +3286,13 @@ CODE_80A232:
         BNE CODE_80A1C5
         RTL
 ; [Menu] Unequips item from character. Entry: A=character ID, X=equipment slot. Removes item, recalculates stats.
-unequipItem:
+unequipItem: ; $00A239
         REP #$20
         JSR.W buyItemShop
         LDX.W #$0000
         LDY.W #$0008
         LDA.W #$0000
-CODE_80A247:
+CODE_80A247: ; $00A247
         STA.W $099E,X
         INX
         INX
@@ -3204,7 +3303,7 @@ CODE_80A247:
         STA.B $06
         LDA.W #$270F
         STA.B $08
-CODE_80A25C:
+CODE_80A25C: ; $00A25C
         LDA.W $1400,X
         AND.W #$00FF
         BEQ CODE_80A29E
@@ -3217,7 +3316,7 @@ CODE_80A25C:
         LDA.W $1408,X
         STA.B $04
         PHX
-        JSR.W loadGame
+        JSR.W calcTilemapIndex
         LDA.L $7FB000,X
         BEQ CODE_80A29D
         LDA.B $06
@@ -3230,9 +3329,9 @@ CODE_80A25C:
         LDA.W $099E,X
         INC A
         STA.W $099E,X
-CODE_80A29D:
+CODE_80A29D: ; $00A29D
         PLX
-CODE_80A29E:
+CODE_80A29E: ; $00A29E
         TXA
         CLC
         ADC.W #$0020
@@ -3243,7 +3342,7 @@ CODE_80A29E:
         BNE CODE_80A25C
         RTL
 ; [Menu] Handles item purchase in shop. Entry: A=item ID, X=quantity. Deducts gold, adds to inventory.
-buyItemShop:
+buyItemShop: ; $00A2AE
         REP #$20
         LDA.W #$007F
         STA.B $14
@@ -3254,7 +3353,7 @@ buyItemShop:
         LDA.W #$B000
         STA.B $16
         LDA.W #$1000
-        JSL.L updateColorMath
+        JSL.L memcpyWords
         STZ.W $09AE
         LDX.W #$0082
         STX.B $12
@@ -3262,14 +3361,14 @@ buyItemShop:
         STA.B $00
         LDA.W #$0200
         STA.B $04
-CODE_80A2DD:
+CODE_80A2DD: ; $00A2DD
         LDA.W #$0028
         STA.B $02
-CODE_80A2E2:
+CODE_80A2E2: ; $00A2E2
         LDA.L $7FA000,X
         BEQ CODE_80A2EB
         JSR.W sellItemShop
-CODE_80A2EB:
+CODE_80A2EB: ; $00A2EB
         INX
         INX
         DEC.B $02
@@ -3283,81 +3382,81 @@ CODE_80A2EB:
         BNE CODE_80A2DD
         RTS
 ; [Menu] Handles item sale in shop. Entry: A=item ID, X=quantity. Adds gold, removes from inventory.
-sellItemShop:
+sellItemShop: ; $00A2FF
         LDY.B $04
         LDA.L $7FAFFE,X
         BNE CODE_80A30C
         TYA
         STA.L $7FAFFE,X
-CODE_80A30C:
+CODE_80A30C: ; $00A30C
         LDA.L $7FB002,X
         BNE CODE_80A317
         TYA
         STA.L $7FB002,X
-CODE_80A317:
+CODE_80A317: ; $00A317
         LDA.L $7FAF80,X
         BNE CODE_80A322
         TYA
         STA.L $7FAF80,X
-CODE_80A322:
+CODE_80A322: ; $00A322
         LDA.L $7FB080,X
         BNE CODE_80A32D
         TYA
         STA.L $7FB080,X
-CODE_80A32D:
+CODE_80A32D: ; $00A32D
         LDA.B $06
         CMP.W #$0002
         BCS CODE_80A335
         RTS
-CODE_80A335:
+CODE_80A335: ; $00A335
         LDA.L $7FAFFC,X
         BNE CODE_80A340
         TYA
         STA.L $7FAFFC,X
-CODE_80A340:
+CODE_80A340: ; $00A340
         LDA.L $7FB004,X
         BNE CODE_80A34B
         TYA
         STA.L $7FB004,X
-CODE_80A34B:
+CODE_80A34B: ; $00A34B
         LDA.L $7FAF82,X
         BNE CODE_80A356
         TYA
         STA.L $7FAF82,X
-CODE_80A356:
+CODE_80A356: ; $00A356
         LDA.L $7FAF7E,X
         BNE CODE_80A361
         TYA
         STA.L $7FAF7E,X
-CODE_80A361:
+CODE_80A361: ; $00A361
         LDA.L $7FB07E,X
         BNE CODE_80A36C
         TYA
         STA.L $7FB07E,X
-CODE_80A36C:
+CODE_80A36C: ; $00A36C
         LDA.L $7FB082,X
         BNE CODE_80A377
         TYA
         STA.L $7FB082,X
-CODE_80A377:
+CODE_80A377: ; $00A377
         CPX.W #$0F00
         BCS CODE_80A387
         LDA.L $7FB100,X
         BNE CODE_80A387
         TYA
         STA.L $7FB100,X
-CODE_80A387:
+CODE_80A387: ; $00A387
         CPX.W #$0100
         BCC CODE_80A397
         LDA.L $7FAF00,X
         BNE CODE_80A397
         TYA
         STA.L $7FAF00,X
-CODE_80A397:
+CODE_80A397: ; $00A397
         RTS
-; [Save] Saves game to SRAM. Entry: copies game state from WRAM to SRAM $700000. Includes checksum.
-saveGame:
-        JSR.W loadGame
+; [Tilemap] calcTilemapIndex, $7F9000,X, AND #$01FF, ASL x2 -> Y.
+lookupTilemapEntry: ; $00A398
+        JSR.W calcTilemapIndex
         LDA.L $7F9000,X
         PHX
         PHA
@@ -3368,8 +3467,8 @@ saveGame:
         PLA
         PLX
         RTS
-; [Save] Loads game from SRAM. Entry: copies from SRAM $700000 to WRAM, verifies checksum.
-loadGame:
+; [Tilemap] ($02 & $1F) << 7 + $00*2 -> X.
+calcTilemapIndex: ; $00A3AA
         LDA.B $02
         AND.W #$001F
         ASL A
@@ -3386,7 +3485,7 @@ loadGame:
         TAX
         RTS
 ; [GameState] Initializes new game state. Entry: sets up party, inventory, story flags to starting values.
-initNewGame:
+initNewGame: ; $00A3BE
         REP #$20
         LDA.W #$0008
         STA.B $0A
@@ -3394,13 +3493,13 @@ initNewGame:
         AND.W #$00FF
         BEQ CODE_80A3D0
         db $85,$0A
-CODE_80A3D0:
+CODE_80A3D0: ; $00A3D0
         LDX.W #$0000
-CODE_80A3D3:
+CODE_80A3D3: ; $00A3D3
         LDA.L $7FC0C8,X
         BNE CODE_80A3DA
         RTL
-CODE_80A3DA:
+CODE_80A3DA: ; $00A3DA
         STA.B $00
         LDA.L $7FC0CA,X
         CMP.W #$1800
@@ -3408,18 +3507,18 @@ CODE_80A3DA:
         LDA.B $0A
         STA.B $08
         BRA CODE_80A402
-CODE_80A3EB:
+CODE_80A3EB: ; $00A3EB
         AND.W #$00FF
         CMP.W #$0040
         BNE CODE_80A3FA
         db $A9,$04,$00,$85,$08,$80,$08
-CODE_80A3FA:
+CODE_80A3FA: ; $00A3FA
         TXA
         CLC
         ADC.W #$0004
         TAX
         BRA CODE_80A3D3
-CODE_80A402:
+CODE_80A402: ; $00A402
         PHX
         SEP #$20
         LDA.B $01
@@ -3427,12 +3526,12 @@ CODE_80A402:
         STZ.B $01
         STZ.B $03
         REP #$20
-        JSR.W saveGame
+        JSR.W lookupTilemapEntry
         CMP.B $08
         BEQ CODE_80A419
         PLX
         BRA CODE_80A3FA
-CODE_80A419:
+CODE_80A419: ; $00A419
         db $FA,$A9,$FF,$FF,$9F,$CA,$C0,$7F,$9F,$C8,$C0,$7F,$80,$D3,$C2,$20
         db $85,$06,$F0,$43,$98,$09,$00,$3F,$85,$04,$A9,$A2,$A4,$85,$12,$B2
         db $12,$85,$06,$64,$08,$E6,$12,$E6,$12,$A2,$00,$00,$A0,$00,$00,$B2
@@ -3450,9 +3549,9 @@ CODE_80A419:
         db $61,$62,$63,$64,$65,$66,$70,$71,$72,$73,$74,$75,$76,$77,$77,$07
         db $17,$27,$37,$77,$77,$77,$47,$57,$67,$77,$77,$FF
 ; [Tilemap] Draws world map or dungeon map. Entry: A=map ID. Loads tilemap, objects, NPCs to VRAM.
-drawMap:
+drawMap: ; $00A515
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         LDA.W $0E6A
         CMP.W #$0001
         BEQ CODE_80A571
@@ -3463,33 +3562,33 @@ drawMap:
         LDX.W #$0000
         JSR.W setupGraphicsMode
         LDA.W #$0A05
-        JSL.L testGraphics
+        JSL.L initEntityFromData
         BRA CODE_80A571
-CODE_80A53E:
+CODE_80A53E: ; $00A53E
         CMP.W #$000D
         BNE CODE_80A555
         db $A9,$21,$00,$A2,$00,$00,$20,$B4,$A5,$A9,$20,$09,$22,$55,$E1,$01
         db $80,$1C
-CODE_80A555:
+CODE_80A555: ; $00A555
         CMP.W #$0012
         BNE CODE_80A56C
         db $A9,$09,$03,$A2,$00,$00,$20,$B4,$A5,$A9,$24,$00,$22,$55,$E1,$01
         db $80,$05
-CODE_80A56C:
+CODE_80A56C: ; $00A56C
         CMP.W #$001E
         BEQ CODE_80A572
-CODE_80A571:
+CODE_80A571: ; $00A571
         RTL
-CODE_80A572:
+CODE_80A572: ; $00A572
         db $AD,$58,$09,$C9,$BE,$00,$F0,$28,$C9,$BF,$00,$F0,$23,$C9,$C0,$00
         db $F0,$1E,$C9,$C2,$00,$F0,$19,$AD,$5A,$09,$C9,$BE,$00,$F0,$11,$C9
         db $BF,$00,$F0,$0C,$C9,$C0,$00,$F0,$07,$C9,$C2,$00,$F0,$02,$80,$CF
         db $A9,$12,$03,$A2,$00,$01,$20,$B4,$A5,$A9,$20,$09,$22,$55,$E1,$01
         db $80,$BD
 ; [Init] Sets up graphics mode for specific screen. Entry: calls calculateSlope, sets $2108, $0E20, $0EA0.
-setupGraphicsMode:
+setupGraphicsMode: ; $00A5B4
         LDY.W #$0000
-        JSL.L calculateSlope
+        JSL.L setTextScrollParams
         SEP #$20
         LDA.B #$70
         STA.W $2108
@@ -3499,13 +3598,13 @@ setupGraphicsMode:
         REP #$20
         RTS
 ; [HUD] Updates minimap display in corner. Entry: reads player position, draws current area on minimap.
-updateMinimap:
+updateMinimap: ; $00A5CD
         REP #$20
         LDA.W #$0008
         STA.W $09E2
         LDX.W #$1200
         LDA.W #$0000
-CODE_80A5DB:
+CODE_80A5DB: ; $00A5DB
         STZ.W $0000,X
         INX
         INX
@@ -3513,7 +3612,7 @@ CODE_80A5DB:
         BNE CODE_80A5DB
         RTL
 ; [Dialogue] Handles NPC dialogue interaction. Entry: A=NPC ID. Loads dialogue text, displays choices if any.
-handleNPCDialogue:
+handleNPCDialogue: ; $00A5E6
         LDY.W $09E2
         LDX.W #$1200
         STA.B $00
@@ -3533,7 +3632,7 @@ handleNPCDialogue:
         ASL A
         STA.W $0004,X
         BRA CODE_80A637
-CODE_80A60B:
+CODE_80A60B: ; $00A60B
         LDA.W $0000,X
         BEQ CODE_80A61A
         TXA
@@ -3543,14 +3642,14 @@ CODE_80A60B:
         DEY
         BNE CODE_80A60B
         db $6B
-CODE_80A61A:
+CODE_80A61A: ; $00A61A
         DEC A
         STA.W $0000,X
         PHX
         INX
         INX
         LDY.W #$0007
-CODE_80A624:
+CODE_80A624: ; $00A624
         STZ.W $0000,X
         INX
         INX
@@ -3561,7 +3660,7 @@ CODE_80A624:
         STA.W $0002,X
         LDA.B $04
         STA.W $0004,X
-CODE_80A637:
+CODE_80A637: ; $00A637
         LDA.B $06
         STA.W $000A,X
         LDA.B $00
@@ -3573,18 +3672,18 @@ CODE_80A637:
         STA.B $12
         LDA.B ($12)
         STA.W $000C,X
-CODE_80A64D:
+CODE_80A64D: ; $00A64D
         RTL
 ; [OAM] Sets up OAM for large sprite (4x4 tiles). Entry: A=base tile, $00=X pos, Y=OAM slot. Creates 16 OAM entries.
-setupLargeSprite:
+setupLargeSprite: ; $00A64E
         REP #$20
         LDA.W $0A87
         BNE CODE_80A656
         RTL
-CODE_80A656:
+CODE_80A656: ; $00A656
         LDX.W #$1200
         LDY.W #$0000
-CODE_80A65C:
+CODE_80A65C: ; $00A65C
         LDA.W $0000,X
         BEQ CODE_80A6B8
         DEC A
@@ -3592,7 +3691,7 @@ CODE_80A65C:
         CMP.W #$0100
         BCS CODE_80A66F
         db $29,$01,$00,$F0,$49
-CODE_80A66F:
+CODE_80A66F: ; $00A66F
         LDA.W $000E,X
         BNE CODE_80A6C4
         LDA.W $0004,X
@@ -3600,7 +3699,7 @@ CODE_80A66F:
         ADC.W $0008,X
         STA.W $0004,X
         STA.B $02
-CODE_80A680:
+CODE_80A680: ; $00A680
         LDA.W $0002,X
         CLC
         ADC.W $0006,X
@@ -3621,13 +3720,13 @@ CODE_80A680:
         BCC CODE_80A6AD
         JSR.W setupBattleSprite
         BRA CODE_80A6B0
-CODE_80A6AD:
+CODE_80A6AD: ; $00A6AD
         db $20,$38,$A7
-CODE_80A6B0:
+CODE_80A6B0: ; $00A6B0
         LDA.W $000C,X
         BEQ CODE_80A6B8
         JSR.W animateCharacter
-CODE_80A6B8:
+CODE_80A6B8: ; $00A6B8
         TXA
         CLC
         ADC.W #$0010
@@ -3635,7 +3734,7 @@ CODE_80A6B8:
         CPX.W #$1340
         BNE CODE_80A65C
         RTL
-CODE_80A6C4:
+CODE_80A6C4: ; $00A6C4
         CLC
         ADC.W $0008,X
         STA.W $0008,X
@@ -3649,7 +3748,7 @@ CODE_80A6C4:
         STA.B $02
         BRA CODE_80A680
 ; [Animation] Handles character walking/running animation. Entry: A=character ID. Updates sprite frames based on movement speed.
-animateCharacter:
+animateCharacter: ; $00A6DC
         STA.B $12
         LDA.B ($12)
         BMI CODE_80A70A
@@ -3658,7 +3757,7 @@ animateCharacter:
         CMP.W #$0010
         BCC CODE_80A6F1
         db $A9,$00,$00,$80,$36
-CODE_80A6F1:
+CODE_80A6F1: ; $00A6F1
         STA.B $14
         TXA
         CLC
@@ -3674,7 +3773,7 @@ CODE_80A6F1:
         STA.B ($14)
         RTS
         db $60
-CODE_80A70A:
+CODE_80A70A: ; $00A70A
         STA.B $00
         LDA.W $0000,X
         CMP.B $00
@@ -3683,16 +3782,16 @@ CODE_80A70A:
         INC.B $12
         LDA.B ($12)
         BRA CODE_80A727
-CODE_80A71B:
+CODE_80A71B: ; $00A71B
         LDA.W #$FFFF
         STA.W $0000,X
         LDA.B $12
         CLC
         ADC.W #$0004
-CODE_80A727:
+CODE_80A727: ; $00A727
         STA.W $000C,X
         RTS
-CODE_80A72B:
+CODE_80A72B: ; $00A72B
         db $29,$FF,$0F,$25,$54,$D0,$D7,$A5,$12,$1A,$1A,$80,$EF,$C2,$20,$99
         db $06,$01,$18,$69,$02,$00,$99,$0A,$01,$18,$69,$02,$00,$99,$02,$01
         db $18,$69,$10,$00,$99,$0E,$01,$A5,$00,$99,$00,$01,$18,$69,$08,$00
@@ -3700,7 +3799,7 @@ CODE_80A72B:
         db $10,$08,$99,$0C,$01,$5A,$98,$4A,$4A,$4A,$4A,$A8,$E2,$20,$A9,$28
         db $99,$00,$03,$C2,$20,$7A,$98,$18,$69,$10,$00,$A8,$60
 ; [OAM] Sets up battle sprite with special attributes. Entry: A=tile data, $00=X pos, Y=OAM slot. Sets up 4 OAM entries with battle flags.
-setupBattleSprite:
+setupBattleSprite: ; $00A788
         REP #$20
         AND.W #$3FFF
         STA.W $0102,Y
@@ -3772,14 +3871,14 @@ setupBattleSprite:
         db $FF,$0E,$00,$01,$00,$0C,$00,$EA,$A8,$06,$00,$01,$00,$08,$00,$EA
         db $FF,$0E,$00,$01,$00,$0C,$00,$EA,$A8,$06,$00,$02,$00,$08,$00,$F0
         db $FF,$0E,$00,$01,$00,$0C,$00,$EA,$A8
-; [Entity] Calculates stat bonus from equipment. Entry: A=character ID. Sums bonuses from all equipped items.
-calculateStatBonus:
+; [GameState] Reads $7EEA82, CMP #$1F, calls processAIscript(#$02).
+scenarioDispatch: ; $00A9A4
         REP #$20
         LDA.L $7EEA82
         CMP.W #$001F
         BNE CODE_80A9B8
         db $A9,$02,$00,$22,$2F,$AA,$00,$80,$0B
-CODE_80A9B8:
+CODE_80A9B8: ; $00A9B8
         JSR.W checkAbilityLearned
         CLC
         ADC.W #$0080
@@ -3792,11 +3891,11 @@ CODE_80A9B8:
         JSL.L externalUtilityFunc2
         LDY.W #$0000
         LDA.B #$AE
-        JSL.L externalEncryptionFunc
+        JSL.L spcPlaySfx
         REP #$20
         RTL
 ; [Entity] Checks if character has learned an ability. Entry: A=character ID, X=ability ID. Returns carry set if learned.
-checkAbilityLearned:
+checkAbilityLearned: ; $00A9DF
         LDA.L $7EEA82
         DEC A
         AND.W #$00FF
@@ -3809,13 +3908,13 @@ checkAbilityLearned:
         db $28,$17,$27,$27,$22,$2B,$23,$09,$23,$08,$06,$08,$07,$1F,$16,$20
         db $0E,$24,$0A,$07,$09,$08,$0B,$23,$07,$08,$06,$07,$06,$06,$06,$06
 ; [AI] Processes AI script for enemy behavior. Entry: A=enemy ID. Reads script from ROM, executes commands.
-processAIscript:
+processAIscript: ; $00AA2F
         PHP
         REP #$20
         CMP.W $09E4
         BNE CODE_80AA3A
         JMP.W $AAC9
-CODE_80AA3A:
+CODE_80AA3A: ; $00AA3A
         STA.W $09E4
         CMP.W #$0080
         BCS CODE_80AA4D
@@ -3825,12 +3924,12 @@ CODE_80AA3A:
         STA.B $12
         STZ.B $14
         BRA CODE_80AA80
-CODE_80AA4D:
+CODE_80AA4D: ; $00AA4D
         LDY.W #$AACB
         CMP.W #$0100
         BCC CODE_80AA58
         LDY.W #$AAF4
-CODE_80AA58:
+CODE_80AA58: ; $00AA58
         STY.B $16
         AND.W #$007F
         CLC
@@ -3841,43 +3940,43 @@ CODE_80AA58:
         LDA.W #$CE80
         STA.B $12
         LDY.W #$0000
-CODE_80AA6F:
+CODE_80AA6F: ; $00AA6F
         LDA.B ($16)
         BEQ CODE_80AA7A
         STA.B [$12],Y
         INC.B $16
         INY
         BRA CODE_80AA6F
-CODE_80AA7A:
+CODE_80AA7A: ; $00AA7A
         PLA
         ORA.W #$FF00
         STA.B [$12],Y
-CODE_80AA80:
+CODE_80AA80: ; $00AA80
         SEP #$20
         STZ.B $81
         LDY.W #$0000
         JSL.L externalUtilityFunc3
         LDY.W #$0001
         JSL.L externalUtilityFunc3
-        JSL.L externalGraphicsFunc2
+        JSL.L spcStartTransfer
         LDA.L $7EEA88
         AND.B #$08
-        JSL.L externalCRC32Func
-        JSL.L externalGraphicsFunc1
+        JSL.L spcPlayMusic
+        JSL.L spcBeginTransfer
         JSL.L externalSoundFunc2
         LDA.B $14
         LDY.B $12
-        JSL.L externalMemoryFunc2
+        JSL.L spcLoadSampleSet
         LDY.W #$01F4
-CODE_80AAB3:
+CODE_80AAB3: ; $00AAB3
         LDA.B #$00
         DEY
         BNE CODE_80AAB3
         LDY.W #$0000
         LDA.B #$AE
-        JSL.L externalEncryptionFunc
+        JSL.L spcPlaySfx
         LDY.W #$01F4
-CODE_80AAC4:
+CODE_80AAC4: ; $00AAC4
         LDA.B #$00
         DEY
         BNE CODE_80AAC4
@@ -3900,13 +3999,16 @@ CODE_80AAC4:
         db $00,$00,$22,$63,$E0,$2B,$22,$F7,$DD,$2B,$22,$E2,$DD,$2B,$22,$C3
         db $DE,$2B,$A9,$00,$A0,$00,$10,$22,$6B,$DF,$2B,$A0,$00,$00,$AD,$00
         db $10,$22,$44,$E0,$2B,$9C,$E4,$09,$28,$6B
+; [Effects] Initialize weather/particle slots at $1200. A=count, X=base offset, Y=stride. Fills with $FFFF.
+initWeatherSlots: ; $00ABD5
         REP #$20
         STX.W $09EC
         STY.W $09EA
         STZ.W $09E8
         TAY
         LDX.W #$1200
-CODE_80ABE4:
+; [Effects] Fill loop: STA $0000,X / ADC #8 / DEY / BNE
+initWeatherSlots_Loop: ; $00ABE4
         LDA.W #$FFFF
         STA.W $0000,X
         TXA
@@ -3914,15 +4016,15 @@ CODE_80ABE4:
         ADC.W #$0008
         TAX
         DEY
-        BNE CODE_80ABE4
+        BNE initWeatherSlots_Loop
         RTL
 ; [Effects] Updates weather/lightning visual effects. Entry: sets up effect parameters, calls updateLightningEffect.
-updateWeatherEffect:
+updateWeatherEffect: ; $00ABF4
         REP #$20
         LDX.W #$000F
         LDY.W #$0002
         LDA.W #$0020
-        JSL.L $00ABD5
+        JSL.L initWeatherSlots
         LDA.W #$0000
         STA.B $14
         LDA.W #$AC79
@@ -3930,12 +4032,12 @@ updateWeatherEffect:
         LDX.W #$1200
         STZ.B $04
         LDY.W #$0010
-CODE_80AC15:
+CODE_80AC15: ; $00AC15
         PHY
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$0007
         STA.B $00
-        JSL.L updateLightningEffect
+        JSL.L getRandomValue
         AND.W #$0007
         STA.B $01
         LDA.W $096C
@@ -3962,30 +4064,30 @@ CODE_80AC15:
         DEY
         BNE CODE_80AC15
         LDY.W #$0018
-CODE_80AC59:
+CODE_80AC59: ; $00AC59
         PHY
-        JSL.L checkSPCBusy
+        JSL.L renderSprites
         LDX.W #$0010
         LDY.W #$0000
         JSL.L handleMenuNavigation
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         PLY
         DEY
         BNE CODE_80AC59
-        JSL.L checkSPCBusy
-        JSL.L updateShadowEffect
+        JSL.L renderSprites
+        JSL.L waitForModeSync
         RTL
         db $00,$FE,$01,$FE,$02,$FE,$02,$FF,$02,$00,$02,$01,$02,$02,$01,$02
         db $00,$02,$FF,$02,$FE,$02,$FE,$01,$FE,$00,$FE,$FF,$FE,$FE,$FF,$FE
 ; [Menu] Handles menu navigation logic. Entry: reads controller, updates cursor, processes selections. Called for all menus.
-handleMenuNavigation:
+handleMenuNavigation: ; $00AC99
         REP #$20
         TXA
         ASL A
         ASL A
         ASL A
         TAX
-CODE_80ACA0:
+CODE_80ACA0: ; $00ACA0
         TXA
         SEC
         SBC.W #$0008
@@ -4016,7 +4118,7 @@ CODE_80ACA0:
         ADC.B $03
         STA.W $1201,X
         REP #$20
-CODE_80ACDF:
+CODE_80ACDF: ; $00ACDF
         LDA.W $1204,X
         STA.B $00
         SEP #$20
@@ -4026,7 +4128,7 @@ CODE_80ACDF:
         AND.W $09EC
         STA.W $1202,X
         REP #$20
-CODE_80ACF4:
+CODE_80ACF4: ; $00ACF4
         TYA
         CLC
         ADC.W #$0004
@@ -4038,13 +4140,13 @@ CODE_80ACF4:
         CMP.W $09EA
         BNE CODE_80AD0B
         STZ.W $09E8
-CODE_80AD0B:
+CODE_80AD0B: ; $00AD0B
         RTL
         db $A0,$3B,$A0,$3B,$A2,$3B,$A2,$3B,$A4,$3B,$A6,$3B,$A8,$3B,$AA,$3B
         db $A8,$3B,$A6,$3B,$A4,$3B,$A2,$3B,$A2,$3B,$A0,$3B,$A0,$3B,$80,$3B
         db $08,$09,$06,$12,$04,$07,$11,$11,$0F,$0E,$0E,$0D,$0C,$1E,$1C
 ; [GameState] Calculates game progress percentage. Entry: reads $7EEA82, $0E06, $0E86, calculates percentage (0-99).
-calculateGameProgress:
+calculateGameProgress: ; $00AD3B
         REP #$20
         STZ.B $12
         LDA.W #$0002
@@ -4053,7 +4155,7 @@ calculateGameProgress:
         CMP.W #$0027
         BNE CODE_80AD51
         STZ.W $09E6
-CODE_80AD51:
+CODE_80AD51: ; $00AD51
         SEP #$20
         LDA.W $0E06
         LSR A
@@ -4068,7 +4170,7 @@ CODE_80AD51:
         CMP.B #$64
         BCC CODE_80AD69
         db $A9,$63
-CODE_80AD69:
+CODE_80AD69: ; $00AD69
         STA.B $22
         REP #$20
         LDA.W $0E4D
@@ -4088,7 +4190,7 @@ CODE_80AD69:
         CMP.W #$0100
         BCC CODE_80AD95
         db $A9,$FF,$00
-CODE_80AD95:
+CODE_80AD95: ; $00AD95
         STA.B $12
         LDX.B $12
         LDA.L $0BE164,X
@@ -4113,7 +4215,7 @@ CODE_80AD95:
         CMP.B #$64
         BCC CODE_80ADC9
         db $A9,$63
-CODE_80ADC9:
+CODE_80ADC9: ; $00ADC9
         STA.B $24
         REP #$20
         LDA.W $0ECD
@@ -4133,7 +4235,7 @@ CODE_80ADC9:
         CMP.W #$0100
         BCC CODE_80ADF5
         db $A9,$FF,$00
-CODE_80ADF5:
+CODE_80ADF5: ; $00ADF5
         STA.B $12
         LDX.B $12
         LDA.L $0BE164,X
@@ -4149,7 +4251,7 @@ CODE_80ADF5:
         CMP.B $28
         BCS CODE_80AE1C
         db $A4,$22,$A6,$24
-CODE_80AE1C:
+CODE_80AE1C: ; $00AE1C
         STX.W $1200
         STY.W $1202
         SEP #$20
@@ -4164,7 +4266,7 @@ CODE_80AE1C:
         CMP.B #$64
         BCC CODE_80AE39
         db $A9,$63
-CODE_80AE39:
+CODE_80AE39: ; $00AE39
         STA.B $22
         LDA.W $0E83
         STA.B $25
@@ -4177,7 +4279,7 @@ CODE_80AE39:
         CMP.B #$64
         BCC CODE_80AE50
         db $A9,$63
-CODE_80AE50:
+CODE_80AE50: ; $00AE50
         STA.B $24
         REP #$20
         LDA.B $22
@@ -4203,7 +4305,7 @@ CODE_80AE50:
         LDY.W #$0000
         LDX.W #$0000
         STZ.W $1210
-CODE_80AE96:
+CODE_80AE96: ; $00AE96
         LDA.W $1200,Y
         CMP.W #$FFFF
         BEQ CODE_80AEA6
@@ -4211,14 +4313,14 @@ CODE_80AE96:
         INX
         INX
         INC.W $1210
-CODE_80AEA6:
+CODE_80AEA6: ; $00AEA6
         INY
         INY
         CPY.W #$0008
         BNE CODE_80AE96
         RTL
 ; [Helper] Compares and swaps values in $1200/$1201 table. Entry: X=index1, Y=index2, compares values, swaps if needed.
-compareAndSwapValues:
+compareAndSwapValues: ; $00AEAE
         PHP
         REP #$20
         TAX
@@ -4234,11 +4336,11 @@ compareAndSwapValues:
         BNE CODE_80AEDB
         db $90,$09,$99,$01,$12,$BD,$00,$12,$99,$00,$12,$A9,$FF,$9D,$00,$12
         db $9D,$01,$12
-CODE_80AEDB:
+CODE_80AEDB: ; $00AEDB
         PLP
         RTS
 ; [Helper] Masks and processes 8-bit value. Entry: A=value, masks with $00FF, processes further.
-maskAndProcessValue:
+maskAndProcessValue: ; $00AEDD
         REP #$20
         AND.W #$00FF
         ASL A
@@ -4251,7 +4353,7 @@ maskAndProcessValue:
         ADC.B $00
         TAX
         LDA.W #$0014
-CODE_80AEF0:
+CODE_80AEF0: ; $00AEF0
         PHA
         LDA.L $0BBF64,X
         STA.W $002A,Y
@@ -4264,18 +4366,18 @@ CODE_80AEF0:
         BNE CODE_80AEF0
         RTL
 ; [GameState] Updates flag table at $7EEA00. Entry: A=flag ID, Y=value, sets flag with high bit ($80).
-updateFlagTable:
+updateFlagTable: ; $00AF01
         PHP
         SEP #$20
         STA.B $22
         STY.B $24
         LDX.W #$0000
-CODE_80AF0B:
+CODE_80AF0B: ; $00AF0B
         LDA.L $7EEA00,X
         CMP.B #$80
         BCC CODE_80AF21
         db $29,$7F,$C5,$22,$D0,$08,$A5,$24,$09,$80,$9F,$00,$EA,$7E
-CODE_80AF21:
+CODE_80AF21: ; $00AF21
         INX
         CPX.W #$0080
         BNE CODE_80AF0B
@@ -4287,17 +4389,17 @@ CODE_80AF21:
         db $65,$66,$67,$68,$69,$6A,$6B,$6D,$6E,$6F,$9B,$59,$5A,$5B,$5C,$5D
         db $FF
 ; [Physics] Calculates MP cost for spell. Entry: A=spell ID. Returns A=MP cost based on spell level and character stats.
-calculateSpellCost:
+calculateSpellCost: ; $00AF6A
         PHP
         REP #$20
         STZ.B $1C
         LDY.W #$0008
         STA.B $00
-CODE_80AF74:
+CODE_80AF74: ; $00AF74
         LDA.B [$12],Y
         BNE CODE_80AF7B
         db $4C,$0A,$B0
-CODE_80AF7B:
+CODE_80AF7B: ; $00AF7B
         CMP.B $00
         BEQ CODE_80AF87
         TYA
@@ -4305,7 +4407,7 @@ CODE_80AF7B:
         ADC.W #$0008
         TAY
         BRA CODE_80AF74
-CODE_80AF87:
+CODE_80AF87: ; $00AF87
         INY
         INY
         LDA.B [$12],Y
@@ -4328,11 +4430,11 @@ CODE_80AF87:
         CLC
         ADC.B $12
         STA.B $12
-CODE_80AFAF:
+CODE_80AFAF: ; $00AFAF
         LDA.B [$12]
         INC.B $12
         AND.W #$00FF
-        BEQ CODE_80B005
+        BEQ textBuf_ReturnZero
         CMP.W #$0040
         BCC CODE_80AFD9
         CMP.W #$0080
@@ -4346,51 +4448,52 @@ CODE_80AFAF:
         REP #$20
         INC.B $12
         LDA.B $06
-        JSR.W castSpell
+        JSR.W textBuf_CalcTileIndex
         BRA CODE_80AFAF
-CODE_80AFD9:
+CODE_80AFD9: ; $00AFD9
         PHA
         LDA.B $0A
-        JSR.W castSpell
+        JSR.W textBuf_CalcTileIndex
         INC.B $0A
         PLA
         DEC A
         BNE CODE_80AFD9
         BRA CODE_80AFAF
-CODE_80AFE7:
+CODE_80AFE7: ; $00AFE7
         LDA.B [$12]
         INC.B $12
         AND.W #$00FF
-CODE_80AFEE:
+CODE_80AFEE: ; $00AFEE
         PHA
         LDA.B $06
-        JSR.W castSpell
+        JSR.W textBuf_CalcTileIndex
         PLA
         DEC A
         BNE CODE_80AFEE
         BRA CODE_80AFAF
-CODE_80AFFA:
+CODE_80AFFA: ; $00AFFA
         AND.W #$007F
         CLC
         ADC.B $06
-        JSR.W castSpell
+        JSR.W textBuf_CalcTileIndex
         BRA CODE_80AFAF
-CODE_80B005:
+; [Text] LDA #0, PLP, RTL. Returns zero result from text buffer operation.
+textBuf_ReturnZero: ; $00B005
         LDA.W #$0000
         PLP
         RTL
         db $A9,$01,$00,$28,$6B
-; [Entity] Casts spell in battle. Entry: A=caster ID, X=spell ID, Y=target. Deducts MP, applies spell effects.
-castSpell:
+; [Text] CMP #$1000, ASL x4, check $8000. Text tile calc.
+textBuf_CalcTileIndex: ; $00B00F
         CMP.W #$1000
-        BCC CODE_80B04B
+        BCC textBuf_ShiftIndex
         STA.B $1B
         ASL A
         ASL A
         ASL A
         ASL A
         CMP.W #$8000
-        BCS CODE_80B033
+        BCS textBuf_CalcPtrOffset
         CLC
         ADC.B $16
         STA.B $1A
@@ -4402,8 +4505,9 @@ castSpell:
         CLC
         ADC.B $18
         STA.B $1C
-        BRA CODE_80B06C
-CODE_80B033:
+        BRA textBuf_CopyData
+; [Text] AND #$7FFF, CLC ADC $16, STA $1A. Calculates text data pointer offset.
+textBuf_CalcPtrOffset: ; $00B033
         AND.W #$7FFF
         CLC
         ADC.B $16
@@ -4417,21 +4521,23 @@ CODE_80B033:
         CLC
         ADC.B $18
         STA.B $1C
-        BRA CODE_80B06C
-CODE_80B04B:
+        BRA textBuf_CopyData
+; [Text] ASL*4. Left-shifts index by 4 (multiply by 16) for table lookup.
+textBuf_ShiftIndex: ; $00B04B
         ASL A
         ASL A
         ASL A
         ASL A
         CMP.W #$8000
-        BCS CODE_80B05F
+        BCS textBuf_CalcPtrOffset2
         CLC
         ADC.B $16
         STA.B $1A
         LDA.B $18
         STA.B $1C
-        BRA CODE_80B06C
-CODE_80B05F:
+        BRA textBuf_CopyData
+; [Text] AND #$7FFF, CLC ADC $16, STA $1A. Second pointer offset calculation path.
+textBuf_CalcPtrOffset2: ; $00B05F
         AND.W #$7FFF
         CLC
         ADC.B $16
@@ -4439,7 +4545,8 @@ CODE_80B05F:
         LDA.B $18
         INC A
         STA.B $1C
-CODE_80B06C:
+; [Text] LDY #0, LDA [$1A],Y STA [$22],Y INY. Copies text data from source to destination.
+textBuf_CopyData: ; $00B06C
         LDY.W #$0000
         LDA.B [$1A],Y
         STA.B [$22],Y
@@ -4479,34 +4586,36 @@ CODE_80B06C:
         STA.B $22
         RTS
 ; [AI] Updates battle turn order based on agility. Entry: sorts unit list by speed, determines next actor.
-updateTurnOrder:
+updateTurnOrder: ; $00B0A8
         REP #$20
         LDX.W #$0000
         LDY.W #$0400
         LDA.W #$03FF
-CODE_80B0B3:
+; [Text] STA $7FB000,X INX INX DEY. Writes to WRAM $7F:B000 tilemap buffer.
+textBuf_WriteWRAM: ; $00B0B3
         STA.L $7FB000,X
         INX
         INX
         DEY
-        BNE CODE_80B0B3
+        BNE textBuf_WriteWRAM
         LDX.W #$0040
         LDY.W #$0380
         LDA.W #$0000
-CODE_80B0C5:
+; [Text] STA $7FB000,X INX INX INC. Writes to WRAM buffer with incrementing value.
+textBuf_WriteWRAMInc: ; $00B0C5
         STA.L $7FB000,X
         INX
         INX
         INC A
         DEY
-        BNE CODE_80B0C5
+        BNE textBuf_WriteWRAMInc
         LDA.W #$7800
         STA.B $78
         SEP #$20
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         SEP #$20
         LDA.B #$60
         STA.W $210B
@@ -4515,24 +4624,27 @@ CODE_80B0C5:
         STA.W $2108
         REP #$20
         RTL
+; [Helper] Look up entry in BE-header table. A=ID to find. [$12]=table ptr. Returns match index in $00.
+lookupTableEntry: ; $00B0F1
         PHP
         REP #$20
         AND.W #$00FF
         STA.B $02
         LDA.B [$12]
         CMP.W #$4245
-        BNE CODE_80B128
+        BNE textTbl_FoundEntry
         LDY.W #$0003
         LDA.B [$12],Y
         STA.B $08
         LDY.W #$0008
         LDA.W #$0000
         STA.B $00
-CODE_80B10F:
+; [Text] LDA [$12],Y AND $FF, CMP $02. Searches table at [$12] for matching entry ID.
+textTbl_SearchEntry: ; $00B10F
         LDA.B [$12],Y
         AND.W #$00FF
         CMP.B $02
-        BEQ CODE_80B12D
+        BEQ textTbl_ReadEntryData
         TYA
         CLC
         ADC.W #$0004
@@ -4540,11 +4652,13 @@ CODE_80B10F:
         INC.B $00
         LDA.B $00
         CMP.B $08
-        BEQ CODE_80B128
-        BRA CODE_80B10F
-CODE_80B128:
+        BEQ textTbl_FoundEntry
+        BRA textTbl_SearchEntry
+; [Text] INY — advances past matched entry ID byte.
+textTbl_FoundEntry: ; $00B128
         db $A2,$00,$00,$28,$6B
-CODE_80B12D:
+; [Text] INY, LDA [$12],Y PHA INY. Reads entry data word after match.
+textTbl_ReadEntryData: ; $00B12D
         INY
         LDA.B [$12],Y
         PHA
@@ -4558,42 +4672,48 @@ CODE_80B12D:
         PLA
         CLC
         ADC.B $12
-        BCC CODE_80B146
+        BCC textTbl_SetupDecomp
         db $09,$00,$80,$E6,$14
-CODE_80B146:
+; [Text] STA $12, LDY #0, LDX #0, SEP #$20. Sets up decompression pointer, 8-bit mode.
+textTbl_SetupDecomp: ; $00B146
         STA.B $12
         LDY.W #$0000
         LDX.W #$0000
         SEP #$20
-CODE_80B150:
+; [Text] LDA [$12],Y BEQ end INY STA $7E2000,X. Reads decompressed byte, stores to WRAM $7E2000.
+textDecomp_ReadByte: ; $00B150
         LDA.B [$12],Y
-        BEQ CODE_80B15C
+        BEQ textDecomp_NextCmd
         INY
         STA.L $7E2000,X
         INX
-        BRA CODE_80B150
-CODE_80B15C:
+        BRA textDecomp_ReadByte
+; [Text] INY, LDA [$12],Y BNE continue JMP end. Reads next decompression command byte.
+textDecomp_NextCmd: ; $00B15C
         INY
         LDA.B [$12],Y
-        BNE CODE_80B164
+        BNE textDecomp_Dispatch
         JMP.W $B1E9
-CODE_80B164:
+; [Text] CMP #$E0 BCS high, CMP #$C0 BCS mid. Dispatches decompression command by range.
+textDecomp_Dispatch: ; $00B164
         CMP.B #$E0
-        BCS CODE_80B1B4
+        BCS textDecomp_Finalize2
         CMP.B #$C0
-        BCS CODE_80B18D
+        BCS textDecomp_Finalize
         CMP.B #$80
-        BCS CODE_80B180
+        BCS textDecomp_SetCount
         INY
         STA.B $00
         LDA.B #$00
-CODE_80B175:
+; [Text] STA $7E2000,X INX DEC $00 BNE loop. Repeat fill — writes same byte $00 times.
+textDecomp_RepeatByte: ; $00B175
         STA.L $7E2000,X
         INX
         DEC.B $00
-        BNE CODE_80B175
-        BRA CODE_80B150
-CODE_80B180:
+        BNE textDecomp_RepeatByte
+        BRA textDecomp_ReadByte
+; [Text] AND #$1F STA $00 PHY DEY. Extracts 5-bit repeat count from command byte.
+textDecomp_SetCount: ; $00B180
         AND.B #$1F
         STA.B $00
         PHY
@@ -4602,12 +4722,14 @@ CODE_80B180:
         LDA.B [$12],Y
         PLY
         INY
-        BRA CODE_80B175
-CODE_80B18D:
+        BRA textDecomp_RepeatByte
+; [Text] DEX STX $00. Finalizes decompression, stores output size.
+textDecomp_Finalize: ; $00B18D
         db $29,$1F,$85,$00,$5A,$88,$88,$88,$B7,$12,$85,$02,$C8,$B7,$12,$85
         db $03,$7A,$C8,$A5,$02,$9F,$00,$20,$7E,$E8,$A5,$03,$9F,$00,$20,$7E
         db $E8,$C6,$00,$D0,$EE,$80,$9C
-CODE_80B1B4:
+; [Text] DEX STX $00 LDX #0. Second finalization path, resets X.
+textDecomp_Finalize2: ; $00B1B4
         db $29,$1F,$85,$00,$5A,$88,$88,$88,$88,$B7,$12,$85,$02,$C8,$B7,$12
         db $85,$03,$C8,$B7,$12,$85,$04,$7A,$C8,$A5,$02,$9F,$00,$20,$7E,$E8
         db $A5,$03,$9F,$00,$20,$7E,$E8,$A5,$04,$9F,$00,$20,$7E,$E8,$C6,$00
@@ -4616,17 +4738,18 @@ CODE_80B1B4:
         STX.B $00
         LDX.W #$0000
         LDA.B #$00
-CODE_80B1F1:
+; [Text] CLC ADC $7E2000,X STA back INX. Delta decompression — adds delta to previous value.
+textDecomp_AddDelta: ; $00B1F1
         CLC
         ADC.L $7E2000,X
         STA.L $7E2000,X
         INX
         CPX.B $00
-        BNE CODE_80B1F1
+        BNE textDecomp_AddDelta
         PLP
         RTL
 ; [GameState] Checks if story event flag is set. Entry: A=flag ID. Returns carry set if flag is true.
-checkEventFlag:
+checkEventFlag: ; $00B201
         PHP
         REP #$20
         STZ.W $0A0C
@@ -4658,7 +4781,7 @@ checkEventFlag:
         PLP
         RTS
 ; [GameState] Sets story event flag. Entry: A=flag ID. Marks flag as completed in save data.
-setEventFlag:
+setEventFlag: ; $00B248
         PHP
         REP #$20
         LDA.W #$0000
@@ -4670,12 +4793,12 @@ setEventFlag:
         LDA.W #$001E
         STA.B $06
         JSR.W checkEventFlag
-        JSL.L monitorParty
-        JSR.W absoluteValue
+        JSL.L initTilemapAndSync_Long
+        JSR.W waitForFrame
         PLP
         RTL
 ; [Script] Handles cutscene playback. Entry: A=cutscene ID. Plays script, moves characters, displays dialogue.
-handleCutscene:
+handleCutscene: ; $00B26B
         REP #$20
         AND.W #$003F
         ASL A
@@ -4735,7 +4858,7 @@ handleCutscene:
         LDA.W #$0008
         STA.B $06
         JSR.W checkEventFlag
-        JSL.L monitorParty
+        JSL.L initTilemapAndSync_Long
         JSR.W drawWindow
         LDA.W #$0002
         STA.B $00
@@ -4763,7 +4886,7 @@ handleCutscene:
         LDA.W #$000A
         STA.B $06
         JSR.W checkEventFlag
-        JSL.L monitorParty
+        JSL.L initTilemapAndSync_Long
         JSR.W drawWindow
         LDA.W #$0002
         STA.B $00
@@ -4824,7 +4947,7 @@ handleCutscene:
         LDA.W #$0006
         STA.B $06
         JSR.W checkEventFlag
-        JSL.L monitorParty
+        JSL.L initTilemapAndSync_Long
         JSR.W drawWindow
         RTL
         LDA.W #$0005
@@ -4836,7 +4959,7 @@ handleCutscene:
         LDA.W #$0008
         STA.B $06
         JSR.W checkEventFlag
-        JSL.L monitorParty
+        JSL.L initTilemapAndSync_Long
         JSR.W drawWindow
         RTL
         LDA.W #$0002
@@ -4922,12 +5045,12 @@ handleCutscene:
         JSR.W drawWindow
         RTL
 ; [Effects] Fades screen to black for transitions. Entry: called before scene changes. Gradual fade via $2100.
-fadeToBlack:
+fadeToBlack: ; $00B525
         REP #$20
         STZ.B $6F
         LDA.W $0E25
         AND.W #$00FF
-        BNE CODE_80B54D
+        BNE textWin_SetParams
         LDA.W #$0001
         STA.B $00
         LDA.W #$0003
@@ -4938,8 +5061,9 @@ fadeToBlack:
         STA.B $06
         JSR.W checkEventFlag
         JSR.W drawWindow
-        BRA CODE_80B581
-CODE_80B54D:
+        BRA textWin_InitState
+; [Text] LDA #1 STA $00, LDA #3 STA $02. Sets window parameter defaults.
+textWin_SetParams: ; $00B54D
         LDA.W #$0001
         STA.B $00
         LDA.W #$0003
@@ -4960,7 +5084,8 @@ CODE_80B54D:
         STA.B $06
         JSR.W checkEventFlag
         JSR.W drawWindow
-CODE_80B581:
+; [Text] LDA #$FFFF STA $6F, LDA #1 STA $00. Initializes text window state, $6F=XOR mask.
+textWin_InitState: ; $00B581
         LDA.W #$FFFF
         STA.B $6F
         LDA.W #$0001
@@ -4984,24 +5109,25 @@ CODE_80B581:
         JSR.W checkEventFlag
         RTL
 ; [Input] Waits for button press before continuing. Entry: displays 'press button' prompt, loops until input.
-waitForButton:
+waitForButton: ; $00B5B8
         PHP
         REP #$20
         STZ.W $09FC
         STZ.W $09FE
         LDX.W #$0000
         LDA.W #$0000
-CODE_80B5C7:
+; [Text] STA $7E9000,X INX INX CPX #$0800. Clears tile buffer $7E9000 (2048 bytes).
+textWin_ClearTileBuf: ; $00B5C7
         STA.L $7E9000,X
         INX
         INX
         CPX.W #$0800
-        BNE CODE_80B5C7
+        BNE textWin_ClearTileBuf
         STZ.W $0A1C
         PLP
         RTL
 ; [Menu] Draws window frame for menus/dialogue. Entry: $00/$02=position, $04/$06=size. Renders border tiles.
-drawWindow:
+drawWindow: ; $00B5D7
         PHP
         REP #$20
         LDA.W $09F0
@@ -5016,9 +5142,10 @@ drawWindow:
         STA.B $04
         LDY.W #$3101
         LDA.B $6F
-        BNE CODE_80B5FC
+        BNE textWin_FillTileBuf
         LDY.W #$3105
-CODE_80B5FC:
+; [Text] TYA STA $22, STA $7E9000,X. Fills tile buffer with uniform value.
+textWin_FillTileBuf: ; $00B5FC
         TYA
         STA.B $22
         STA.L $7E9000,X
@@ -5028,12 +5155,13 @@ CODE_80B5FC:
         DEY
         DEY
         INC A
-CODE_80B60B:
+; [Text] STA $7E9000,X INX INX DEY. Writes one row of tiles to buffer.
+textWin_WriteTileRow: ; $00B60B
         STA.L $7E9000,X
         INX
         INX
         DEY
-        BNE CODE_80B60B
+        BNE textWin_WriteTileRow
         LDA.B $22
         CLC
         ADC.W #$4000
@@ -5046,7 +5174,8 @@ CODE_80B60B:
         TAY
         DEY
         DEY
-CODE_80B62A:
+; [Text] LDA $06 LDX $04, STA $7E9000,X. Writes tile value at specific buffer offset.
+textWin_WriteAtOffset: ; $00B62A
         LDA.B $06
         LDX.B $04
         STA.L $7E9000,X
@@ -5066,7 +5195,7 @@ CODE_80B62A:
         ADC.W #$0040
         STA.B $04
         DEY
-        BNE CODE_80B62A
+        BNE textWin_WriteAtOffset
         LDX.B $04
         LDA.B $22
         CLC
@@ -5078,40 +5207,44 @@ CODE_80B62A:
         INX
         INX
         INC A
-CODE_80B667:
+; [Text] STA $7E9000,X INX INX DEY. Another tile row fill loop.
+textWin_FillRow: ; $00B667
         STA.L $7E9000,X
         INX
         INX
         DEY
-        BNE CODE_80B667
+        BNE textWin_FillRow
         LDA.B $22
         CLC
         ADC.W #$C000
         STA.L $7E9000,X
         PLP
         RTS
-; [Menu] Handles inventory management screen. Entry: displays items, allows equip/use/drop. Updates inventory array.
-handleInventory:
+; [Text] Phase 1 text engine: streams text from ROM into WRAM $0400 buffer. Dispatches FF control codes; calls unit-name copy, etc.
+fillTextBuffer_Phase1: ; $00B67C
         STZ.W $0A08
         STZ.W $0A16
         STZ.W $0A18
         SEP #$20
         LDY.W #$0000
         LDX.W #$0000
-CODE_80B68D:
+; [Text] Text loop: reads [$14],Y into $0400 buffer
+textLoopStart: ; $00B68D
         LDA.B [$14],Y
-        BNE CODE_80B694
-        JMP.W $BBB8
-CODE_80B694:
+        BNE ffCode_DispatchRange
+        JMP.W endOfTextHandler
+; [Text] CMP #9 BCC low, CMP #$FF BEQ ff. Phase 1 FF sub-code range dispatch.
+ffCode_DispatchRange: ; $00B694
         CMP.B #$09
-        BCC CODE_80B6A3
+        BCC ffCode_HandleLow
         CMP.B #$FF
-        BEQ CODE_80B6D6
+        BEQ ffCode_PeekNext
         STA.W $0400,X
         INX
         INY
-        BRA CODE_80B68D
-CODE_80B6A3:
+        BRA textLoopStart
+; [Text] DEC STA $01, INY LDA [$14],Y. Handles FF codes < $09 — copies raw bytes to $0400 buffer.
+ffCode_HandleLow: ; $00B6A3
         DEC A
         STA.B $01
         INY
@@ -5138,23 +5271,27 @@ CODE_80B6A3:
         INC.W $0A18
         PLX
         SEP #$20
-        BRA CODE_80B68D
-CODE_80B6D6:
+        BRA textLoopStart
+; [Text] INY LDA [$14],Y DEY CMP #$80. Peeks at next byte after FF to check high/low dispatch.
+ffCode_PeekNext: ; $00B6D6
         INY
         LDA.B [$14],Y
         DEY
         CMP.B #$80
-        BCS CODE_80B6E1
-        JMP.W $B775
-CODE_80B6E1:
+        BCS ffCode_CheckF1
+        JMP.W ffLowBufferCopy
+; [Text] CMP #$F1 BCC buffer, JMP ffHighJumpTable. Checks if FF sub-code >= $F1 for high jump table.
+ffCode_CheckF1: ; $00B6E1
         CMP.B #$F1
-        BCC CODE_80B6E8
-        JMP.W $B775
-CODE_80B6E8:
+        BCC ffCode_CheckC0
+        JMP.W ffLowBufferCopy
+; [Text] CMP #$C0 BCC low, JMP $BB33. Checks if FF sub-code >= $C0 (FFC0 redirect handler).
+ffCode_CheckC0: ; $00B6E8
         CMP.B #$C0
-        BCC CODE_80B6EF
+        BCC ffCode_LowMask
         JMP.W $BB33
-CODE_80B6EF:
+; [Text] REP #$20, AND #$3F ASL ASL. Masks low FF code to 6 bits, *4 for jump table index.
+ffCode_LowMask: ; $00B6EF
         REP #$20
         AND.W #$003F
         ASL A
@@ -5164,21 +5301,23 @@ CODE_80B6EF:
         STA.B $00
         SEP #$20
         JMP.W ($0000)
-        JMP.W $B78D
+; [Text] FF codes >= $80: processed inline Phase 1, NOT buffered
+ffHighJumpTable: ; $00B701
+        JMP.W ffCode80_SetParam
         db $EA
-        JMP.W $B79C
+        JMP.W ffCode81_SetParamIndirect
         db $EA
-        JMP.W $B7AE
+        JMP.W ffCode82_MultiplyParam
         db $EA
-        JMP.W $B7CB
+        JMP.W ffCode83_RenderWord
         db $EA
-        JMP.W $B7DD
+        JMP.W ffCode84_RenderByte
         db $EA
-        JMP.W $B810
+        JMP.W ffCode85_RenderClamped99
         db $EA
-        JMP.W $B94A
+        JMP.W ffCode86_RenderSingleDigit
         db $EA
-        JMP.W $B961
+        JMP.W ffCode87_CopyStringDirect
         db $EA
         JMP.W $B97B
         db $EA
@@ -5193,14 +5332,16 @@ CODE_80B6EF:
         db $EA,$4C,$E7,$BA,$EA
         JMP.W $BAFD
         db $EA
-        JMP.W $B88B
+        JMP.W ffCode95_RenderClamped999
         db $EA,$4C,$12,$BB,$EA
-        JMP.W $B8E8
+        JMP.W ffCode_RenderCompoundName
         db $EA,$4C,$B7,$B8,$EA,$4C,$2D,$B8,$EA,$4C,$F2,$B7,$EA
         JMP.W $BB2A
         db $EA
-        JMP.W $B904
+        JMP.W ffCode_RenderStringLookup
         db $EA
+; FF codes <$80 and >=$F1: copies 3 raw bytes to $0400 buffer.
+ffLowBufferCopy: ; $00B775
         LDA.B [$14],Y
         STA.W $0400,X
         INY
@@ -5213,21 +5354,27 @@ CODE_80B6EF:
         STA.W $0400,X
         INY
         INX
-        JMP.W CODE_80B68D
-        JSR.W multiply8x8
+        JMP.W textLoopStart
+; FF 80: reads 1 inline byte, stores to $0A08 (text param).
+ffCode80_SetParam: ; $00B78D
+        JSR.W ffReadInlineByte
         REP #$20
         LDA.B $00
         STA.W $0A08
         SEP #$20
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        JMP.W textLoopStart
+; FF 81: reads 3-byte ptr, loads indirect byte to $0A08.
+ffCode81_SetParamIndirect: ; $00B79C
+        JSR.W ffReadInlinePtr
         REP #$20
         LDA.B [$00]
         AND.W #$00FF
         STA.W $0A08
         SEP #$20
-        JMP.W CODE_80B68D
-        JSR.W multiply8x8
+        JMP.W textLoopStart
+; FF 82: hardware multiply $0A08 * inline byte via $4202/$4203.
+ffCode82_MultiplyParam: ; $00B7AE
+        JSR.W ffReadInlineByte
         PHY
         LDA.W $0A08
         STA.W $4202
@@ -5240,87 +5387,102 @@ CODE_80B6EF:
         LDY.W $4216
         STY.W $0A08
         PLY
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        JMP.W textLoopStart
+; FF 83: reads 3-byte ptr, loads 16-bit value, renders via $BCD6.
+ffCode83_RenderWord: ; $00B7CB
+        JSR.W ffReadInlinePtr
         PHY
         REP #$20
         LDA.B [$00]
         TAY
-        JSR.W clearMemory
+        JSR.W renderNumber5Digit
         SEP #$20
         PLY
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        JMP.W textLoopStart
+; FF 84: reads 3-byte ptr, loads 8-bit value, renders via $BCFF.
+ffCode84_RenderByte: ; $00B7DD
+        JSR.W ffReadInlinePtr
         PHY
         REP #$20
         LDA.B [$00]
         AND.W #$00FF
         TAY
-        JSR.W setMemory
+        JSR.W renderNumber3Digit
         SEP #$20
         PLY
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         db $20,$71,$BB,$5A,$C2,$20,$E6,$00,$A7,$00,$20,$0D,$BD,$C6,$00,$A7
         db $00,$20,$0D,$BD,$E6,$00,$E6,$00,$E2,$20,$7A,$4C,$8D,$B6
-        JSR.W divide16x8
+; FF 85: reads ptr, loads byte clamped to 99, renders via $BD06.
+ffCode85_RenderClamped99: ; $00B810
+        JSR.W ffReadInlinePtr
         PHY
         REP #$20
         LDA.B [$00]
         AND.W #$00FF
         CMP.W #$0064
-        BCC CODE_80B823
+        BCC textBuf_CopyUnitName
         LDA.W #$0063
-CODE_80B823:
+; [Text] TAY JSR $BD06 SEP #$20 PLY. Copies unit name bytes to $0400 buffer via clearMemory.
+textBuf_CopyUnitName: ; $00B823
         TAY
-        JSR.W findMemory
+        JSR.W renderNumber2Digit
         SEP #$20
         PLY
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         db $20,$71,$BB,$5A,$C2,$20,$A0,$20,$00,$A7,$00,$20,$6C,$C2,$85,$04
         db $C0,$00,$00,$F0,$05,$A0,$2D,$00,$80,$03,$A0,$20,$00,$E2,$20,$98
         db $9D,$00,$04,$E8,$C2,$20,$A4,$04,$20,$06,$BD,$E2,$20,$7A,$4C,$8D
         db $B6,$20,$71,$BB,$5A,$C2,$20,$A7,$00,$29,$FF,$00,$C9,$64,$00,$B0
         db $11,$A8,$A9,$25,$00,$9D,$00,$04,$E8,$20,$06,$BD,$E2,$20,$7A,$4C
         db $8D,$B6,$C2,$20,$A8,$20,$FF,$BC,$E2,$20,$7A,$4C,$8D,$B6
-        JSR.W divide16x8
+; FF 95: reads ptr, loads value clamped to 999, renders number.
+ffCode95_RenderClamped999: ; $00B88B
+        JSR.W ffReadInlinePtr
         PHY
         REP #$20
         LDA.B [$00]
         CMP.W #$03E8
-        BCC CODE_80B89B
+        BCC textBuf_CopyRaw
         db $A9,$E7,$03
-CODE_80B89B:
+; [Text] TAY JSR $BCFF. Copies raw bytes using setMemory, then returns to text loop.
+textBuf_CopyRaw: ; $00B89B
         TAY
-        JSR.W setMemory
-        BRA CODE_80B8B1
+        JSR.W renderNumber3Digit
+        BRA textBuf_ReturnToLoop
         db $A8,$20,$06,$BD,$E2,$20,$A9,$20,$9D,$00,$04,$E8,$7A,$4C,$8D,$B6
-CODE_80B8B1:
+; [Text] SEP #$20 PLY JMP textLoopStart. Returns to Phase 1 text loop after copy.
+textBuf_ReturnToLoop: ; $00B8B1
         SEP #$20
         PLY
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         db $20,$71,$BB,$5A,$C2,$20,$A0,$20,$00,$A7,$00,$20,$6C,$C2,$85,$04
         db $C0,$00,$00,$F0,$05,$A0,$2D,$00,$80,$03,$A0,$20,$00,$E2,$20,$98
         db $9D,$00,$04,$E8,$C2,$20,$A4,$04,$20,$CF,$BC,$E2,$20,$7A,$4C,$8D
         db $B6
-        JSR.W divide16x8
+; Reads 3-byte ptr, renders two string lookups separated by $95 char.
+ffCode_RenderCompoundName: ; $00B8E8
+        JSR.W ffReadInlinePtr
         INC.B $00
         LDA.B [$00]
         PHA
         DEC.B $00
         LDA.B [$00]
-        JSR.W initRandomSeed
+        JSR.W lookupStringTable1
         LDA.B #$95
         STA.W $0400,X
         INX
         PLA
-        JSR.W getRandomNumber
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        JSR.W lookupStringTable2
+        JMP.W textLoopStart
+; Reads 3-byte ptr, looks up single string via $B90F.
+ffCode_RenderStringLookup: ; $00B904
+        JSR.W ffReadInlinePtr
         LDA.B [$00]
-        JSR.W initRandomSeed
-        JMP.W CODE_80B68D
-; [RNG] Initializes random number generator seed. Entry: sets seed based on frame counter.
-initRandomSeed:
+        JSR.W lookupStringTable1
+        JMP.W textLoopStart
+; Text engine: index*8 into table at $02:A050, copy chars to $0400 until $20 terminator.
+lookupStringTable1: ; $00B90F
         PHY
         REP #$20
         AND.W #$00FF
@@ -5332,9 +5494,9 @@ initRandomSeed:
         STA.B $02
         LDA.W #$A050
         STA.B $00
-        BRA CODE_80B939
-; [RNG] Generates random number. Entry: A=max value. Returns A=random number (0 to max-1). Uses LFSR algorithm.
-getRandomNumber:
+        BRA textBuf_ScanString
+; Text engine: index*8 into table at $02:A298, copy chars to $0400 until $20 terminator.
+lookupStringTable2: ; $00B925
         PHY
         REP #$20
         AND.W #$00FF
@@ -5346,52 +5508,63 @@ getRandomNumber:
         STA.B $02
         LDA.W #$A298
         STA.B $00
-CODE_80B939:
+; [Text] SEP #$20, LDA [$00],Y INY CMP #$20. Scans string for space ($20) delimiter.
+textBuf_ScanString: ; $00B939
         SEP #$20
-CODE_80B93B:
+; [Text] LDA [$00],Y INY CMP #$20 BEQ found. String scan loop body.
+textBuf_ScanLoop: ; $00B93B
         LDA.B [$00],Y
         INY
         CMP.B #$20
-        BEQ CODE_80B948
+        BEQ textBuf_ScanDone
         STA.W $0400,X
         INX
-        BRA CODE_80B93B
-CODE_80B948:
+        BRA textBuf_ScanLoop
+; [Text] PLY RTS. String scan complete, return.
+textBuf_ScanDone: ; $00B948
         PLY
         RTS
-        JSR.W divide16x8
+; FF 86: reads ptr, loads byte clamped to 9, adds $30, writes single ASCII digit.
+ffCode86_RenderSingleDigit: ; $00B94A
+        JSR.W ffReadInlinePtr
         LDA.B [$00]
         AND.B #$FF
         CMP.B #$0A
-        BCC CODE_80B957
+        BCC textBuf_WriteDigit
         db $A9,$09
-CODE_80B957:
+; [Text] CLC ADC #$30, STA $0400,X INX. Converts digit to ASCII ($30 base) and writes to text buffer.
+textBuf_WriteDigit: ; $00B957
         CLC
         ADC.B #$30
         STA.W $0400,X
         INX
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
-CODE_80B964:
+        JMP.W textLoopStart
+; FF 87: reads ptr, copies bytes from [$00] to $0400 until $00 or $20 terminator.
+ffCode87_CopyStringDirect: ; $00B961
+        JSR.W ffReadInlinePtr
+; [Text] LDA [$00] BEQ done CMP #$20 BEQ done. Checks for null or space terminator.
+textBuf_CheckEnd: ; $00B964
         LDA.B [$00]
-        BEQ CODE_80B978
+        BEQ textBuf_JmpLoop
         CMP.B #$20
-        BEQ CODE_80B978
+        BEQ textBuf_JmpLoop
         STA.W $0400,X
         INX
         REP #$20
         INC.B $00
         SEP #$20
-        BRA CODE_80B964
-CODE_80B978:
-        JMP.W CODE_80B68D
+        BRA textBuf_CheckEnd
+; [Text] JMP textLoopStart. Returns to Phase 1 main loop.
+textBuf_JmpLoop: ; $00B978
+        JMP.W textLoopStart
         INY
         INY
         LDA.B [$14],Y
         STA.B $04
         DEY
-        JSR.W divide16x8
-CODE_80B985:
+        JSR.W ffReadInlinePtr
+; [Text] Copies raw bytes from embedded 3-byte SNES ptrs in text
+textRawCopyHandler: ; $00B985
         LDA.B [$00]
         STA.W $0400,X
         INX
@@ -5399,16 +5572,16 @@ CODE_80B985:
         INC.B $00
         SEP #$20
         DEC.B $04
-        BNE CODE_80B985
-        JMP.W CODE_80B68D
-        JSR.W copyMemory
+        BNE textRawCopyHandler
+        JMP.W textLoopStart
+        JSR.W ffReadInlineWord
         REP #$20
         LDA.W $0A08
         CLC
         ADC.B $00
         STA.W $0A08
         SEP #$20
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         db $20,$A7,$BB,$20,$A1,$EE,$C2,$20,$5A,$AC,$0E,$0A,$A5,$00,$99,$00
         db $01,$C8,$C8,$AD,$08,$0A,$99,$00,$01,$C8,$C8,$8C,$0E,$0A,$7A,$E2
         db $20,$4C,$8D,$B6,$20,$A7,$BB,$20,$A1,$EE,$C2,$20,$5A,$AC,$0E,$0A
@@ -5418,37 +5591,42 @@ CODE_80B985:
         db $C8,$AD,$08,$0A,$18,$69,$20,$00,$99,$00,$01,$C8,$C8,$A5,$00,$18
         db $69,$10,$10,$99,$00,$01,$C8,$C8,$AD,$08,$0A,$18,$69,$22,$00,$99
         db $00,$01,$C8,$C8,$8C,$0E,$0A,$7A,$E2,$20,$4C,$8D,$B6
-        JSR.W divide16x8
+        JSR.W ffReadInlinePtr
         LDA.B [$00]
         STA.B $00
         LDA.B [$14],Y
         INY
         CMP.B #$20
-        BCC CODE_80BA53
+        BCC ffBuf_ClampMin
         STA.B $01
         LDA.B $00
-        BNE CODE_80BA4F
-        JMP.W CODE_80B68D
-CODE_80BA4F:
+        BNE ffBuf_LoadParam
+        JMP.W textLoopStart
+; [Text] LDA $01, BRA store. Loads parameter byte for FF buffer copy.
+ffBuf_LoadParam: ; $00BA4F
         LDA.B $01
-        BRA CODE_80BA62
-CODE_80BA53:
+        BRA ffBuf_FillLoop
+; [Text] CMP $00 BCS skip STA $00. Clamps value to minimum in $00.
+ffBuf_ClampMin: ; $00BA53
         CMP.B $00
-        BCS CODE_80BA59
+        BCS ffBuf_CheckZero
         STA.B $00
-CODE_80BA59:
+; [Text] LDA $00 BNE continue JMP textLoopStart. If count is zero, skip to next byte.
+ffBuf_CheckZero: ; $00BA59
         LDA.B $00
-        BNE CODE_80BA60
-        JMP.W CODE_80B68D
-CODE_80BA60:
+        BNE ffBuf_FillChar3E
+        JMP.W textLoopStart
+; [Text] LDA #$3E, STA $0400,X. Fills buffer with character $3E (dash/fill char).
+ffBuf_FillChar3E: ; $00BA60
         LDA.B #$3E
-CODE_80BA62:
+; [Text] STA $0400,X INX DEC $00 BNE loop. Fill loop for text buffer with repeated character.
+ffBuf_FillLoop: ; $00BA62
         STA.W $0400,X
         INX
         DEC.B $00
-        BNE CODE_80BA62
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        BNE ffBuf_FillLoop
+        JMP.W textLoopStart
+        JSR.W ffReadInlinePtr
         LDA.B [$00]
         STA.B $00
         LDA.B [$14],Y
@@ -5456,32 +5634,37 @@ CODE_80BA62:
         STA.B $01
         SEC
         SBC.B $00
-        BPL CODE_80BA84
+        BPL ffBuf_PadSpaces
         LDA.B $01
         STA.B $00
         LDA.B #$00
-CODE_80BA84:
+; [Text] STA $02, BEQ skip, LDA #$20. Pads text buffer with spaces ($20).
+ffBuf_PadSpaces: ; $00BA84
         STA.B $02
-        BEQ CODE_80BA92
+        BEQ ffBuf_CheckZero2
         LDA.B #$20
-CODE_80BA8A:
+; [Text] STA $0400,X INX DEC $02 BNE loop. Space padding loop.
+ffBuf_SpaceLoop: ; $00BA8A
         STA.W $0400,X
         INX
         DEC.B $02
-        BNE CODE_80BA8A
-CODE_80BA92:
+        BNE ffBuf_SpaceLoop
+; [Text] LDA $00 BNE continue JMP textLoopStart. Second zero-check path.
+ffBuf_CheckZero2: ; $00BA92
         LDA.B $00
-        BNE CODE_80BA99
-        JMP.W CODE_80B68D
-CODE_80BA99:
+        BNE ffBuf_FillChar3C
+        JMP.W textLoopStart
+; [Text] LDA #$3C, STA $0400,X. Fills with character $3C.
+ffBuf_FillChar3C: ; $00BA99
         LDA.B #$3C
-CODE_80BA9B:
+; [Text] STA $0400,X INX DEC $00 BNE loop. Fill loop for character $3C.
+ffBuf_FillLoop3C: ; $00BA9B
         STA.W $0400,X
         INX
         DEC.B $00
-        BNE CODE_80BA9B
-        JMP.W CODE_80B68D
-        JSR.W divide16x8
+        BNE ffBuf_FillLoop3C
+        JMP.W textLoopStart
+        JSR.W ffReadInlinePtr
         LDA.B [$00]
         STA.B $00
         LDA.B [$14],Y
@@ -5490,7 +5673,7 @@ CODE_80BA9B:
         ADC.B $00
         STA.W $0400,X
         INX
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         db $C8,$C8,$C2,$20,$AD,$08,$0A,$8D,$14,$0A,$E2,$20,$4C,$8D,$B6,$C8
         db $C8,$C2,$20,$AD,$08,$0A,$18,$6D,$14,$0A,$8D,$08,$0A,$E2,$20,$4C
         db $8D,$B6,$20,$91,$BB,$AD,$08,$0A,$87,$00,$4C,$8D,$B6,$20,$91,$BB
@@ -5503,33 +5686,36 @@ CODE_80BA9B:
         INY
         LDA.B [$14],Y
         INY
-CODE_80BB07:
+; [Text] STA $0400,X INX DEC $00 BNE loop. Generic character fill loop.
+ffBuf_FillGeneric: ; $00BB07
         STA.W $0400,X
         INX
         DEC.B $00
-        BNE CODE_80BB07
-        JMP.W CODE_80B68D
+        BNE ffBuf_FillGeneric
+        JMP.W textLoopStart
         db $20,$71,$BB,$5A,$C2,$20,$A7,$00,$A8,$E6,$00,$E6,$00,$A7,$00,$20
         db $8E,$BC,$E2,$20,$7A,$4C,$8D,$B6
-        JSR.W multiply8x8
+        JSR.W ffReadInlineByte
         STA.W $0A20
-        JMP.W CODE_80B68D
+        JMP.W textLoopStart
         AND.B #$3F
         STA.B $04
         JSR.W compareStrings
         LDA.B $04
         CMP.B #$30
-        BNE CODE_80BB48
+        BNE ffC0_CheckCondition
         LDA.W $0A08
-        BEQ CODE_80BB53
-        JMP.W CODE_80B68D
-CODE_80BB48:
+        BEQ ffC0_SetTextPtr
+        JMP.W textLoopStart
+; [Text] LDA $54 AND #$3F CMP $04. Checks condition flags for FF C0 conditional redirect.
+ffC0_CheckCondition: ; $00BB48
         LDA.B $54
         AND.B #$3F
         CMP.B $04
-        BCS CODE_80BB53
+        BCS ffC0_SetTextPtr
         db $4C,$8D,$B6
-CODE_80BB53:
+; [Text] LDA $00 STA $14, LDA $01 STA $15. Sets text stream pointer from computed address.
+ffC0_SetTextPtr: ; $00BB53
         LDA.B $00
         STA.B $14
         LDA.B $01
@@ -5537,9 +5723,9 @@ CODE_80BB53:
         LDA.B $02
         STA.B $16
         LDY.W #$0000
-        JMP.W CODE_80B68D
-; [Math] 8x8 unsigned multiplication. Entry: A=multiplicand, X=multiplier. Returns A=product (16-bit). Uses $4202/$4203.
-multiply8x8:
+        JMP.W textLoopStart
+; Helper: reads 1 byte from text stream after FF code, stores to $00.
+ffReadInlineByte: ; $00BB65
         SEP #$20
         INY
         INY
@@ -5548,8 +5734,8 @@ multiply8x8:
         STA.B $00
         INY
         RTS
-; [Math] 16÷8 unsigned division. Entry: A=dividend, X=divisor. Returns A=quotient, Y=remainder. Uses $4204-$4206.
-divide16x8:
+; Helper: reads 3-byte SNES pointer from text stream, stores to $00/$02.
+ffReadInlinePtr: ; $00BB71
         PHP
         SEP #$20
         INY
@@ -5571,7 +5757,7 @@ divide16x8:
         PLP
         RTS
 ; [Text] Compares two strings. Entry: $12/$14=string1, $16/$18=string2. Returns Z flag set if equal.
-compareStrings:
+compareStrings: ; $00BB91
         PHP
         SEP #$20
         INY
@@ -5587,8 +5773,8 @@ compareStrings:
         INY
         PLP
         RTS
-; [Memory] Copies memory block. Entry: $12/$14=source, $16/$18=dest, A=length. Uses MVN instruction.
-copyMemory:
+; Reads 2 bytes from text stream [$14]+Y into $00/$01.
+ffReadInlineWord: ; $00BBA7
         PHP
         SEP #$20
         INY
@@ -5601,6 +5787,8 @@ copyMemory:
         INY
         PLP
         RTS
+; [Text] Null byte handler: kanji tile copy + render trigger
+endOfTextHandler: ; $00BBB8
         REP #$20
         STZ.W $0400,X
         INY
@@ -5609,9 +5797,10 @@ copyMemory:
         ADC.B $14
         PHA
         LDA.W $0A18
-        BNE CODE_80BBCB
+        BNE ffC0_CalcOffset
         JMP.W renderTextWrapper
-CODE_80BBCB:
+; [Text] CLC ADC $0A1A ASL STA $00. Calculates entry offset for FF C0 redirect table.
+ffC0_CalcOffset: ; $00BBCB
         CLC
         ADC.W $0A1A
         ASL A
@@ -5625,7 +5814,8 @@ CODE_80BBCB:
         LDA.W #$0004
         STA.B $1A
         LDY.W #$0000
-CODE_80BBE9:
+; [Text] LDA $0700,Y INY INY PHY. Reads kanji tile data from $0700 buffer.
+kanji_ReadTileData: ; $00BBE9
         LDA.W $0700,Y
         INY
         INY
@@ -5637,16 +5827,18 @@ CODE_80BBE9:
         ASL A
         LDY.W #$0004
         CMP.W #$8000
-        BCC CODE_80BC02
+        BCC kanji_SetupWrite
         LDY.W #$0005
         AND.W #$7FFF
-CODE_80BC02:
+; [Text] STY $1A TAY, LDA $0A1C BNE alt. Sets up kanji tile write, checks special mode.
+kanji_SetupWrite: ; $00BC02
         STY.B $1A
         TAY
         LDA.W $0A1C
-        BNE CODE_80BC1E
+        BNE kanji_AltWrite
         LDX.W #$0010
-CODE_80BC0D:
+; [Text] LDA [$18],Y EOR $6F STA [$14]. Writes kanji tile with XOR mask ($6F) for inversion.
+kanji_WriteTile: ; $00BC0D
         LDA.B [$18],Y
         EOR.B $6F
         STA.B [$14]
@@ -5655,40 +5847,44 @@ CODE_80BC0D:
         INC.B $14
         INC.B $14
         DEX
-        BNE CODE_80BC0D
-        BRA CODE_80BC57
-CODE_80BC1E:
+        BNE kanji_WriteTile
+        BRA kanji_LoopCheck
+; [Text] Alternate kanji write path when $0A1C special mode is set.
+kanji_AltWrite: ; $00BC1E
         db $A9,$02,$00,$85,$02,$5A,$A2,$08,$00,$E2,$20,$B7,$18,$87,$14,$E6
         db $14,$87,$14,$C2,$20,$E6,$14,$C8,$C8,$CA,$D0,$ED,$7A,$C8,$A2,$08
         db $00,$E2,$20,$B7,$18,$87,$14,$E6,$14,$87,$14,$C2,$20,$E6,$14,$C8
         db $C8,$CA,$D0,$ED,$88,$C6,$02,$D0,$CC
-CODE_80BC57:
+; [Text] PLY CPY $00 BNE loop LDY #$6C00. Checks if all kanji tiles processed, sets VRAM dest.
+kanji_LoopCheck: ; $00BC57
         PLY
         CPY.B $00
-        BNE CODE_80BBE9
+        BNE kanji_ReadTileData
         LDY.W #$6C00
         LDA.W $0A1C
-        BEQ CODE_80BC67
+        BEQ kanji_SetVRAMDest
         db $A0,$00,$48
-CODE_80BC67:
+; [Text] STY $78, SEP #$20, LDA #$FE STA $57. Sets VRAM destination $78=$6C00, DMA flag $57=$FE.
+kanji_SetVRAMDest: ; $00BC67
         STY.B $78
         SEP #$20
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
 ; [Text] Text render wrapper - sets up parameters and calls main text processor. Entry: expects text pointer at $14/$16. Sets $14=#$0400, $16=0, calls processText. Returns via RTL.
-renderTextWrapper:
+renderTextWrapper: ; $00BC75
         LDA.W #$0400
         STA.B $14
         STZ.B $16
-        JSR.W processText
+        JSR.W renderTextStream
         REP #$20
         LDA.W $0A16
-        BNE CODE_80BC8C
-        JSR.W absoluteValue
+        BNE kanji_Return
+        JSR.W waitForFrame
         STZ.W $0A0E
-CODE_80BC8C:
+; [Text] PLA RTL. Returns from kanji tile processing.
+kanji_Return: ; $00BC8C
         PLA
         RTL
         db $08,$C2,$20,$64,$00,$84,$06,$85,$08,$A9,$98,$00,$85,$0C,$A9,$80
@@ -5696,21 +5892,23 @@ CODE_80BC8C:
         db $20,$5F,$BD,$A9,$01,$00,$85,$0C,$A9,$A0,$86,$85,$0A,$20,$5F,$BD
         db $A9,$00,$00,$85,$0C,$A9,$10,$27,$85,$0A,$20,$5F,$BD,$A4,$06,$80
         db $12,$08,$C2,$20,$64,$00,$80,$0B
-; [Memory] Clears memory block to zero. Entry: $12/$14=address, A=length. Uses STZ in loop.
-clearMemory:
+; Renders number as up to 5 decimal digits via renderNumberToBuffer.
+renderNumber5Digit: ; $00BCD6
         PHP
         REP #$20
         STZ.B $00
         LDA.W #$2710
-        JSR.W compressData
+        JSR.W renderNumberToBuffer
         LDA.W #$03E8
-        JSR.W compressData
-CODE_80BCE7:
+        JSR.W renderNumberToBuffer
+; [Text] LDA #100 JSR $BD31. Divides by 100 for hundreds digit.
+numRender_Hundreds: ; $00BCE7
         LDA.W #$0064
-        JSR.W compressData
-CODE_80BCED:
+        JSR.W renderNumberToBuffer
+; [Text] LDA #10 JSR $BD31 TYA SEP #$20. Divides remainder by 10 for tens digit.
+numRender_Tens: ; $00BCED
         LDA.W #$000A
-        JSR.W compressData
+        JSR.W renderNumberToBuffer
         TYA
         SEP #$20
         CLC
@@ -5719,51 +5917,56 @@ CODE_80BCED:
         INX
         PLP
         RTS
-; [Memory] Fills memory block with value. Entry: $12/$14=address, A=length, X=fill value.
-setMemory:
+; Alternate entry: starts at hundreds place.
+renderNumber3Digit: ; $00BCFF
         PHP
         REP #$20
         STZ.B $00
-        BRA CODE_80BCE7
-; [Memory] Searches memory for value. Entry: $12/$14=address, A=length, X=search value. Returns Y=offset if found.
-findMemory:
+        BRA numRender_Hundreds
+; Alternate entry: starts at tens place.
+renderNumber2Digit: ; $00BD06
         PHP
         REP #$20
         STZ.B $00
-        BRA CODE_80BCED
+        BRA numRender_Tens
         db $C2,$20,$A8,$29,$0F,$00,$48,$98,$4A,$4A,$4A,$4A,$29,$0F,$00,$A8
         db $E2,$20,$B9,$C7,$E0,$9D,$00,$04,$E8,$7A,$B9,$C7,$E0,$9D,$00,$04
         db $E8,$C2,$20,$60
-; [Memory] Compresses data using simple RLE. Entry: $12/$14=source, $16/$18=dest. Returns A=compressed size.
-compressData:
+; Converts A to decimal string in $0400. Division by repeated subtraction, leading zero suppression, +$30 ASCII.
+renderNumberToBuffer: ; $00BD31
         STA.B $04
         TYA
         LDY.W #$0000
-CODE_80BD37:
+; [Text] SEC SBC $04 BCC done INY. Division loop — repeated subtraction.
+numRender_DivLoop: ; $00BD37
         SEC
         SBC.B $04
-        BCC CODE_80BD3F
+        BCC numRender_DivDone
         INY
-        BRA CODE_80BD37
-CODE_80BD3F:
+        BRA numRender_DivLoop
+; [Text] CLC ADC $04 PHA PHP. Division complete, save remainder.
+numRender_DivDone: ; $00BD3F
         CLC
         ADC.B $04
         PHA
         PHP
         SEP #$20
         LDA.B $00
-        BNE CODE_80BD54
+        BNE numRender_ToASCII
         TYA
-        BNE CODE_80BD52
+        BNE numRender_IncLeading
         LDA.W $0A20
-        BRA CODE_80BD58
-CODE_80BD52:
+        BRA numRender_StoreBuf
+; [Text] INC $00 — marks leading digit as nonzero (suppress leading zeros).
+numRender_IncLeading: ; $00BD52
         INC.B $00
-CODE_80BD54:
+; [Text] TYA CLC ADC #$30. Converts digit to ASCII character code.
+numRender_ToASCII: ; $00BD54
         TYA
         CLC
         ADC.B #$30
-CODE_80BD58:
+; [Text] STA $0400,X INX PLP PLY. Stores digit character to text buffer $0400.
+numRender_StoreBuf: ; $00BD58
         STA.W $0400,X
         INX
         PLP
@@ -5774,7 +5977,7 @@ CODE_80BD58:
         db $85,$08,$08,$E2,$20,$A5,$00,$D0,$0A,$98,$D0,$05,$AD,$20,$0A,$80
         db $06,$E6,$00,$98,$18,$69,$30,$9D,$00,$04,$E8,$28,$60
 ; [Text] Copies text buffer data between buffers. Entry: $09F0/$09F2=source, $09F4=width, $09F6=height.
-copyTextBuffer:
+copyTextBuffer: ; $00BD9C
         PHP
         REP #$20
         PHA
@@ -5785,62 +5988,68 @@ copyTextBuffer:
         LDA.W $09F6
         DEC A
         STA.B $00
-CODE_80BDB1:
+; [Text] LDX $02, LDY $09F4. Copies tile buffer upward — $7E9040→$7E9000 for text scrolling.
+textScroll_CopyUp: ; $00BDB1
         LDX.B $02
         LDY.W $09F4
-CODE_80BDB6:
+; [Text] LDA $7E9040,X STA $7E9000,X INX INX. Copies bottom tile row to top row.
+textScroll_CopyLoop: ; $00BDB6
         LDA.L $7E9040,X
         STA.L $7E9000,X
         INX
         INX
         DEY
-        BNE CODE_80BDB6
+        BNE textScroll_CopyLoop
         LDA.B $02
         CLC
         ADC.W #$0040
         STA.B $02
         DEC.B $00
-        BNE CODE_80BDB1
+        BNE textScroll_CopyUp
         PLA
-        BNE CODE_80BDEF
+        BNE textScroll_End
         LDX.B $02
         LDY.W #$0000
         LDA.B $6F
-        BEQ CODE_80BDDE
+        BEQ textScroll_ClearLine
         LDA.W #$3100
-CODE_80BDDE:
+; [Text] LDY $09F4, STA $7E9000,X. Clears bottom tile row after scroll.
+textScroll_ClearLine: ; $00BDDE
         LDY.W $09F4
-CODE_80BDE1:
+; [Text] STA $7E9000,X INX INX DEY. Fill loop to clear scrolled-out line.
+textScroll_ClearLoop: ; $00BDE1
         STA.L $7E9000,X
         INX
         INX
         DEY
-        BNE CODE_80BDE1
-        JSR.W absoluteValue
+        BNE textScroll_ClearLoop
+        JSR.W waitForFrame
         PLP
         RTS
-CODE_80BDEF:
+; [Text] End of text scroll operation.
+textScroll_End: ; $00BDEF
         db $AE,$F0,$09,$A8,$20,$40,$C2,$AC,$F4,$09,$A5,$02,$18,$69,$00,$90
         db $85,$02,$A9,$7E,$00,$85,$04,$BF,$00,$90,$7E,$87,$02,$E8,$E8,$E6
         db $02,$E6,$02,$88,$D0,$F1,$20,$0E,$C2,$22,$BE,$E3,$00,$28,$60,$08
         db $C2,$20,$A2
-; [Memory] Decompresses RLE-compressed data. Entry: $12/$14=source, $16/$18=dest. Returns A=decompressed size.
-decompressData:
+; Clears text tile buffer line in $7E:9000. Fills $80 words with zero.
+clearTextTileLine: ; $00BE22
         BRK #$00
         LDY.W #$001E
         JSR.W calculateSine
         LDA.W #$0000
         LDY.W #$0080
-CODE_80BE30:
+; [Text] STA $7E9000,X INX INX DEY. Fills tile buffer line for rendering.
+textRender_FillLine: ; $00BE30
         STA.L $7E9000,X
         INX
         INX
         DEY
-        BNE CODE_80BE30
+        BNE textRender_FillLine
         PLP
         RTS
-; [Text] Main text processing routine - reads characters, handles control codes, calls character writer. Entry: $14/$16=text pointer, $09FC=column, $09FE=row, $0A00=line width? Processes until null terminator or page break. Control codes: $00=end, $90=newline, $FF=extended codes, $D0=special char.
-processText:
+; [Text] Main text/dialogue renderer. Reads byte stream from [$14], processes control codes, writes tiles to buffer.
+renderTextStream: ; $00BE3B
         REP #$20
         LDA.W $0A0C
         STA.W $0A0A
@@ -5848,62 +6057,69 @@ processText:
         STZ.W $0A06
         JSR.W calculateBufferOffset
         STZ.W $0A1E
-CODE_80BE4F:
+; [Text] Main loop: read next byte from [$14], dispatch by control code
+textStreamLoop: ; $00BE4F
         LDA.B [$14]
         INC.B $14
         AND.W #$00FF
-        BNE CODE_80BE5B
-        JMP.W handleNullTerminator
-CODE_80BE5B:
+        BNE textStream_CheckFF
+        JMP.W textStream_Handle00
+; [Text] Check for $FF extended control code
+textStream_CheckFF: ; $00BE5B
         CMP.W #$00FF
-        BNE CODE_80BE63
-        JMP.W handleControlCodeFF
-CODE_80BE63:
+        BNE textStream_Check90
+        JMP.W textStream_HandleFF
+; [Text] Check for $90 newline/scroll control code
+textStream_Check90: ; $00BE63
         CMP.W #$0090
-        BNE CODE_80BE6B
-        JMP.W handleControlCode90
-CODE_80BE6B:
+        BNE textStream_CheckD0
+        JMP.W textStream_Handle90
+; [Text] Check for $D0 icon/special character code
+textStream_CheckD0: ; $00BE6B
         CMP.W #$00D0
-        BEQ handleControlCodeD0
+        BEQ textStream_HandleD0
         CMP.W #$00CE
-        BEQ CODE_80BE4F
-CODE_80BE75:
+        BEQ textStreamLoop
+; [Text] Write regular character tile and advance cursor
+textStream_WriteChar: ; $00BE75
         JSR.W writeTextCharacter
         INC.W $0A10
         LDA.W $0A0A
-        BEQ CODE_80BE88
-        JSR.W compareValues
+        BEQ textStream_CheckAutoScroll
+        JSR.W setTextRenderParams
         LDA.B $82
-        BPL CODE_80BE88
+        BPL textStream_CheckAutoScroll
         RTS
-CODE_80BE88:
+; [Text] Check if auto-scroll needed after character write
+textStream_CheckAutoScroll: ; $00BE88
         LDA.W $0A06
-        BNE CODE_80BE92
+        BNE textStream_CheckLineEnd
         INX
         INX
         INC.W $09FC
-CODE_80BE92:
+; [Text] Compare cursor to line width, loop or handle overflow
+textStream_CheckLineEnd: ; $00BE92
         LDA.W $09FC
         DEC A
         CMP.W $09F8
-        BCC CODE_80BE4F
+        BCC textStreamLoop
         LDA.W $0A1E
-        BNE CODE_80BE4F
+        BNE textStreamLoop
         LDA.B [$14]
         AND.W #$00FF
         CMP.W #$0091
-        BEQ CODE_80BEFB
+        BEQ textStream_SetPauseFlag
         CMP.W #$0093
-        BEQ CODE_80BEFB
+        BEQ textStream_SetPauseFlag
         CMP.W #$0094
-        BEQ CODE_80BEFB
+        BEQ textStream_SetPauseFlag
         CMP.W #$00A0
-        BEQ CODE_80BEFB
-        BRA handleControlCode90
-; [Text] Handles control code $D0 - special character/icon. Reads next byte, multiplies by 2, adds $0180 base, writes as character.
-handleControlCodeD0:
+        BEQ textStream_SetPauseFlag
+        BRA textStream_Handle90
+; [Text] $D0 handler: icon/special char - read param, compute tile, write
+textStream_HandleD0: ; $00BEBB
         LDA.W $0A1C
-        BNE CODE_80BEDC
+        BNE textStream_StorePauseCode
         LDA.B [$14]
         INC.B $14
         AND.W #$00FF
@@ -5918,71 +6134,81 @@ handleControlCodeD0:
         INC.W $09FC
         PLA
         INC A
-        BRA CODE_80BE75
-CODE_80BEDC:
+        BRA textStream_WriteChar
+; [Text] STA $0A06. Stores pause/wait flag value from control code ($91/$93/$94/$A0).
+textStream_StorePauseCode: ; $00BEDC
         db $A7,$14,$E6,$14,$29,$FF,$00,$0A,$0A,$18,$69,$00,$03,$48,$20,$56
         db $C1,$EE,$10,$0A,$E8,$E8,$EE,$FC,$09,$68,$1A,$1A,$4C,$75,$BE
-CODE_80BEFB:
+; [Text] Set pause/wait flag from control code ($91/$93/$94/$A0)
+textStream_SetPauseFlag: ; $00BEFB
         STA.W $0A06
-        JMP.W CODE_80BE4F
-; [Text] Handles control code $90 - newline or carriage return. Checks row position, may scroll or move to next line. Updates $09FE (row) and resets $09FC (column).
-handleControlCode90:
+        JMP.W textStreamLoop
+; [Text] $90 newline handler: scroll text window if at bottom, reset cursor
+textStream_Handle90: ; $00BF01
         LDA.W $09FE
         CMP.W #$003E
-        BNE CODE_80BF2F
+        BNE textStream_90_Advance
         db $A9,$1E,$00,$20,$9C,$BD,$A9,$1F,$00,$20,$9C,$BD,$20,$1E,$BE,$AD
         db $04,$0A,$18,$69,$02,$00,$8D,$04,$0A,$CD,$F6,$09,$90,$06,$20,$7F
         db $C2,$9C,$04,$0A,$80,$1D
-CODE_80BF2F:
+; [Text] Advance line counter, check if scroll needed
+textStream_90_Advance: ; $00BF2F
         CLC
         ADC.W #$0002
         CMP.W $09FA
-        BCC CODE_80BF49
-        JSR.W calculateCosine
+        BCC textStream_90_StoreLine
+        JSR.W checkTextActive
         LDA.W #$0000
         JSR.W copyTextBuffer
         LDA.W #$0000
         JSR.W copyTextBuffer
-        BRA CODE_80BF4C
-CODE_80BF49:
+        BRA textStream_90_ResetCursor
+; [Text] Store new line position
+textStream_90_StoreLine: ; $00BF49
         STA.W $09FE
-CODE_80BF4C:
+; [Text] Reset cursor position and char count for new line
+textStream_90_ResetCursor: ; $00BF4C
         LDA.W $09F0
         STA.W $09FC
         STZ.W $0A06
         STZ.W $0A10
         JSR.W calculateBufferOffset
-        JMP.W CODE_80BE4F
-; [Text] Handles null terminator ($00) - end of text. Checks if at bottom of screen, may scroll. Returns from text processing.
-handleNullTerminator:
+        JMP.W textStreamLoop
+; [Text] $00 null terminator handler: check if at dialog bottom
+textStream_Handle00: ; $00BF5E
         LDA.W $09FE
         CMP.W #$003E
-        BNE CODE_80BF7C
+; [Text] Text engine Phase 2: renders buffer, dispatches by byte value
+processText: ; $00BF64
+        BNE textStream_RTS
         db $A9,$1E,$00,$20,$9C,$BD,$A9,$1F,$00,$20,$9C,$BD,$AD,$FA,$09,$38
         db $E9,$02,$00,$8D,$FE,$09
-CODE_80BF7C:
+; [Text] RTS — Phase 2 sub-function return.
+textStream_RTS: ; $00BF7C
         RTS
-; [Text] Handles control code $FF - extended control codes. Reads next byte for sub-command: $F0-$FF. Includes party monitoring, calculations, etc. Also handles $80-$BF for position setting.
-handleControlCodeFF:
+; [Text] $FF extended control: read sub-command byte, dispatch
+textStream_HandleFF: ; $00BF7D
         LDA.B [$14]
         INC.B $14
         AND.W #$00FF
         CMP.W #$00F0
-        BCS handleExtendedControlCode
+        BCS textStream_HandleExtended
         CMP.W #$0080
-        BEQ CODE_80BF94
+        BEQ textStream_FFReadCode
         AND.W #$001F
         STA.W $09FC
-CODE_80BF94:
+; [Text] LDA [$14] AND $FF, CMP #$80 BCS high. Reads FF sub-command, dispatches by range.
+textStream_FFReadCode: ; $00BF94
         LDA.B [$14]
         AND.W #$00FF
         CMP.W #$0080
-        BCS CODE_80BFA9
+        BCS textStream_FFHighMask
         AND.W #$001F
         STA.W $09FE
         STZ.W $0A06
-        BRA CODE_80BFBA
-CODE_80BFA9:
+        BRA textStream_FFAdvance
+; [Text] AND #$3F STA $00, LDA $09FE SEC. Masks high FF code, reads current line position.
+textStream_FFHighMask: ; $00BFA9
         AND.W #$003F
         STA.B $00
         LDA.W $09FE
@@ -5990,19 +6216,22 @@ CODE_80BFA9:
         SBC.B $00
         STA.W $09FE
         STZ.W $0A06
-CODE_80BFBA:
+; [Text] INC $14, JSR calculateBufferOffset, JMP textStreamLoop. Advances past FF byte, recalcs offset.
+textStream_FFAdvance: ; $00BFBA
         INC.B $14
         JSR.W calculateBufferOffset
-        JMP.W CODE_80BE4F
-CODE_80BFC2:
+        JMP.W textStreamLoop
+; [Text] Extended $F1: toggle text state flag
+textStream_ExtF1: ; $00BFC2
         LDA.B [$14]
         AND.W #$00FF
         INC.B $14
         CMP.W #$0001
-        BNE CODE_80BFD4
+        BNE textStream_ExtF1_SetPos
         STZ.W $0A1E
-        JMP.W CODE_80BE4F
-CODE_80BFD4:
+        JMP.W textStreamLoop
+; [Text] Extended $F1 param>1: set cursor Y position from param
+textStream_ExtF1_SetPos: ; $00BFD4
         SEP #$20
         DEC A
         ASL A
@@ -6011,51 +6240,58 @@ CODE_80BFD4:
         ADC.B #$21
         STA.W $0A1F
         REP #$20
-        JMP.W CODE_80BE4F
-CODE_80BFE4:
+        JMP.W textStreamLoop
+; [Text] Extended $F2: write auto-delay value from stream
+textStream_ExtF2: ; $00BFE4
         LDA.B [$14]
         AND.W #$00FF
         INC.B $14
-        JSR.W compareValues
-        JMP.W CODE_80BE4F
-; [Text] Dispatches extended control codes ($F0-$FF). $FA=increment $0A16, $FB=set text color?, $FC=set variable, $FD=set $0A0A, $FE=call $C27F, $FF=monitorParty.
-handleExtendedControlCode:
+        JSR.W setTextRenderParams
+        JMP.W textStreamLoop
+; [Text] Extended control dispatcher ($F0-$FF sub-commands)
+textStream_HandleExtended: ; $00BFF1
         CMP.W #$00FF
-        BEQ CODE_80C022
+        BEQ textStream_ExtFF
         CMP.W #$00FE
-        BEQ CODE_80C028
+        BEQ textStream_ExtFE
         CMP.W #$00FD
-        BEQ CODE_80C02D
+        BEQ textStream_ExtFD
         CMP.W #$00FC
-        BEQ CODE_80C053
+        BEQ textStream_ExtFC
         CMP.W #$00FB
-        BEQ CODE_80C041
+        BEQ textStream_ExtFB
         CMP.W #$00FA
-        BNE CODE_80C015
+        BNE textStream_ExtDispatch
         INC.W $0A16
-        JMP.W handleNullTerminator
-CODE_80C015:
+        JMP.W textStream_Handle00
+; [Text] CMP #$F1 BEQ, CMP #$F2 BEQ. Extended FF command dispatcher — checks F1, F2, etc.
+textStream_ExtDispatch: ; $00C015
         CMP.W #$00F1
-        BEQ CODE_80BFC2
+        BEQ textStream_ExtF1
         CMP.W #$00F2
-        BEQ CODE_80BFE4
+        BEQ textStream_ExtF2
         db $4C,$4F,$BE
-CODE_80C022:
-        JSL.L monitorParty
-        BRA CODE_80BFBA
-CODE_80C028:
-        JSR.W calculateCosine
-        BRA CODE_80BFBA
-CODE_80C02D:
+; [Text] Extended $FF: call monitorParty, then continue
+textStream_ExtFF: ; $00C022
+        JSL.L initTilemapAndSync_Long
+        BRA textStream_FFAdvance
+; [Text] Extended $FE: call scrollTextWindow, then continue
+textStream_ExtFE: ; $00C028
+        JSR.W checkTextActive
+        BRA textStream_FFAdvance
+; [Text] Extended $FD: set auto-advance delay from stream byte (or $FF=from RAM)
+textStream_ExtFD: ; $00C02D
         LDA.B [$14]
         AND.W #$00FF
         CMP.W #$00FF
-        BNE CODE_80C03B
+        BNE textStream_ExtFD_Store
         db $AF,$84,$EA,$7E
-CODE_80C03B:
+; [Text] Store auto-advance delay value
+textStream_ExtFD_Store: ; $00C03B
         STA.W $0A0A
-        JMP.W CODE_80BFBA
-CODE_80C041:
+        JMP.W textStream_FFAdvance
+; [Text] Extended $FB: set text Y offset from stream byte
+textStream_ExtFB: ; $00C041
         SEP #$20
         LDA.B [$14]
         ASL A
@@ -6065,54 +6301,61 @@ CODE_80C041:
         ADC.B #$20
         STA.W $0A03
         REP #$20
-        JMP.W CODE_80BFBA
-CODE_80C053:
+        JMP.W textStream_FFAdvance
+; [Text] Extended $FC: choice/menu selection handler
+textStream_ExtFC: ; $00C053
         LDA.B [$14]
         AND.W #$00FF
         CMP.W #$0080
-        BCS CODE_80C0C9
+        BCS textStream_FC_Grid
         STA.W $0A12
         LDA.W $09FE
         STA.B $22
         STZ.W $0A08
-CODE_80C068:
+; [Text] LDA $0A08 ASL CLC ADC $22. Calculates cursor position for choice/menu selection.
+textStream_FC_CalcPos: ; $00C068
         LDA.W $0A08
         ASL A
         CLC
         ADC.B $22
         STA.W $09FE
-        JSR.W calculateDistance
+        JSR.W pollInputFlashCursor
         LDA.B $50
         AND.W #$0400
-        BEQ CODE_80C08D
+        BEQ textStream_FC_CheckRight
         JSR.W incrementCounter3
         LDA.W $0A08
         INC A
         CMP.W $0A12
-        BEQ CODE_80C08D
+        BEQ textStream_FC_CheckRight
         STA.W $0A08
-        BRA CODE_80C068
-CODE_80C08D:
+        BRA textStream_FC_CalcPos
+; [Text] Choice handler: check right button press
+textStream_FC_CheckRight: ; $00C08D
         LDA.B $50
         AND.W #$0800
-        BEQ CODE_80C0A1
+        BEQ textStream_FC_CheckCancel
         db $20,$47,$C1,$AD,$08,$0A,$F0,$05,$CE,$08,$0A,$80,$C7
-CODE_80C0A1:
+; [Text] Choice handler: check B/cancel button
+textStream_FC_CheckCancel: ; $00C0A1
         LDA.B $50
         AND.W #$8000
-        BEQ CODE_80C0B4
+        BEQ textStream_FC_CheckConfirm
         db $A9,$02,$00,$20,$4A,$C1,$9C,$08,$0A,$4C,$BA,$BF
-CODE_80C0B4:
+; [Text] Choice handler: check A/confirm button
+textStream_FC_CheckConfirm: ; $00C0B4
         LDA.B $50
         AND.W #$0080
-        BNE CODE_80C0BD
+        BNE textStream_FC_Confirm
         db $80,$AB
-CODE_80C0BD:
+; [Text] LDA #1 JSR $C14A, INC $0A08. Processes confirm input in choice menu.
+textStream_FC_Confirm: ; $00C0BD
         LDA.W #$0001
         JSR.W incrementCounter8
         INC.W $0A08
-        JMP.W CODE_80BFBA
-CODE_80C0C9:
+        JMP.W textStream_FFAdvance
+; [Text] Extended $FC with param>=$80: grid-style choice menu
+textStream_FC_Grid: ; $00C0C9
         AND.W #$007F
         STA.W $0A12
         LDA.W $09FC
@@ -6120,7 +6363,8 @@ CODE_80C0C9:
         LDA.W $0A08
         STA.B $22
         STZ.W $0A08
-CODE_80C0DC:
+; [Text] Grid choice: hardware multiply for cursor position
+textStream_FC_Grid_Loop: ; $00C0DC
         SEP #$20
         LDA.W $0A08
         STA.W $4202
@@ -6136,73 +6380,80 @@ CODE_80C0DC:
         CLC
         ADC.B $24
         STA.W $09FC
-        JSR.W calculateDistance
+        JSR.W pollInputFlashCursor
         LDA.B $50
         AND.W #$0100
-        BEQ CODE_80C114
+        BEQ textStream_FC_Grid_Down
         JSR.W incrementCounter3
         LDA.W $0A08
         INC A
         CMP.W $0A12
-        BEQ CODE_80C114
+        BEQ textStream_FC_Grid_Down
         STA.W $0A08
-        BRA CODE_80C0DC
-CODE_80C114:
+        BRA textStream_FC_Grid_Loop
+; [Text] Grid choice: check down button
+textStream_FC_Grid_Down: ; $00C114
         LDA.B $50
         AND.W #$0200
-        BEQ CODE_80C128
+        BEQ textStream_FC_Grid_Cancel
         JSR.W incrementCounter3
         LDA.W $0A08
-        BEQ CODE_80C128
+        BEQ textStream_FC_Grid_Cancel
         DEC.W $0A08
-        BRA CODE_80C0DC
-CODE_80C128:
+        BRA textStream_FC_Grid_Loop
+; [Text] Grid choice: check cancel
+textStream_FC_Grid_Cancel: ; $00C128
         LDA.B $50
         AND.W #$8000
-        BEQ CODE_80C13B
+        BEQ textStream_FC_Grid_Confirm
         LDA.W #$0002
         JSR.W incrementCounter8
         STZ.W $0A08
-        JMP.W CODE_80BFBA
-CODE_80C13B:
+        JMP.W textStream_FFAdvance
+; [Text] Grid choice: check confirm, store selection
+textStream_FC_Grid_Confirm: ; $00C13B
         LDA.B $50
         AND.W #$0080
-        BEQ CODE_80C145
-        JMP.W CODE_80C0BD
-CODE_80C145:
-        BRA CODE_80C0DC
+        BEQ textStream_FC_GridLoop
+        JMP.W textStream_FC_Confirm
+; [Text] BRA textStream_FC_Grid_Loop. Branches back to grid choice input loop.
+textStream_FC_GridLoop: ; $00C145
+        BRA textStream_FC_Grid_Loop
 ; [Timer] Increments counter at $81. Entry: A=value. Similar to incrementCounter but with different entry.
-incrementCounter3:
+incrementCounter3: ; $00C147
         LDA.W #$0003
 ; [Timer] Increments 8-bit counter at $81. Entry: A=value (8-bit).
-incrementCounter8:
+incrementCounter8: ; $00C14A
         SEP #$20
         INC A
         STA.B $81
         REP #$20
         RTS
 ; [Helper] Wrapper for checkZero function. Entry: A=value. Returns via RTL.
-checkZeroWrapper:
+checkZeroWrapper: ; $00C152
         JSR.W writeTextCharacter
         RTL
 ; [Text] Writes single character to text buffer. Entry: A=character code, X=buffer offset. Writes to top/bottom buffers based on $0A1C/$0A1E flags.
-writeTextCharacter:
+writeTextCharacter: ; $00C156
         CMP.W #$0000
-        BNE CODE_80C170
+        BNE textChar_CheckMode
         LDA.B $6F
-        BEQ CODE_80C170
+        BEQ textChar_CheckMode
         LDA.W $0A1C
-        BNE CODE_80C18F
+        BNE textChar_AltMode
         LDA.W #$0100
         STA.L $7E9000,X
         STA.L $7E9040,X
         RTS
-CODE_80C170:
+; [Text] PHA, LDA $0A1E BNE alt, LDA $0A1C. Checks special rendering mode flags before writing.
+textChar_CheckMode: ; $00C170
         PHA
         LDA.W $0A1E
-        BNE CODE_80C1A6
+        BNE textChar_CalcTileAddr
         LDA.W $0A1C
-        BNE CODE_80C18F
+        BNE textChar_AltMode
+; [Text] Writes tilemap entry for character to top/bottom buffers. Entry: character code on stack, X=buffer offset. Adds $0A02 (priority/palette bits) to character index. Writes to $7E9000,X (top tile) and $7E9040,X (bottom tile) with +$0400 palette difference. Each buffer holds 32 tiles (16x2 area), each entry 2 bytes: tile# low + VHPPCCCC (V=vert flip, H=horiz flip, P=priority, CCCC=palette).
+writeTilemapEntry: ; $00C17B
         PLA
         CLC
         ADC.W $0A02
@@ -6213,10 +6464,12 @@ CODE_80C170:
         ADC.W #$0400
         STA.L $7E9040,X
         RTS
-CODE_80C18F:
+; [Text] PLA — alternate character write path entry (special mode $0A1E).
+textChar_AltMode: ; $00C18F
         db $68,$C9,$80,$01,$B0,$01,$0A,$18,$6D,$02,$0A,$48,$9F,$00,$90,$7E
         db $68,$1A,$9F,$40,$90,$7E,$60
-CODE_80C1A6:
+; [Text] PLA SEC SBC #$20 CLC. Calculates tile address: subtract $20 (space offset) for indexing.
+textChar_CalcTileAddr: ; $00C1A6
         PLA
         SEC
         SBC.W #$0020
@@ -6224,8 +6477,8 @@ CODE_80C1A6:
         ADC.W $0A1E
         STA.L $7E9000,X
         RTS
-; [Math] Compares two 16-bit values. Entry: A=value1, X=value2. Returns flags for signed comparison.
-compareValues:
+; Stores text layout params to $0A2E/$0A28/$0A2A/$0A2C.
+setTextRenderParams: ; $00C1B4
         REP #$20
         STA.W $0A2E
         LDA.B $14
@@ -6233,62 +6486,90 @@ compareValues:
         LDA.B $16
         STA.W $0A2A
         STX.W $0A2C
-        JSR.W absoluteValue
-CODE_80C1C9:
+        JSR.W waitForFrame
+; [Text] DEC $0A2E, check zero. Auto-advance delay countdown for per-character timing.
+textChar_AutoDelay: ; $00C1C9
         DEC.W $0A2E
         LDA.W $0A2E
-        BEQ CODE_80C200
+        BEQ NMITIMEN
         LDA.B $6A
         AND.W #$00FF
         CMP.W #$0001
-        BNE CODE_80C1DF
-        JSL.L checkSPCBusy
-CODE_80C1DF:
-        JSL.L updateTransparency
+        BNE textChar_WaitFrame
+        JSL.L renderSprites
+; [Text] JSL updateTransparency, LDA $4E AND #$30 BNE done. Waits for frame with transparency update.
+textChar_WaitFrame: ; $00C1DF
+        JSL.L readJoypadNewPress
         LDA.B $4E
         AND.W #$0030
-        BNE CODE_80C200
+        BNE NMITIMEN
         LDA.B $82
-        BEQ CODE_80C1F5
+        BEQ textChar_WaitShadow
         LDA.B $4E
         AND.W #$3000
-        BNE CODE_80C1FB
-CODE_80C1F5:
-        JSL.L updateShadowEffect
-        BRA CODE_80C1C9
-CODE_80C1FB:
+        BNE textChar_SetEndFlag
+; [Text] JSL updateShadowEffect BRA autoDelay. Waits with shadow effect update loop.
+textChar_WaitShadow: ; $00C1F5
+        JSL.L waitForModeSync
+        BRA textChar_AutoDelay
+; [Text] LDA #$FFFF STA $82, LDA $0A28. Sets text-complete flag ($82=$FFFF).
+textChar_SetEndFlag: ; $00C1FB
         LDA.W #$FFFF
         STA.B $82
-CODE_80C200:
+; [Helper] Interrupt Enable Register
+NMITIMEN: ; $00C200
         LDA.W $0A28
+; [Helper] Multiplicand Registers
+WRMPYB: ; $00C203
         STA.B $14
+; [Helper] Divisor & Dividend Registers
+WRDIVH: ; $00C205
         LDA.W $0A2A
+; [Helper] IRQ Timer Registers (Horizontal - High)
+HTIMEH: ; $00C208
         STA.B $16
+; [Helper] IRQ Timer Registers (Vertical - High)
+VTIMEH: ; $00C20A
         LDX.W $0A2C
+; [Helper] ROM Speed Register
+MEMSEL: ; $00C20D
         RTS
-; [Math] Calculates absolute value. Entry: A=value (16-bit signed). Returns A=absolute value.
-absoluteValue:
+; INC $57 frame flag, JSL waitForModeSync.
+waitForFrame: ; $00C20E
         PHP
         SEP #$20
+; [Helper] Interrupt Flag Registers
+TIMEUP: ; $00C211
         INC.B $57
-        JSL.L updateShadowEffect
+; [Helper] IO Port Read Register
+RDIO: ; $00C213
+        JSL.L waitForModeSync
+; [Helper] Multiplication Or Divide Result Registers (High)
+RDMPYH: ; $00C217
         PLP
+; [Helper] Controller Port Data Registers (Pad 1 - Low)
+JOY1L: ; $00C218
         RTS
-; [Math] Negates value (two's complement). Entry: A=value. Returns A=-value.
-negateValue:
+; Loads $09FC/$09FE cursor pos, adds $0A00.
+readTextCursorState: ; $00C219
         REP #$20
+; [Helper] Controller Port Data Registers (Pad 2 - High)
+JOY2H: ; $00C21B
         LDX.W $09FC
+; [Helper] Controller Port Data Registers (Pad 4 - Low)
+JOY4L: ; $00C21E
         LDA.W $09FE
         CLC
         ADC.W $0A00
         TAY
         CPY.W #$003E
-        BNE CODE_80C230
+        BNE textChar_JmpCalcSine
         db $AC,$FA,$09,$88,$88
-CODE_80C230:
+; [Text] JMP calculateSine ($C240). Jumps to sine calculation for wavy text effect.
+textChar_JmpCalcSine: ; $00C230
         JMP.W calculateSine
 ; [Text] Calculates buffer position from column/row/width. Entry: $09FC=column, $09FE=row, $0A00=width. Returns X=offset.
-calculateBufferOffset:
+calculateBufferOffset: ; $00C233
         REP #$20
         LDX.W $09FC
         LDA.W $09FE
@@ -6296,7 +6577,7 @@ calculateBufferOffset:
         ADC.W $0A00
         TAY
 ; [Math] Calculates sine value using lookup table. Entry: A=angle (0-255). Returns A=sine value (8.8 fixed point).
-calculateSine:
+calculateSine: ; $00C240
         TXA
         ASL A
         STA.B $00
@@ -6315,253 +6596,346 @@ calculateSine:
         db $08,$C2,$20,$85,$04,$98,$A0,$00,$00,$38,$E5,$04,$90,$03,$C8,$80
         db $F8,$18,$65,$04,$48,$98,$7A,$28,$60,$A0,$00,$00,$C9,$00,$80,$B0
         db $01,$60,$C8,$85,$00,$A9,$00,$00,$38,$E5,$00,$60
-; [Math] Calculates cosine value (sine of angle+64). Entry: A=angle (0-255). Returns A=cosine value.
-calculateCosine:
+; Checks $0A10 text pause flag; returns if zero.
+checkTextActive: ; $00C27F
         LDA.W $0A10
-        BNE CODE_80C285
+        BNE textWait_Frame
         db $60
-CODE_80C285:
-        JSR.W interpolateValue
+; [Text] JSR $C29A, LDA $0A06 BEQ done JSR $C219. Frame wait with pause flag check.
+textWait_Frame: ; $00C285
+        JSR.W waitForButtonPressText
         LDA.W $0A06
-        BEQ CODE_80C299
+        BEQ textWait_RTS
         db $20,$19,$C2,$AD,$06,$0A,$20,$56,$C1,$20,$0E,$C2
-CODE_80C299:
+; [Text] RTS — text wait return.
+textWait_RTS: ; $00C299
         RTS
-; [Math] Linear interpolation between values. Entry: A=start, X=end, Y=factor (0-255). Returns A=interpolated value.
-interpolateValue:
+; Polls controller ($50 AND #$F0F0) during text display.
+waitForButtonPressText: ; $00C29A
         PHP
         REP #$20
-CODE_80C29D:
-        JSR.W calculateDistance
+; [Text] JSR $C2A9, LDA $50 AND #$F0F0 BEQ poll. Polls controller for any button press.
+textWait_PollInput: ; $00C29D
+        JSR.W pollInputFlashCursor
         LDA.B $50
         AND.W #$F0F0
-        BEQ CODE_80C29D
+        BEQ textWait_PollInput
         PLP
         RTS
-; [Math] Calculates distance between two points. Entry: $00-$01=point1, $02-$03=point2. Returns A=distance.
-calculateDistance:
+; JSL readJoypadNewPress + flash cursor indicator.
+pollInputFlashCursor: ; $00C2A9
         PHP
         REP #$20
-        JSL.L updateTransparency
+        JSL.L readJoypadNewPress
         STZ.B $0E
-CODE_80C2B2:
-        JSR.W negateValue
+; [Text] JSR $C219, LDY #$3E, INC $0E. Flashes cursor indicator while waiting for input.
+textWait_FlashCursor: ; $00C2B2
+        JSR.W readTextCursorState
         LDY.W #$003E
         INC.B $0E
         LDA.B $0E
         AND.W #$0010
-        BEQ CODE_80C2C4
+        BEQ textWait_WriteCursor
         LDY.W #$0000
-CODE_80C2C4:
+; [Text] TYA JSR writeTextCharacter JSR $C20E JSL updateTransparency. Writes animated cursor char.
+textWait_WriteCursor: ; $00C2C4
         TYA
         JSR.W writeTextCharacter
-        JSR.W absoluteValue
-        JSL.L updateTransparency
+        JSR.W waitForFrame
+        JSL.L readJoypadNewPress
         LDA.B $50
-        BEQ CODE_80C2B2
-        JSR.W negateValue
+        BEQ textWait_FlashCursor
+        JSR.W readTextCursorState
         LDA.W #$0000
         JSR.W writeTextCharacter
-        JSR.W absoluteValue
+        JSR.W waitForFrame
         PLP
         RTS
-; [Math] Calculates slope between two points. Entry: A=dx, X=dy. Returns A=slope (fixed point).
-calculateSlope:
+; Stores text scroll params to $0A36/$0A38/$0A3A.
+setTextScrollParams: ; $00C2E1
         REP #$20
         STA.W $0A36
         STX.W $0A38
         STY.W $0A3A
         TYA
         AND.W #$0080
-        BEQ CODE_80C327
+        BEQ DAS2B
         INC.W $0A36
-        JSR.W readJoypad
+        JSR.W readTileDataWord
         PHA
         DEC.W $0A36
-        JSR.W readJoypad
+        JSR.W readTileDataWord
         STA.B $00
+; [Helper] (H)DMA B-Bus Address
+BBAD0: ; $00C301
         PLA
+; [Helper] DMA A-Bus Address / HDMA Table Address (Low)
+A1T0L: ; $00C302
         SEC
+; [Helper] DMA A-Bus Address / HDMA Table Address (High)
+A1T0H: ; $00C303
         SBC.B $00
+; [Helper] DMA Size / HDMA Indirect Address (Low)
+DAS0L: ; $00C305
         INC A
+; [Helper] DMA Size / HDMA Indirect Address (High)
+DAS0H: ; $00C306
         STA.B $16
-        JSR.W updateHDMA
+; [Helper] HDMA Mid Frame Table Address (Low)
+A2A0L: ; $00C308
+        JSR.W setupTileDataFromROM
         LDX.W #$0000
-CODE_80C30E:
+; [Text] LDA [$12] STA $7E2000,X. Loads tile data from source to WRAM $7E2000.
+textGfx_LoadTile: ; $00C30E
         LDA.B [$12]
+; [Helper] (H)DMA Control
+DMAP1: ; $00C310
         STA.L $7E2000,X
+; [Helper] DMA A-Bus Address / HDMA Table Address (Bank)
+A1B1: ; $00C314
         LDA.B $12
+; [Helper] DMA Size / HDMA Indirect Address (High)
+DAS1H: ; $00C316
         INC A
+; [Helper] HDMA Indirect Address (Bank)
+DAS1B: ; $00C317
         INC A
-        BNE CODE_80C31F
+; [Helper] HDMA Mid Frame Table Address (Low)
+A2A1L: ; $00C318
+        BNE textGfx_StorePtr
+; [Helper] HDMA Line Counter
+NTLR1: ; $00C31A
         INC.B $14
         LDA.W #$8000
-CODE_80C31F:
+; [Text] STA $12 INX. Stores updated source pointer.
+textGfx_StorePtr: ; $00C31F
         STA.B $12
+; [Helper] (H)DMA B-Bus Address
+BBAD2: ; $00C321
         INX
+; [Helper] DMA A-Bus Address / HDMA Table Address (Low)
+A1T2L: ; $00C322
         INX
+; [Helper] DMA A-Bus Address / HDMA Table Address (High)
+A1T2H: ; $00C323
         CPX.B $16
-        BCC CODE_80C30E
-CODE_80C327:
+; [Helper] DMA Size / HDMA Indirect Address (Low)
+DAS2L: ; $00C325
+        BCC textGfx_LoadTile
+; [Helper] HDMA Indirect Address (Bank)
+DAS2B: ; $00C327
         LDA.W $0A3A
+; [Helper] HDMA Line Counter
+NTLR2: ; $00C32A
         AND.W #$0002
-        BNE CODE_80C366
-        JSR.W setupHDMATable
+        BNE DAS6H
+        JSR.W setupTileDataPointer
+; [Helper] DMA A-Bus Address / HDMA Table Address (Low)
+A1T3L: ; $00C332
         LDY.W #$0006
+; [Helper] DMA Size / HDMA Indirect Address (Low)
+DAS3L: ; $00C335
         LDA.B [$12],Y
+; [Helper] HDMA Indirect Address (Bank)
+DAS3B: ; $00C337
         CMP.W #$0020
-        BEQ CODE_80C366
+; [Helper] HDMA Line Counter
+NTLR3: ; $00C33A
+        BEQ DAS6H
         LDX.W #$5000
         LDA.W $0A38
+; [Helper] DMA A-Bus Address / HDMA Table Address (Low)
+A1T4L: ; $00C342
         CMP.W #$2000
-        BCC CODE_80C34A
+; [Helper] DMA Size / HDMA Indirect Address (Low)
+DAS4L: ; $00C345
+        BCC NTLR4
+; [Helper] HDMA Indirect Address (Bank)
+DAS4B: ; $00C347
         LDX.W #$2000
-CODE_80C34A:
+; [Helper] HDMA Line Counter
+NTLR4: ; $00C34A
         LDA.W $0A3A
         AND.W #$0010
-        BEQ CODE_80C355
+; [Helper] (H)DMA Control
+DMAP5: ; $00C350
+        BEQ DAS5L
+; [Helper] DMA A-Bus Address / HDMA Table Address (Low)
+A1T5L: ; $00C352
         LDX.W #$4000
-CODE_80C355:
+; [Helper] DMA Size / HDMA Indirect Address (Low)
+DAS5L: ; $00C355
         LDY.W #$1800
+; [Helper] HDMA Mid Frame Table Address (Low)
+A2A5L: ; $00C358
         LDA.W $0A3A
         AND.W #$0040
-        BEQ CODE_80C363
+        BEQ A1T6H
+; [Helper] (H)DMA Control
+DMAP6: ; $00C360
         LDY.W #$2000
-CODE_80C363:
+; [Helper] DMA A-Bus Address / HDMA Table Address (High)
+A1T6H: ; $00C363
         JSR.W waitForVBlank2
-CODE_80C366:
+; [Helper] DMA Size / HDMA Indirect Address (High)
+DAS6H: ; $00C366
         LDA.W $0A3A
+; [Helper] HDMA Mid Frame Table Address (High)
+A2A6H: ; $00C369
         AND.W #$0004
-        BNE CODE_80C399
-        JSR.W readJoypadEdge
+        BNE textGfx_CheckDMA
+        JSR.W readTileDataByte
+; [Helper] (H)DMA B-Bus Address
+BBAD7: ; $00C371
         LDA.W #$0007
+; [Helper] DMA A-Bus Address / HDMA Table Address (Bank)
+A1B7: ; $00C374
         STA.B $00
+; [Helper] DMA Size / HDMA Indirect Address (High)
+DAS7H: ; $00C376
         LDA.W #$0001
+; [Helper] HDMA Mid Frame Table Address (High)
+A2A7H: ; $00C379
         STA.B $02
         LDA.W $0A38
         CMP.W #$2000
-        BCC CODE_80C388
+        BCC textGfx_CheckFlags
         LDA.W #$0002
         STA.B $00
-CODE_80C388:
+; [Text] LDA $0A3A AND #1 BEQ skip LDA #$80. Checks text graphics config flags.
+textGfx_CheckFlags: ; $00C388
         LDA.W $0A3A
         AND.W #$0001
-        BEQ CODE_80C395
+        BEQ textGfx_EnableInterrupts
         db $A9,$80,$00,$04,$00
-CODE_80C395:
-        JSL.L enableInterrupts
-CODE_80C399:
+; [Text] JSL enableInterrupts, LDA $0A3A AND #8. Re-enables interrupts, checks more flags.
+textGfx_EnableInterrupts: ; $00C395
+        JSL.L unpackTileProperties
+; [Text] LDA $0A3A AND #8 BEQ skip JMP $C453. Checks if DMA transfer needed for text tiles.
+textGfx_CheckDMA: ; $00C399
         LDA.W $0A3A
         AND.W #$0008
-        BEQ CODE_80C3A4
+        BEQ textGfx_ReadInput
         db $4C,$53,$C4
-CODE_80C3A4:
-        JSR.W readJoypadEdge
+; [Text] JSR readJoypadEdge ($C4B1), LDA $12 CLC ADC #$20. Reads input during graphics setup.
+textGfx_ReadInput: ; $00C3A4
+        JSR.W readTileDataByte
         LDA.B $12
         CLC
         ADC.W #$0020
         STA.B $12
         LDA.W $0A3A
         AND.W #$0020
-        BNE CODE_80C3BC
-        JSR.W acknowledgeIRQ
-        BRA CODE_80C3CE
-CODE_80C3BC:
+        BNE textGfx_CopyWRAM
+        JSR.W clearTileBuffer
+        BRA textGfx_SetPalette
+; [Text] LDX #0, LDA $7FF000,X STA $7FB000,X. Copies WRAM $7F:F000 → $7F:B000 (tilemap buffer).
+textGfx_CopyWRAM: ; $00C3BC
         LDX.W #$0000
-CODE_80C3BF:
+; [Text] LDA $7FF000,X STA $7FB000,X INX INX. WRAM copy loop body.
+textGfx_CopyLoop: ; $00C3BF
         LDA.L $7FF000,X
         STA.L $7FB000,X
         INX
         INX
         CPX.W #$0800
-        BNE CODE_80C3BF
-CODE_80C3CE:
+        BNE textGfx_CopyLoop
+; [Text] LDA #$3F00 STA $06, LDA $0A38. Sets palette/priority bits for text tiles.
+textGfx_SetPalette: ; $00C3CE
         LDA.W #$3F00
         STA.B $06
         LDA.W $0A38
         LDY.W #$7000
         CMP.W #$2000
-        BCS CODE_80C3F5
+        BCS textGfx_VRAMBase7800
         CMP.W #$0800
-        BCC CODE_80C3E6
+        BCC textGfx_CheckPriority
         LDY.W #$7400
-CODE_80C3E6:
+; [Text] LDA $0A3A AND #$10 BEQ skip LDA #$3E00. Checks priority flag for alternate palette.
+textGfx_CheckPriority: ; $00C3E6
         LDA.W $0A3A
         AND.W #$0010
-        BEQ CODE_80C3F3
+        BEQ textGfx_SetVRAMBase
         LDA.W #$3E00
         STA.B $06
-CODE_80C3F3:
-        BRA CODE_80C3FD
-CODE_80C3F5:
+; [Text] BRA common. Falls through to VRAM base address setup.
+textGfx_SetVRAMBase: ; $00C3F3
+        BRA textGfx_CheckBit8
+; [Text] LDY #$7800 LDA #$0800 STA $06. VRAM base $7800, size $0800.
+textGfx_VRAMBase7800: ; $00C3F5
         LDY.W #$7800
         LDA.W #$0800
         STA.B $06
-CODE_80C3FD:
+; [Text] LDA $0A3A AND #$100 BEQ skip LDA #$2000. Checks bit 8 of config for alternate mode.
+textGfx_CheckBit8: ; $00C3FD
         LDA.W $0A3A
         AND.W #$0100
-        BEQ CODE_80C40A
+        BEQ textGfx_StoreVRAM
         db $A9,$00,$20,$14,$06
-CODE_80C40A:
+; [Text] STY $78, LDA $0A38 AND #$07FE TAX. Stores VRAM destination, masks data address.
+textGfx_StoreVRAM: ; $00C40A
         STY.B $78
         LDA.W $0A38
         AND.W #$07FE
         TAX
-CODE_80C413:
+; [Text] PHX LDY $08. Pushes X, loads Y for tile decompression loop.
+textGfx_PushAndRead: ; $00C413
         PHX
         LDY.B $08
-CODE_80C416:
+; [Text] LDA [$12] AND $FF INC $12 CMP #$FF. Reads compressed tile byte, checks for $FF terminator.
+textGfx_DecompTile: ; $00C416
         LDA.B [$12]
         AND.W #$00FF
         INC.B $12
         CMP.W #$00FF
-        BNE CODE_80C430
+        BNE textGfx_StoreTile
         LDA.B $06
         EOR.W #$4000
         STA.B $06
         LDA.B [$12]
         AND.W #$00FF
         INC.B $12
-CODE_80C430:
+; [Text] ORA $06 STA $7FB000,X INX INX. ORs palette bits and stores to WRAM buffer.
+textGfx_StoreTile: ; $00C430
         ORA.B $06
         STA.L $7FB000,X
         INX
         INX
         DEY
-        BNE CODE_80C416
+        BNE textGfx_DecompTile
         PLA
         CLC
         ADC.W #$0040
         TAX
         DEC.B $0A
         LDA.B $0A
-        BNE CODE_80C413
+        BNE textGfx_PushAndRead
         SEP #$20
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         RTL
-; [DMA] Sets up HDMA table for gradient effects. Entry: A=channel, $12/$14=table data. Configures indirect HDMA.
-setupHDMATable:
+; If $0A3A bit 7 set, load [$12/$14]=$7E:2000; else fall through to setupTileDataFromROM.
+setupTileDataPointer: ; $00C454
         REP #$20
         LDA.W $0A3A
         AND.W #$0080
-        BEQ updateHDMA
+        BEQ setupTileDataFromROM
         LDA.W #$007E
         STA.B $14
         LDA.W #$2000
         STA.B $12
         RTS
-; [DMA] Updates HDMA table values dynamically. Entry: A=channel, X=table offset, Y=new value.
-updateHDMA:
+; Load [$12/$14]=$24:8000, adjust bank by $0A37 AND 7, call readIndexedTableEntry for $0A36 index.
+setupTileDataFromROM: ; $00C469
         LDA.W #$0024
         STA.B $14
         LDA.W #$8000
         STA.B $12
         LDA.W $0A36
         CMP.W #$0100
-        BCC CODE_80C48C
+        BCC textGfx_SetupNMI
         LDA.W $0A37
         AND.W #$0007
         CLC
@@ -6569,11 +6943,12 @@ updateHDMA:
         STA.B $14
         LDA.W $0A36
         AND.W #$00FF
-CODE_80C48C:
-        JSR.W setupNMI
+; [Text] JSR setupNMI ($C585) RTS. Configures NMI for text graphics transfer.
+textGfx_SetupNMI: ; $00C48C
+        JSR.W readIndexedTableEntry
         RTS
-; [Input] Reads controller input via auto-read. Entry: none. Returns A=joypad1 state, X=joypad2 state.
-readJoypad:
+; Load [$12/$14]=$24:8000+, read word at ($0A36 AND $FF)*4 index from tileset table.
+readTileDataWord: ; $00C490
         LDA.W #$0024
         STA.B $14
         LDA.W #$8000
@@ -6590,10 +6965,10 @@ readJoypad:
         TAY
         LDA.B [$12],Y
         RTS
-; [Input] Reads newly pressed buttons (edge detection). Entry: compares current with previous frame. Returns A=new presses.
-readJoypadEdge:
+; Call setupTileDataPointer, save [$12], add 4, read byte from tileset entry.
+readTileDataByte: ; $00C4B1
         REP #$20
-        JSR.W setupHDMATable
+        JSR.W setupTileDataPointer
         LDA.B $12
         STA.B $16
         CLC
@@ -6613,15 +6988,17 @@ readJoypadEdge:
         STA.B $12
         RTS
 ; [Helper] Alternative V-blank wait routine. Entry: polls $4212 with timeout. Returns carry set if timeout.
-waitForVBlank2:
+waitForVBlank2: ; $00C4DA
         REP #$20
         STY.B $04
         STZ.B $02
         STX.B $78
         LDY.W #$0000
-CODE_80C4E5:
+; [Text] LDX #0, LDA [$12] STA $7FB000,X. Direct (uncompressed) tile copy to WRAM.
+textGfx_DirectCopy: ; $00C4E5
         LDX.W #$0000
-CODE_80C4E8:
+; [Text] LDA [$12] STA $7FB000,X INX INX. Direct copy loop body.
+textGfx_DirectLoop: ; $00C4E8
         LDA.B [$12]
         STA.L $7FB000,X
         INX
@@ -6629,24 +7006,24 @@ CODE_80C4E8:
         INC.B $12
         INC.B $12
         CPX.W #$0800
-        BNE CODE_80C4E8
+        BNE textGfx_DirectLoop
         LDA.B $02
         BNE CODE_80C50F
         LDX.W #$0000
         LDY.W #$0010
         LDA.W #$0000
-CODE_80C506:
+CODE_80C506: ; $00C506
         STA.L $7FB000,X
         INX
         INX
         DEY
         BNE CODE_80C506
-CODE_80C50F:
+CODE_80C50F: ; $00C50F
         SEP #$20
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         LDA.B $78
         CLC
         ADC.W #$0400
@@ -6656,18 +7033,18 @@ CODE_80C50F:
         ADC.W #$0800
         STA.B $02
         CMP.B $04
-        BCC CODE_80C4E5
+        BCC textGfx_DirectCopy
         RTS
-; [Interrupt] Sets up IRQ for raster effects. Entry: A=scanline, X=handler address. Configures $4207-$420A.
-setupIRQ:
+; Chunked copy [$12] -> $7F:B000, 2048 bytes/chunk, VBlank sync between chunks. RTL.
+copyToTileBuffer: ; $00C530
         REP #$20
         STY.B $04
         STZ.B $02
         STX.B $78
         LDY.W #$0000
-CODE_80C53B:
+CODE_80C53B: ; $00C53B
         LDX.W #$0000
-CODE_80C53E:
+CODE_80C53E: ; $00C53E
         LDA.B [$12]
         STA.L $7FB000,X
         INX
@@ -6680,7 +7057,7 @@ CODE_80C53E:
         LDA.B #$FE
         STA.B $57
         REP #$20
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         LDA.B $78
         CLC
         ADC.W #$0400
@@ -6692,21 +7069,21 @@ CODE_80C53E:
         CMP.B $04
         BCC CODE_80C53B
         RTL
-; [Interrupt] Acknowledges IRQ by reading $4211. Entry: called in IRQ handler. Clears IRQ flag.
-acknowledgeIRQ:
+; Zero-fill $7F:B000, 2048 bytes (0x400 words). RTS.
+clearTileBuffer: ; $00C570
         REP #$20
         LDX.W #$0000
         LDA.W #$0000
         LDY.W #$0400
-CODE_80C57B:
+CODE_80C57B: ; $00C57B
         STA.L $7FB000,X
         INX
         INX
         DEY
         BNE CODE_80C57B
         RTS
-; [Interrupt] Sets up NMI handler. Entry: X=handler address. Stores vector at $00FFEA.
-setupNMI:
+; Read 4-byte record at A*4 from [$12] table, advance [$12/$14] pointer. RTS.
+readIndexedTableEntry: ; $00C585
         REP #$20
         PHY
         ASL A
@@ -6727,16 +7104,16 @@ setupNMI:
         BCC CODE_80C5A3
         ORA.W #$8000
         INC.B $14
-CODE_80C5A3:
+CODE_80C5A3: ; $00C5A3
         STA.B $12
         PLY
         RTS
-; [Interrupt] Enables interrupts (NMI/IRQ). Entry: A=interrupt mask. Writes to $4200.
-enableInterrupts:
+; Extract packed 5-bit fields from [$12] data -> $7F:E800 entries (stride 8). Calls setupHdmaScroll.
+unpackTileProperties: ; $00C5A7
         REP #$20
-        JSR.W setupWRAM
+        JSR.W setupHdmaScroll
         LDY.W #$0000
-CODE_80C5AF:
+CODE_80C5AF: ; $00C5AF
         LDA.B [$12],Y
         STA.B $06
         INY
@@ -6775,31 +7152,31 @@ CODE_80C5AF:
         BCC CODE_80C5FC
         JSL.L setupTilemap
         BRA CODE_80C5FF
-CODE_80C5FC:
+CODE_80C5FC: ; $00C5FC
         JSR.W setupCGRAM
-CODE_80C5FF:
+CODE_80C5FF: ; $00C5FF
         RTL
-; [Interrupt] Disables all interrupts. Entry: writes $00 to $4200.
-disableInterrupts:
+; Save $00/$02 -> $22/$24, iterate calling processScrollEntries ($C6D6).
+processScrollLoop: ; $00C600
         REP #$20
         LDA.B $00
         STA.B $22
         LDA.B $02
         STA.B $24
-CODE_80C60A:
+CODE_80C60A: ; $00C60A
         LDA.B $22
         STA.B $00
         LDA.B $24
         STA.B $02
-        JSR.W setupVRAM
+        JSR.W processScrollEntries
         BEQ CODE_80C61C
         JSR.W setupCGRAM
         BRA CODE_80C60A
-CODE_80C61C:
+CODE_80C61C: ; $00C61C
         JSR.W setupCGRAM
         RTL
-; [Memory] Sets up WRAM access via $2180. Entry: A=bank, X=address. Configures $2181-$2183.
-setupWRAM:
+; HDMA scroll setup: params to $04/$06.
+setupHdmaScroll: ; $00C620
         REP #$20
         LDA.W #$0004
         STA.B $06
@@ -6809,7 +7186,7 @@ setupWRAM:
         CMP.B #$80
         BCS CODE_80C633
         STZ.B $06
-CODE_80C633:
+CODE_80C633: ; $00C633
         AND.B #$7F
         STA.B $05
         REP #$20
@@ -6826,8 +7203,8 @@ CODE_80C633:
         STA.B $04
         RTS
         db $20,$4D,$C6,$6B
-; [Memory] Copies data to WRAM via $2180. Entry: $12/$14=source, A=length. Uses loop with $2180 writes.
-copyToWRAM:
+; Sets up HDMA/DMA parameters.
+setupHdmaParams: ; $00C64D
         SEP #$20
         STA.B $05
         STZ.B $04
@@ -6839,8 +7216,8 @@ copyToWRAM:
         LDY.W #$0010
         LDA.W #$0DC0
         STA.B $12
-CODE_80C663:
-        JSR.W readFromWRAM
+CODE_80C663: ; $00C663
+        JSR.W lookupMapTileType
         STA.B ($12)
         INC.B $12
         INC.B $12
@@ -6864,8 +7241,8 @@ CODE_80C663:
         db $C2,$20,$20,$20,$C6,$A4,$04,$BF,$04,$E8,$7F,$9F,$00,$E8,$7F,$BF
         db $06,$E8,$7F,$9F,$02,$E8,$7F,$8A,$18,$69,$08,$00,$AA,$88,$D0,$E7
         db $60
-; [Memory] Reads data from WRAM via $2180. Entry: $12/$14=dest, A=length. Uses loop with $2180 reads.
-readFromWRAM:
+; Reads $7F:E800+X, extracts tile type AND $001F, shifts left 5.
+lookupMapTileType: ; $00C6A7
         REP #$20
         LDA.L $7FE800,X
         AND.W #$001F
@@ -6891,17 +7268,17 @@ readFromWRAM:
         REP #$20
         LDA.B $06
         RTS
-; [VRAM] Sets up VRAM address for access. Entry: A=VRAM address. Writes to $2116-$2117.
-setupVRAM:
+; Call setupHdmaScroll, loop: call interpolateScrollValue 3x per entry, stride 8+6. Returns $096E.
+processScrollEntries: ; $00C6D6
         REP #$20
-        JSR.W setupWRAM
+        JSR.W setupHdmaScroll
         STZ.W $096E
-CODE_80C6DE:
-        JSR.W uploadSPCProgram
+CODE_80C6DE: ; $00C6DE
+        JSR.W interpolateScrollValue
         INX
-        JSR.W uploadSPCProgram
+        JSR.W interpolateScrollValue
         INX
-        JSR.W uploadSPCProgram
+        JSR.W interpolateScrollValue
         TXA
         CLC
         ADC.W #$0006
@@ -6912,21 +7289,21 @@ CODE_80C6DE:
         LDA.W $096E
         RTS
 ; [Palette] Sets up CGRAM address for access. Entry: A=CGRAM address. Writes to $2121.
-setupCGRAM:
+setupCGRAM: ; $00C6F9
         REP #$20
         LDY.B $02
-CODE_80C6FD:
+CODE_80C6FD: ; $00C6FD
         PHY
         LDA.B $00
-        JSR.W copyToWRAM
-        JSL.L updateShadowEffect
+        JSR.W setupHdmaParams
+        JSL.L waitForModeSync
         PLY
         INC.B $00
         DEY
         BNE CODE_80C6FD
         RTS
-; [Music] Uploads SPC700 sound program to APU. Entry: $12/$14=SPC program data. Follows SPC boot protocol.
-uploadSPCProgram:
+; Step $7F:E800,X toward $7F:E804,X by +/-1 per call. 8-bit comparison with INC/DEC.
+interpolateScrollValue: ; $00C70E
         PHP
         SEP #$20
         LDA.L $7FE800,X
@@ -6935,12 +7312,12 @@ uploadSPCProgram:
         BCS CODE_80C720
         INC A
         BRA CODE_80C721
-CODE_80C720:
+CODE_80C720: ; $00C720
         DEC A
-CODE_80C721:
+CODE_80C721: ; $00C721
         STA.L $7FE800,X
         INC.W $096E
-CODE_80C728:
+CODE_80C728: ; $00C728
         PLP
         RTS
         db $00,$00,$42,$08,$84,$10,$C6,$18,$08,$21,$4A,$29,$8C,$31,$CE,$39
@@ -6961,35 +7338,35 @@ CODE_80C728:
         db $88,$03,$1A,$3E,$82,$00,$00,$01,$00,$00,$00,$00,$01,$00,$00,$01
         db $00
 ; [Music] Sends command to SPC700. Entry: A=command, X=data1, Y=data2. Writes to $2140-$2143.
-sendSPCCommand:
+sendSPCCommand: ; $00C82B
         REP #$20
         LDY.W #$C7AB
         CMP.W #$0019
         BNE CODE_80C838
         LDY.W #$C773
-CODE_80C838:
+CODE_80C838: ; $00C838
         CMP.W #$000F
         BNE CODE_80C847
         LDA.W #$0001
         JSL.L handleCutscene
         LDY.W #$C793
-CODE_80C847:
+CODE_80C847: ; $00C847
         CMP.W #$0037
         BNE CODE_80C84F
         db $A0,$CB,$C7
-CODE_80C84F:
+CODE_80C84F: ; $00C84F
         CMP.W #$008E
         BNE CODE_80C857
         LDY.W #$C7E3
-CODE_80C857:
+CODE_80C857: ; $00C857
         CMP.W #$0032
         BNE CODE_80C85F
         LDY.W #$C7FB
-CODE_80C85F:
+CODE_80C85F: ; $00C85F
         CMP.W #$00B6
         BNE CODE_80C867
         LDY.W #$C813
-CODE_80C867:
+CODE_80C867: ; $00C867
         STY.W $096E
         RTL
         db $C2,$20,$9C,$10,$0A,$9C,$06,$0A,$9C,$1E,$0A,$A9,$02,$00,$8D,$FC
@@ -6997,31 +7374,32 @@ CODE_80C867:
         db $A9,$1D,$00,$85,$28,$20,$33,$C2,$A7,$22,$29,$FF,$00,$E6,$22,$20
         db $56,$C1,$E8,$E8,$C6,$28,$D0,$F0,$A0,$10,$00,$5A,$E2,$20,$E6,$69
         db $E6,$57,$C2,$20,$A9,$05,$00,$22,$DD,$E3,$00,$7A,$88,$D0,$EC,$6B
-; [Music] Checks if SPC700 is busy processing. Entry: reads $2140. Returns Z clear if busy.
-checkSPCBusy:
+; [OAM] Main sprite render pipeline. Calls: clearOamBuffer, clearOamExtTable, buildEntityOam, finalizeOam, setupLargeSprite.
+renderSprites: ; $00C8BB
         REP #$20
-        JSL.L cheatTeleport
-        JSR.W waitSPCReady
-        JSR.W spawnEntity
-        JSR.W processEntityQueue
-        JSR.W despawnEntity
+        JSL.L processScrollDirtyWrapper
+        JSR.W clearOamBuffer
+        JSR.W clearOamExtTable
+        JSR.W buildEntityOam
+        JSR.W finalizeOam
         JSL.L setupLargeSprite
         RTL
-; [Music] Waits for SPC700 to be ready. Entry: loops until $2140 returns $AA.
-waitSPCReady:
+; [OAM] Fills OAM buffer $0100 with $E0FF (offscreen Y). 32 entries, stride 4.
+clearOamBuffer: ; $00C8D2
         LDA.W #$E0FF
         LDX.W #$0000
-CODE_80C8D8:
+; [OAM] Fill loop: STA $0100,X / INX*4 / CPX $80 / BNE
+clearOamBuffer_Loop: ; $00C8D8
         STA.W $0100,X
         INX
         INX
         INX
         INX
         CPX.W #$0080
-        BNE CODE_80C8D8
+        BNE clearOamBuffer_Loop
         RTS
-; [Entity] Processes entity update queue. Entry: scans entity list at $1800, updates positions, animations.
-processEntityQueue:
+; [OAM] Converts entity table at $1800 (stride $10, max $20) to OAM entries at $1A00. Handles position lerp, screen transform, tile/palette setup.
+buildEntityOam: ; $00C8E5
         REP #$20
         LDA.B $80
         AND.W #$00FF
@@ -7036,129 +7414,148 @@ processEntityQueue:
         LDA.W $0000,X
         STA.B $0A
         AND.W #$00FF
-        BEQ CODE_80C91D
+        BEQ oam_SkipEmpty
         STZ.B $06
         LDA.W $0008,X
-        BPL CODE_80C914
+        BPL oam_StoreTargetY
         AND.W #$7FFF
         STA.B $06
-CODE_80C914:
+; [OAM] Store extracted target Y offset (bit15 cleared)
+oam_StoreTargetY: ; $00C914
         LDA.B $0A
         AND.W #$0800
-        BNE CODE_80C920
-        BRA CODE_80C98E
-CODE_80C91D:
+        BNE oam_BeginMove
+        BRA oam_LoadTileData
+; [OAM] Entity slot empty (type=0), skip to next
+oam_SkipEmpty: ; $00C91D
         JMP.W $CDB4
-CODE_80C920:
+; [OAM] Begin entity position lerp toward target X/Y
+oam_BeginMove: ; $00C920
         PHY
         LDY.W #$0000
         LDA.W $0000,X
         AND.W #$0007
         STA.B $00
-        BNE CODE_80C942
+        BNE oam_CalcMoveSpeed
         LDA.B $72
         AND.W #$00FF
         CMP.W #$0004
-        BNE CODE_80C942
+        BNE oam_CalcMoveSpeed
         db $A5,$54,$29,$03,$00,$F0,$03,$7A,$80,$4C
-CODE_80C942:
+; [OAM] Compute movement speed from entity type low 3 bits + 1
+oam_CalcMoveSpeed: ; $00C942
         INC.B $00
         LDA.W $0002,X
         CMP.W $0006,X
-        BEQ CODE_80C962
-        BCS CODE_80C959
+        BEQ oam_CheckYMove
+        BCS oam_MoveXNeg
         CLC
         ADC.B $00
         STA.W $0002,X
         LDY.W #$1600
-        BRA CODE_80C962
-CODE_80C959:
+        BRA oam_CheckYMove
+; [OAM] Entity X > target X, subtract speed
+oam_MoveXNeg: ; $00C959
         SEC
         SBC.B $00
         STA.W $0002,X
         LDY.W #$1400
-CODE_80C962:
+; [OAM] Compare entity Y to target Y for movement
+oam_CheckYMove: ; $00C962
         LDA.W $0004,X
         CMP.W $0008,X
-        BEQ CODE_80C980
-        BCS CODE_80C977
+        BEQ oam_CheckArrived
+        BCS oam_MoveYNeg
         CLC
         ADC.B $00
         STA.W $0004,X
         LDY.W #$1000
-        BRA CODE_80C980
-CODE_80C977:
+        BRA oam_CheckArrived
+; [OAM] Entity Y > target Y, subtract speed
+oam_MoveYNeg: ; $00C977
         SEC
         SBC.B $00
         STA.W $0004,X
         LDY.W #$1200
-CODE_80C980:
+; [OAM] Entity reached target — clear movement flags (bits 0x0807)
+oam_CheckArrived: ; $00C980
         TYA
-        BNE CODE_80C98D
+        BNE oam_MoveDone
         LDA.W #$0807
         TRB.B $0A
         LDA.B $0A
         STA.W $0000,X
-CODE_80C98D:
+; [OAM] Movement calculation complete, restore Y register
+oam_MoveDone: ; $00C98D
         PLY
-CODE_80C98E:
+; [OAM] Load tile data ptr (entity+0A) and attributes (entity+0E) to DP
+oam_LoadTileData: ; $00C98E
         LDA.W $000A,X
         STA.B $04
         LDA.W $000E,X
         STA.B $0C
         LDA.W $000C,X
-        BNE CODE_80C9A0
+        BNE oam_ReadAnimCmd
         JMP.W $CA2C
-CODE_80C9A0:
+; [OAM] Read animation command byte from tile data stream
+oam_ReadAnimCmd: ; $00C9A0
         STA.B $00
-CODE_80C9A2:
+; [OAM] Animation command processing loop
+oam_AnimCmdLoop: ; $00C9A2
         LDA.B ($00)
         AND.W #$00FF
         STA.B $02
         CMP.W #$0080
-        BCC CODE_80C9DC
-        BNE CODE_80C9B6
+        BCC oam_CheckFlipX
+        BNE oam_AnimCmd_NewPtr
         INC.B $00
         LDA.B ($00)
-        BRA CODE_80C9A0
-CODE_80C9B6:
+        BRA oam_ReadAnimCmd
+; [OAM] Cmd $FF: replace tile data pointer from stream
+oam_AnimCmd_NewPtr: ; $00C9B6
         CMP.W #$00FF
-        BNE CODE_80C9C8
+        BNE oam_AnimCmd_Cond
         INC.B $00
         LDA.B ($00)
         STA.W $000A,X
         INC.B $00
         INC.B $00
-        BRA CODE_80C9A2
-CODE_80C9C8:
+        BRA oam_AnimCmdLoop
+; [OAM] Cmd $80+: conditional frame display based on $54 flags
+oam_AnimCmd_Cond: ; $00C9C8
         AND.W #$007F
         AND.B $54
-        BNE CODE_80C9D3
+        BNE oam_AnimCmd_Reread
         INC.B $00
-        BRA CODE_80C9A2
-CODE_80C9D3:
+        BRA oam_AnimCmdLoop
+; [OAM] Re-read command byte after conditional check
+oam_AnimCmd_Reread: ; $00C9D3
         DEC.B $00
         LDA.B ($00)
         AND.W #$00FF
         STA.B $02
-CODE_80C9DC:
+; [OAM] Bit6: toggle entity horizontal flip flag
+oam_CheckFlipX: ; $00C9DC
         INC.B $00
         AND.W #$0040
-        BEQ CODE_80C9EC
+        BEQ oam_CheckCountdown
         db $BD,$00,$00,$49,$00,$80,$9D,$00,$00
-CODE_80C9EC:
+; [OAM] Bit5: decrement entity Y, increment attributes (animation timer)
+oam_CheckCountdown: ; $00C9EC
         LDA.B $02
         AND.W #$0020
-        BEQ CODE_80CA06
+        BEQ oam_ApplyXOffset
         db $BD,$04,$00,$3A,$D0,$03,$9D,$00,$00,$9D,$04,$00,$BD,$0E,$00,$1A
         db $9D,$0E,$00
-CODE_80CA06:
+; [OAM] Apply tile X position offset to entity X coordinate
+oam_ApplyXOffset: ; $00CA06
         LDA.B $02
         AND.W #$001F
         CMP.W #$0010
-        BCC CODE_80CA19
+        BCC oam_XOffsetPositive
         db $29,$0F,$00,$3A,$49,$FF,$FF,$80,$07
-CODE_80CA19:
+; [OAM] Positive X offset path — sets bit $4000 in tile ptr
+oam_XOffsetPositive: ; $00CA19
         PHA
         LDA.W #$4000
         TSB.B $04
@@ -7170,54 +7567,60 @@ CODE_80CA19:
         STA.W $000C,X
         LDA.B $0A
         AND.W #$0100
-        BEQ CODE_80CA4C
+        BEQ oam_MultiTileSetup
         LDA.B $0A
         AND.W #$8000
-        BEQ CODE_80CA49
+        BEQ oam_JmpSingleTile
         LDA.B $54
         AND.W #$0010
-        BEQ CODE_80CA49
+        BEQ oam_JmpSingleTile
         LDA.B $04
         CLC
         ADC.W #$0002
         STA.B $04
-CODE_80CA49:
+; [OAM] Jump to single-tile OAM path at $CD20
+oam_JmpSingleTile: ; $00CA49
         JMP.W $CD20
-CODE_80CA4C:
+; [OAM] Begin 2x2 multi-tile sprite layout setup
+oam_MultiTileSetup: ; $00CA4C
         LDA.B $0A
         AND.W #$C000
-        BEQ CODE_80CA62
+        BEQ oam_LoadTilePtr
         LDA.B $54
         AND.W #$0010
-        BEQ CODE_80CA62
+        BEQ oam_LoadTilePtr
         LDA.B $04
         CLC
         ADC.W #$00C0
         STA.B $04
-CODE_80CA62:
+; [OAM] Load tile data pointer for layout computation
+oam_LoadTilePtr: ; $00CA62
         LDA.B $04
         AND.W #$4000
-        BEQ CODE_80CA6C
+        BEQ oam_CalcScreenX
         JMP.W $CBC6
-CODE_80CA6C:
+; [OAM] Convert entity X to screen-relative X (subtract camera $60)
+oam_CalcScreenX: ; $00CA6C
         LDA.W $0002,X
         SEC
         SBC.B $60
         STA.B $02
         CMP.W #$FFF8
-        BCS CODE_80CA93
+        BCS oam_LayoutWrapLeft
         CMP.W #$FFF0
-        BCS CODE_80CAB0
+        BCS oam_LayoutFarLeft
         CMP.W #$00E8
-        BCS CODE_80CA86
+        BCS oam_LayoutNearRight
         JMP.W $CB0A
-CODE_80CA86:
+; [OAM] Tile layout: X in $E8-$F7 (near right edge)
+oam_LayoutNearRight: ; $00CA86
         CMP.W #$00F8
-        BCC CODE_80CAF0
+        BCC oam_LayoutNormal
         CMP.W #$0100
-        BCC CODE_80CAD0
+        BCC oam_LayoutEdgeRight
         JMP.W $CDB4
-CODE_80CA93:
+; [OAM] Tile layout: X >= $FFF8 (wrapping from left side)
+oam_LayoutWrapLeft: ; $00CA93
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7231,8 +7634,9 @@ CODE_80CA93:
         CLC
         ADC.W #$E014
         STA.B $44
-        JMP.W CODE_80CB22
-CODE_80CAB0:
+        JMP.W oam_CalcScreenY
+; [OAM] Tile layout: X in $FFF0-$FFF7 (far left wrap)
+oam_LayoutFarLeft: ; $00CAB0
         STA.B $00
         LDA.B $04
         CLC
@@ -7248,8 +7652,9 @@ CODE_80CAB0:
         CLC
         ADC.W #$E014
         STA.B $44
-        BRA CODE_80CB22
-CODE_80CAD0:
+        BRA oam_CalcScreenY
+; [OAM] Tile layout: X in $F8-$FF (right edge)
+oam_LayoutEdgeRight: ; $00CAD0
         STA.B $00
         LDA.B $04
         CLC
@@ -7265,8 +7670,9 @@ CODE_80CAD0:
         CLC
         ADC.W #$1010
         STA.B $44
-        BRA CODE_80CB22
-CODE_80CAF0:
+        BRA oam_CalcScreenY
+; [OAM] Tile layout: X in normal visible range
+oam_LayoutNormal: ; $00CAF0
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7279,7 +7685,7 @@ CODE_80CAF0:
         CLC
         ADC.W #$1010
         STA.B $44
-        BRA CODE_80CB22
+        BRA oam_CalcScreenY
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7292,14 +7698,16 @@ CODE_80CAF0:
         CLC
         ADC.W #$0010
         STA.B $44
-CODE_80CB22:
+; [OAM] Convert entity Y to screen Y (subtract camera $1E). Check bounds.
+oam_CalcScreenY: ; $00CB22
         LDA.W $0004,X
         SEC
         SBC.B $1E
         CMP.W #$00E6
-        BCC CODE_80CB30
+        BCC oam_StoreScreenY
         JMP.W $CDB4
-CODE_80CB30:
+; [OAM] Store screen Y, add offsets, clamp to $01F4 max
+oam_StoreScreenY: ; $00CB30
         STA.B $01
         CLC
         ADC.B $06
@@ -7307,32 +7715,35 @@ CODE_80CB30:
         ADC.W #$0012
         ASL A
         CMP.W #$01F4
-        BCC CODE_80CB42
+        BCC oam_ClampY
         db $A9,$F4,$01
-CODE_80CB42:
+; [OAM] Store clamped Y position to $1A
+oam_ClampY: ; $00CB42
         STA.B $1A
         TYA
         LSR A
         STA.B $18
         LDA.B $0C
         AND.W #$000F
-        BEQ CODE_80CB68
+        BEQ oam_Palette2
         DEC A
-        BEQ CODE_80CB5E
+        BEQ oam_Palette1
         LDA.B $44
         AND.W #$1000
         ORA.W #$8BEF
         STA.B $44
-        BRA CODE_80CB68
-CODE_80CB5E:
+        BRA oam_Palette2
+; [OAM] Palette option 1: OR $C9FF into tile attributes
+oam_Palette1: ; $00CB5E
         LDA.B $44
         AND.W #$1000
         ORA.W #$C9FF
         STA.B $44
-CODE_80CB68:
+; [OAM] Palette option 2: check high nibble of entity attribs
+oam_Palette2: ; $00CB68
         LDA.B $0D
         AND.W #$000F
-        BEQ CODE_80CB7E
+        BEQ oam_WriteTilesNormal
         CLC
         ADC.W #$8981
         STA.B $48
@@ -7340,7 +7751,8 @@ CODE_80CB68:
         AND.W #$1000
         ORA.B $48
         STA.B $46
-CODE_80CB7E:
+; [OAM] Write 4 OAM tile entries to $1C00 buffer (normal orientation)
+oam_WriteTilesNormal: ; $00CB7E
         LDA.B $00
         CLC
         ADC.W #$F800
@@ -7379,19 +7791,21 @@ CODE_80CB7E:
         SBC.B $60
         STA.B $02
         CMP.W #$FFF8
-        BCS CODE_80CBED
+        BCS oam_LayoutWrapLeft_F
         CMP.W #$FFF0
-        BCS CODE_80CC0E
+        BCS oam_LayoutFarLeft_F
         CMP.W #$00E8
-        BCS CODE_80CBE0
+        BCS oam_LayoutNearRight_F
         JMP.W $CC66
-CODE_80CBE0:
+; [OAM] Flipped tile layout: X in $E8-$F7
+oam_LayoutNearRight_F: ; $00CBE0
         CMP.W #$00F8
-        BCC CODE_80CC4A
+        BCC oam_LayoutNormal_F
         CMP.W #$0100
-        BCC CODE_80CC2E
+        BCC oam_LayoutEdgeRight_F
         JMP.W $CDB4
-CODE_80CBED:
+; [OAM] Flipped tile layout: X >= $FFF8
+oam_LayoutWrapLeft_F: ; $00CBED
         STA.B $00
         LDA.B $04
         CLC
@@ -7407,8 +7821,9 @@ CODE_80CBED:
         CLC
         ADC.W #$1010
         STA.B $44
-        JMP.W CODE_80CC7E
-CODE_80CC0E:
+        JMP.W oam_CalcScreenY_F
+; [OAM] Flipped tile layout: X in $FFF0-$FFF7
+oam_LayoutFarLeft_F: ; $00CC0E
         STA.B $00
         LDA.B $04
         CLC
@@ -7424,8 +7839,9 @@ CODE_80CC0E:
         CLC
         ADC.W #$F014
         STA.B $44
-        BRA CODE_80CC7E
-CODE_80CC2E:
+        BRA oam_CalcScreenY_F
+; [OAM] Flipped tile layout: X in $F8-$FF
+oam_LayoutEdgeRight_F: ; $00CC2E
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7439,8 +7855,9 @@ CODE_80CC2E:
         CLC
         ADC.W #$E014
         STA.B $44
-        BRA CODE_80CC7E
-CODE_80CC4A:
+        BRA oam_CalcScreenY_F
+; [OAM] Flipped tile layout: normal visible X range
+oam_LayoutNormal_F: ; $00CC4A
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7454,7 +7871,7 @@ CODE_80CC4A:
         CLC
         ADC.W #$E014
         STA.B $44
-        BRA CODE_80CC7E
+        BRA oam_CalcScreenY_F
         STA.B $00
         LDA.B $04
         STA.B $40
@@ -7467,14 +7884,16 @@ CODE_80CC4A:
         CLC
         ADC.W #$0010
         STA.B $44
-CODE_80CC7E:
+; [OAM] Flipped: convert entity Y to screen Y, check bounds
+oam_CalcScreenY_F: ; $00CC7E
         LDA.W $0004,X
         SEC
         SBC.B $1E
         CMP.W #$00E6
-        BCC CODE_80CC8C
+        BCC oam_StoreScreenY_F
         JMP.W $CDB4
-CODE_80CC8C:
+; [OAM] Flipped: store screen Y with offsets and clamp
+oam_StoreScreenY_F: ; $00CC8C
         STA.B $01
         CLC
         ADC.B $06
@@ -7482,34 +7901,38 @@ CODE_80CC8C:
         ADC.W #$0012
         ASL A
         CMP.W #$01F4
-        BCC CODE_80CC9E
+        BCC oam_ClampY_F
         LDA.W #$01F4
-CODE_80CC9E:
+; [OAM] Flipped: clamp Y to $1A
+oam_ClampY_F: ; $00CC9E
         STA.B $1A
         TYA
         LSR A
         STA.B $18
         LDA.B $0C
         AND.W #$000F
-        BEQ CODE_80CCC4
+        BEQ oam_Palette2_F
         DEC A
-        BEQ CODE_80CCBA
+        BEQ oam_Palette1_F
         LDA.B $44
         AND.W #$1000
         ORA.W #$8BEF
         STA.B $44
-        BRA CODE_80CCC4
-CODE_80CCBA:
+        BRA oam_Palette2_F
+; [OAM] Flipped palette 1: OR $C9FF
+oam_Palette1_F: ; $00CCBA
         LDA.B $44
         AND.W #$1000
         ORA.W #$C9FF
         STA.B $44
-CODE_80CCC4:
+; [OAM] Flipped palette 2: high nibble check
+oam_Palette2_F: ; $00CCC4
         LDA.B $0D
         AND.W #$000F
-        BEQ CODE_80CCDA
+        BEQ oam_WriteTilesFlipped
         db $18,$69,$81,$89,$85,$48,$A5,$46,$29,$00,$10,$05,$48,$85,$46
-CODE_80CCDA:
+; [OAM] Write 4 OAM tile entries to $1C00 buffer (flipped orientation)
+oam_WriteTilesFlipped: ; $00CCDA
         LDA.B $00
         STA.W $1C08,Y
         CLC
@@ -7548,20 +7971,22 @@ CODE_80CCDA:
         CMP.W #$FFF0
         BCS CODE_80CD33
         CMP.W #$0100
-        BCC CODE_80CD3C
+        BCC oam_SingleTileVisible
         db $4C,$A2,$CD
-CODE_80CD33:
+CODE_80CD33: ; $00CD33
         db $85,$00,$A9,$00,$10,$04,$04,$80,$02
-CODE_80CD3C:
+; [OAM] Single-tile OAM: X in visible range, compute position
+oam_SingleTileVisible: ; $00CD3C
         STA.B $00
         LDA.W $0004,X
         SEC
         SBC.B $1E
         DEC A
         CMP.W #$00E6
-        BCC CODE_80CD4D
+        BCC oam_SingleTileCalcY
         db $4C,$A2,$CD
-CODE_80CD4D:
+; [OAM] Single-tile: compute screen Y from entity Y
+oam_SingleTileCalcY: ; $00CD4D
         STA.B $01
         CLC
         ADC.B $0C
@@ -7569,9 +7994,10 @@ CODE_80CD4D:
         ADC.W #$0010
         ASL A
         CMP.W #$01F4
-        BCC CODE_80CD5F
+        BCC oam_SingleTileClampY
         db $A9,$F4,$01
-CODE_80CD5F:
+; [OAM] Single-tile: clamp Y, write OAM entry
+oam_SingleTileClampY: ; $00CD5F
         STA.B $1A
         TYA
         LSR A
@@ -7590,24 +8016,27 @@ CODE_80CD5F:
         REP #$20
         PHX
         LDX.B $1A
-        BRA CODE_80CD89
+        BRA oam_FindFreeSlot
         STA.B $16
         PHX
         LDX.B $1A
-CODE_80CD89:
+; [OAM] Search $1A00 buffer for empty OAM slot (byte=0)
+oam_FindFreeSlot: ; $00CD89
         LDA.W $1A00,X
         AND.W #$00FF
-        BEQ CODE_80CD9C
+        BEQ oam_WriteSlot
         INX
         INX
         CPX.W #$0200
-        BNE CODE_80CD89
+        BNE oam_FindFreeSlot
         db $FA,$4C,$A2,$CD
-CODE_80CD9C:
+; [OAM] Write tile+attrib data to found OAM slot
+oam_WriteSlot: ; $00CD9C
         LDA.B $17
         STA.W $1A00,X
         PLX
-CODE_80CDA2:
+; [OAM] Advance X by $10 to next entity slot, loop or exit
+oam_NextEntity: ; $00CDA2
         TXA
         CLC
         ADC.W #$0010
@@ -7615,27 +8044,29 @@ CODE_80CDA2:
         LDA.B $0E
         INC A
         CMP.W #$0020
-        BEQ CODE_80CDB3
+        BEQ oam_AllDone
         JMP.W $C8FC
-CODE_80CDB3:
+; [OAM] All 32 entities processed, RTS
+oam_AllDone: ; $00CDB3
         RTS
-        BRA CODE_80CDA2
-; [Entity] Spawns new entity in world. Entry: A=entity type, $00/$02=position. Finds free slot in entity list.
-spawnEntity:
+        BRA oam_NextEntity
+; [OAM] Zeros OAM extended attribute table $1A00-$1C00. Called before buildEntityOam.
+clearOamExtTable: ; $00CDB6
         PHP
         SEP #$20
         LDY.W #$0200
         LDA.B #$00
-CODE_80CDBE:
+; [OAM] Zero loop: STA $19FE,Y / DEY / BNE
+clearOamExtTable_Loop: ; $00CDBE
         STA.W $19FE,Y
         DEY
         DEY
-        BNE CODE_80CDBE
+        BNE clearOamExtTable_Loop
         STA.W $1A00
         PLP
         RTS
-; [Entity] Removes entity from world. Entry: A=entity ID. Clears entity slot in list.
-despawnEntity:
+; [OAM] Post-OAM processing after entity sprites are built.
+finalizeOam: ; $00CDCA
         PHP
         REP #$20
         LDA.W #$0308
@@ -7650,15 +8081,17 @@ despawnEntity:
         STA.B $02
         LDY.W #$0200
         LDX.W #$0080
-CODE_80CDE8:
+; [OAM] Main processing loop for OAM finalization
+finalizeOam_Loop: ; $00CDE8
         LDA.W $19FE,Y
-        BNE CODE_80CDF6
+        BNE finalizeOam_Entry
         STZ.B $06
         DEY
         DEY
-        BNE CODE_80CDE8
+        BNE finalizeOam_Loop
         JMP.W CODE_80CE81
-CODE_80CDF6:
+; [OAM] Process non-zero OAM entry
+finalizeOam_Entry: ; $00CDF6
         PHY
         PHA
         STZ.B $13
@@ -7672,9 +8105,9 @@ CODE_80CDF6:
         CMP.B #$09
         BCC CODE_80CE1B
         db $A5,$08,$D0,$0B,$A5,$0A,$CD,$50,$0A,$90,$04,$F0,$02,$85,$08
-CODE_80CE1B:
+CODE_80CE1B: ; $00CE1B
         PLA
-CODE_80CE1C:
+CODE_80CE1C: ; $00CE1C
         PHA
         LDA.W $1C00,Y
         STA.W $0100,X
@@ -7689,20 +8122,20 @@ CODE_80CE1C:
         BEQ CODE_80CE3E
         LDA.B $00
         TSB.B $02
-CODE_80CE3E:
+CODE_80CE3E: ; $00CE3E
         ROL.B $00
         LDA.B #$80
         TRB.B $04
         BNE CODE_80CE4A
         LDA.B #$10
         TSB.B $04
-CODE_80CE4A:
+CODE_80CE4A: ; $00CE4A
         LDA.B #$20
         TSB.B $04
         BNE CODE_80CE54
         LDA.B $00
         TRB.B $02
-CODE_80CE54:
+CODE_80CE54: ; $00CE54
         ROL.B $00
         BCC CODE_80CE64
         ROL.B $00
@@ -7711,7 +8144,7 @@ CODE_80CE54:
         INC.B $16
         LDA.B #$AA
         STA.B $02
-CODE_80CE64:
+CODE_80CE64: ; $00CE64
         LDA.B $04
         STA.W $0103,X
         INX
@@ -7731,18 +8164,18 @@ CODE_80CE64:
         DEY
         DEY
         BEQ CODE_80CE81
-        JMP.W CODE_80CDE8
-CODE_80CE81:
+        JMP.W finalizeOam_Loop
+CODE_80CE81: ; $00CE81
         LDA.B $02
         STA.B ($16)
         LDA.B $08
         BEQ CODE_80CE8C
         db $18,$69,$40
-CODE_80CE8C:
+CODE_80CE8C: ; $00CE8C
         STA.W $0A50
         REP #$20
         LDA.W #$E0FF
-CODE_80CE94:
+CODE_80CE94: ; $00CE94
         STA.W $0100,X
         INX
         INX
@@ -7766,56 +8199,56 @@ CODE_80CE94:
         db $42,$CF,$FF,$80,$A3,$00,$87,$FF,$85,$A3,$00,$87,$FF,$8A,$A3,$00
         db $87,$FF,$E0,$A3,$00,$87,$80,$54,$CF
 ; [AI] Updates AI for all entities. Entry: calls entity-specific AI routines based on type.
-updateEntityAI:
+updateEntityAI: ; $00CF6B
         REP #$20
         CMP.W #$0000
         BNE CODE_80CF75
         JMP.W $D0E8
-CODE_80CF75:
+CODE_80CF75: ; $00CF75
         CMP.W #$0001
         BNE CODE_80CF7D
         JMP.W $D0D4
-CODE_80CF7D:
+CODE_80CF7D: ; $00CF7D
         CMP.W #$0002
         BNE CODE_80CF85
         JMP.W $D1A6
-CODE_80CF85:
+CODE_80CF85: ; $00CF85
         CMP.W #$0003
         BNE CODE_80CF8D
         JMP.W $D20D
-CODE_80CF8D:
+CODE_80CF8D: ; $00CF8D
         CMP.W #$0004
         BNE CODE_80CF95
         db $4C,$26,$D2
-CODE_80CF95:
+CODE_80CF95: ; $00CF95
         CMP.W #$0005
         BNE CODE_80CF9D
         db $4C,$2E,$D3
-CODE_80CF9D:
+CODE_80CF9D: ; $00CF9D
         CMP.W #$0006
         BNE CODE_80CFA5
         db $4C,$DD,$D2
-CODE_80CFA5:
+CODE_80CFA5: ; $00CFA5
         CMP.W #$0007
         BNE CODE_80CFAD
         JMP.W $D3C5
-CODE_80CFAD:
+CODE_80CFAD: ; $00CFAD
         CMP.W #$0008
         BNE CODE_80CFB5
         db $4C,$F8,$D2
-CODE_80CFB5:
+CODE_80CFB5: ; $00CFB5
         CMP.W #$0009
         BNE CODE_80CFBD
         db $4C,$D8,$D3
-CODE_80CFBD:
+CODE_80CFBD: ; $00CFBD
         CMP.W #$000A
         BNE CODE_80CFC5
         JMP.W $D425
-CODE_80CFC5:
+CODE_80CFC5: ; $00CFC5
         STZ.W $0A7B
         RTL
 ; [Collision] Checks collisions between entities. Entry: scans entity list, tests bounding boxes.
-checkEntityCollision:
+checkEntityCollision: ; $00CFC9
         PHP
         SEP #$20
         LDA.W $0A5D
@@ -7847,7 +8280,7 @@ checkEntityCollision:
         STA.B $22
         BRA CODE_80D027
         db $E2,$20
-CODE_80D00A:
+CODE_80D00A: ; $00D00A
         LDA.W $0A65
         STA.W $4202
         LDA.B $00
@@ -7862,7 +8295,7 @@ CODE_80D00A:
         CLC
         ADC.W $0A61
         STA.B $22
-CODE_80D027:
+CODE_80D027: ; $00D027
         SEP #$20
         LDA.W $0A68
         BEQ CODE_80D056
@@ -7886,7 +8319,7 @@ CODE_80D027:
         STA.B $24
         BRA CODE_80D073
         db $E2,$20
-CODE_80D056:
+CODE_80D056: ; $00D056
         LDA.W $0A67
         STA.W $4202
         LDA.B $00
@@ -7901,7 +8334,7 @@ CODE_80D056:
         CLC
         ADC.W $0A63
         STA.B $24
-CODE_80D073:
+CODE_80D073: ; $00D073
         REP #$20
         LDA.W $0A5D
         CLC
@@ -7918,7 +8351,7 @@ CODE_80D073:
         ADC.W $0A67
         STA.B $24
         STZ.W $0A57
-CODE_80D099:
+CODE_80D099: ; $00D099
         LDA.W $0A69
         BEQ CODE_80D0D2
         DEC.W $0A6D
@@ -7935,9 +8368,9 @@ CODE_80D099:
         STA.W $0A6D
         BNE CODE_80D0C0
         STZ.W $0A69
-CODE_80D0C0:
+CODE_80D0C0: ; $00D0C0
         STZ.W $0A6B
-CODE_80D0C3:
+CODE_80D0C3: ; $00D0C3
         LDA.W $0A6B
         LSR A
         LSR A
@@ -7947,12 +8380,12 @@ CODE_80D0C3:
         SEC
         SBC.B $00
         STA.B $24
-CODE_80D0D2:
+CODE_80D0D2: ; $00D0D2
         PLP
         RTL
         REP #$20
         LDX.W #$0000
-CODE_80D0D9:
+CODE_80D0D9: ; $00D0D9
         LDA.L $7EE600,X
         STA.W $1400,X
         INX
@@ -7962,7 +8395,7 @@ CODE_80D0D9:
         RTL
         REP #$20
         LDX.W #$0000
-CODE_80D0ED:
+CODE_80D0ED: ; $00D0ED
         LDA.W $1400,X
         STA.L $7EE600,X
         INX
@@ -7971,7 +8404,7 @@ CODE_80D0ED:
         BNE CODE_80D0ED
         RTL
 ; [Physics] Handles damage between entities. Entry: A=attacker ID, X=defender ID. Applies damage, knockback.
-handleEntityDamage:
+handleEntityDamage: ; $00D0FC
         PHX
         STA.B $06
         LDA.B $02
@@ -7979,7 +8412,7 @@ handleEntityDamage:
         BEQ CODE_80D10B
         LDA.W #$4000
         TSB.B $06
-CODE_80D10B:
+CODE_80D10B: ; $00D10B
         LDA.B $02
         AND.W #$FB00
         EOR.W #$80F0
@@ -8009,7 +8442,7 @@ CODE_80D10B:
         db $00,$00,$00,$00,$01,$01,$00,$00,$00,$01,$01,$00,$00,$00,$00,$00
         db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
         LDX.W #$0000
-CODE_80D1A9:
+CODE_80D1A9: ; $00D1A9
         STZ.W $1400,X
         INX
         INX
@@ -8017,7 +8450,7 @@ CODE_80D1A9:
         BCC CODE_80D1A9
         LDX.W #$0000
         LDY.W #$0008
-CODE_80D1B9:
+CODE_80D1B9: ; $00D1B9
         SEP #$20
         LDA.B [$85]
         STA.W $1403,X
@@ -8033,7 +8466,7 @@ CODE_80D1B9:
         BNE CODE_80D1B9
         LDX.W #$0000
         LDY.W #$0008
-CODE_80D1D9:
+CODE_80D1D9: ; $00D1D9
         SEP #$20
         LDA.B [$85]
         STA.L $7FC028,X
@@ -8048,7 +8481,7 @@ CODE_80D1D9:
         DEY
         BNE CODE_80D1D9
         LDY.W #$000C
-CODE_80D1F8:
+CODE_80D1F8: ; $00D1F8
         LDA.W #$0000
         STA.L $7FC028,X
         STA.L $7FC029,X
@@ -8114,7 +8547,7 @@ CODE_80D1F8:
         STA.B $12
         LDX.W #$1800
         LDY.W #$1000
-        JSL.L updateWeatherParticles
+        JSL.L dmaToVRAMGeneric
         LDA.W #$0003
         STA.B $14
         LDA.W #$A4F2
@@ -8137,8 +8570,8 @@ CODE_80D1F8:
         REP #$30
         JSL.L systemInit
         db $4C,$62,$D4
-; [Camera] Updates camera to follow target entity. Entry: A=target entity ID. Smooth scrolling with bounds.
-updateCameraFollow:
+; NMI body: read $4210, dispatch by $10 mode. Mode 0: OAM DMA $0100->$2102, screen brightness $58->$2100.
+vblankProcess: ; $00D469
         PHP
         REP #$30
         PHA
@@ -8151,9 +8584,9 @@ updateCameraFollow:
         CMP.B #$02
         BCS CODE_80D47F
         JMP.W CODE_80D534
-CODE_80D47F:
+CODE_80D47F: ; $00D47F
         JMP.W CODE_80D77A
-CODE_80D482:
+CODE_80D482: ; $00D482
         INC.B $4A
         LDA.B $58
         STA.W $2100
@@ -8200,7 +8633,7 @@ CODE_80D482:
         LDA.B #$04
         STA.W $420B
         STZ.W $05F5
-CODE_80D4F9:
+CODE_80D4F9: ; $00D4F9
         LDA.B $5E
         BEQ CODE_80D51D
         INC A
@@ -8209,7 +8642,7 @@ CODE_80D4F9:
         STA.W $2131
         STZ.B $5E
         BRA CODE_80D51D
-CODE_80D509:
+CODE_80D509: ; $00D509
         STA.W $4355
         LDA.B $5F
         STA.W $2121
@@ -8218,21 +8651,21 @@ CODE_80D509:
         LDA.B #$20
         STA.W $420B
         STZ.B $5E
-CODE_80D51D:
+CODE_80D51D: ; $00D51D
         LDA.B $57
         BEQ CODE_80D534
         INC A
         BEQ CODE_80D52C
         INC A
         BEQ CODE_80D531
-        JSR.W updateParticleSystem
+        JSR.W dmaTextTileToVRAM
         BRA CODE_80D534
-CODE_80D52C:
-        JSR.W drawParticles
+CODE_80D52C: ; $00D52C
+        JSR.W dmaOverlayToVRAM
         BRA CODE_80D534
-CODE_80D531:
-        JSR.W spawnParticle
-CODE_80D534:
+CODE_80D531: ; $00D531
+        JSR.W dmaTilemapToVRAM
+CODE_80D534: ; $00D534
         LDA.B $6B
         STA.W $210F
         LDA.B $6C
@@ -8268,7 +8701,7 @@ CODE_80D534:
         ADC.B $73
         STA.W $210B
         BRA CODE_80D5B3
-CODE_80D589:
+CODE_80D589: ; $00D589
         LDA.B $60
         STA.W $210D
         STZ.W $210D
@@ -8285,7 +8718,7 @@ CODE_80D589:
         STA.W $212C
         LDA.B $75
         STA.W $212D
-CODE_80D5B3:
+CODE_80D5B3: ; $00D5B3
         LDA.B $58
         CMP.B #$20
         BCC CODE_80D5DB
@@ -8294,24 +8727,24 @@ CODE_80D5B3:
         LDA.B $54
         AND.B $59
         BNE CODE_80D5DB
-CODE_80D5C3:
+CODE_80D5C3: ; $00D5C3
         LDA.B $58
         CMP.B #$40
         BCC CODE_80D5CC
         INC A
         BRA CODE_80D5CD
-CODE_80D5CC:
+CODE_80D5CC: ; $00D5CC
         DEC A
-CODE_80D5CD:
+CODE_80D5CD: ; $00D5CD
         STA.B $58
         AND.B #$0F
         BEQ CODE_80D5D9
         CMP.B #$0F
         BEQ CODE_80D5D9
         BRA CODE_80D5DB
-CODE_80D5D9:
+CODE_80D5D9: ; $00D5D9
         STA.B $58
-CODE_80D5DB:
+CODE_80D5DB: ; $00D5DB
         LDA.B $84
         STA.W $420C
         LDA.B $72
@@ -8322,9 +8755,9 @@ CODE_80D5DB:
         BNE CODE_80D607
         db $A5,$54,$29,$0F,$D0,$27,$A5,$71,$1A,$29,$0F,$C9,$03,$90,$02,$A9
         db $00,$85,$71,$80,$18
-CODE_80D601:
+CODE_80D601: ; $00D601
         db $A5,$54,$29,$03,$80,$E9
-CODE_80D607:
+CODE_80D607: ; $00D607
         REP #$20
         LDA.B $54
         LSR A
@@ -8335,35 +8768,35 @@ CODE_80D607:
         SEP #$20
         LDA.W $E0B7,X
         STA.B $71
-CODE_80D619:
+CODE_80D619: ; $00D619
         LDA.B $76
         BEQ CODE_80D663
         CMP.B #$01
         BNE CODE_80D626
         db $20,$83,$D7,$80,$3D
-CODE_80D626:
+CODE_80D626: ; $00D626
         CMP.B #$02
         BNE CODE_80D62F
         JSR.W buildDataStructure
         BRA CODE_80D663
-CODE_80D62F:
+CODE_80D62F: ; $00D62F
         CMP.B #$03
         BNE CODE_80D638
         db $20,$4E,$D8,$80,$2B
-CODE_80D638:
+CODE_80D638: ; $00D638
         CMP.B #$0E
         BNE CODE_80D641
         db $20,$CA,$D8,$80,$22
-CODE_80D641:
+CODE_80D641: ; $00D641
         CMP.B #$0F
         BNE CODE_80D64A
         db $20,$83,$D8,$80,$19
-CODE_80D64A:
-        JSR.W drawHealthBars
+CODE_80D64A: ; $00D64A
+        JSR.W initHdmaFromParam
         BRA CODE_80D663
         db $C2,$20,$A5,$62,$C9,$F8,$00,$B0,$06,$38,$E9,$60,$00,$85,$6D,$E2
         db $20,$4C,$DB,$D6
-CODE_80D663:
+CODE_80D663: ; $00D663
         LDA.B $77
         BEQ CODE_80D6DB
         DEC A
@@ -8377,10 +8810,10 @@ CODE_80D663:
         DEC A
         BEQ CODE_80D6CA
         db $80,$D7
-CODE_80D678:
+CODE_80D678: ; $00D678
         db $C2,$20,$A5,$54,$4A,$85,$40,$18,$65,$60,$85,$6B,$E2,$20,$A5,$62
         db $38,$E5,$40,$85,$6D,$80,$4C
-CODE_80D68F:
+CODE_80D68F: ; $00D68F
         REP #$20
         LDA.B $60
         STA.B $6B
@@ -8390,9 +8823,9 @@ CODE_80D68F:
         STA.B $6D
         SEP #$20
         BRA CODE_80D6DB
-CODE_80D6A1:
+CODE_80D6A1: ; $00D6A1
         db $C2,$20,$A5,$60,$4A,$85,$6B,$A5,$62,$4A,$85,$6D,$E2,$20,$80,$2A
-CODE_80D6B1:
+CODE_80D6B1: ; $00D6B1
         REP #$20
         LDA.B $54
         CLC
@@ -8407,7 +8840,7 @@ CODE_80D6B1:
         SBC.B $40
         STA.B $6D
         BRA CODE_80D6DB
-CODE_80D6CA:
+CODE_80D6CA: ; $00D6CA
         INC.B $6B
         LDA.B $54
         ASL A
@@ -8418,7 +8851,7 @@ CODE_80D6CA:
         SBC.B $40
         STA.B $6D
         BRA CODE_80D6DB
-CODE_80D6DB:
+CODE_80D6DB: ; $00D6DB
         LDA.B $7A
         AND.B #$80
         BEQ CODE_80D72E
@@ -8451,10 +8884,10 @@ CODE_80D6DB:
         LDA.B #$04
         STA.B $5E
         BRA CODE_80D72E
-CODE_80D71D:
+CODE_80D71D: ; $00D71D
         db $E2,$20,$A5,$7A,$29,$0F,$F0,$07,$20,$96,$D9,$E2,$20,$80,$02,$64
         db $7A
-CODE_80D72E:
+CODE_80D72E: ; $00D72E
         LDA.B $7F
         BEQ CODE_80D754
         REP #$20
@@ -8469,35 +8902,35 @@ CODE_80D72E:
         STA.B $7F
         DEC A
         BRA CODE_80D752
-CODE_80D74A:
+CODE_80D74A: ; $00D74A
         CMP.B #$FF
         BNE CODE_80D752
         LDA.B #$00
         STA.B $7F
-CODE_80D752:
+CODE_80D752: ; $00D752
         STA.B $80
-CODE_80D754:
+CODE_80D754: ; $00D754
         LDA.B $81
         BEQ CODE_80D762
         STZ.B $81
         LDY.W #$0002
         DEC A
-        JSL.L externalSortFunc
-CODE_80D762:
+        JSL.L spcWritePort2
+CODE_80D762: ; $00D762
         LDA.B $4C
         BEQ CODE_80D77A
         LDA.B $10
         PHA
         LDA.B #$02
         STA.B $10
-        JSR.W updateBloomEffect
+        JSR.W initObjectStreamReader
         LDA.B $AA
         BEQ CODE_80D777
         db $20,$88,$E6
-CODE_80D777:
+CODE_80D777: ; $00D777
         PLA
         STA.B $10
-CODE_80D77A:
+CODE_80D77A: ; $00D77A
         REP #$30
         INC.B $54
         PLY
@@ -8510,7 +8943,7 @@ CODE_80D77A:
         db $6B,$9F,$01,$A0,$7E,$E2,$20,$A5,$3A,$18,$69,$10,$85,$3A,$E8,$E8
         db $E8,$88,$D0,$E6,$A9,$00,$9F,$00,$A0,$7E,$60
 ; [Memory] Builds data structure from indirect pointer. Entry: $54/$6D base, reads from [$3A], writes to $7EA001.
-buildDataStructure:
+buildDataStructure: ; $00D7BE
         SEP #$20
         LDA.B $54
         CLC
@@ -8525,7 +8958,7 @@ buildDataStructure:
         STA.B $3B
         LDX.W #$0003
         LDY.W #$0054
-CODE_80D7DA:
+CODE_80D7DA: ; $00D7DA
         REP #$20
         LDA.B [$3A]
         CLC
@@ -8544,10 +8977,12 @@ CODE_80D7DA:
         LDA.B #$00
         STA.L $7EA000,X
         RTS
-; [HUD] Draws health bars for visible entities. Entry: scans entity list, draws bars above entities.
-drawHealthBars:
+; AND $00FF, falls into buildHdmaScrollTable.
+initHdmaFromParam: ; $00D7FB
         REP #$20
         AND.W #$00FF
+; Builds HDMA scroll table at $7EA000 from params at $D83D,X. 84 entries, stride 3.
+buildHdmaScrollTable: ; $00D800
         SEC
         SBC.W #$0004
         TAX
@@ -8563,7 +8998,7 @@ drawHealthBars:
         STA.B $3B
         LDX.W #$0003
         LDY.W #$0054
-CODE_80D820:
+CODE_80D820: ; $00D820
         LDA.B [$3A]
         CLC
         ADC.B $6B
@@ -8592,8 +9027,8 @@ CODE_80D820:
         db $54,$0A,$85,$3A,$A9,$03,$85,$3C,$A9,$80,$85,$3B,$A2,$03,$00,$A0
         db $54,$00,$A7,$3A,$18,$65,$6D,$9F,$01,$A0,$7E,$E6,$3A,$E8,$E8,$E8
         db $88,$D0,$EF,$A9,$00,$9F,$00,$A0,$7E,$60,$E2,$20
-; [Effects] Updates particle effects system. Entry: processes particle list, updates positions, lifetimes.
-updateParticleSystem:
+; [DMA] DMA ch1: $7E:9000 -> VRAM $7C00. Text tilemap upload.
+dmaTextTileToVRAM: ; $00D8F9
         LDA.B #$80
         STA.W $2115
         LDY.W #$7C00
@@ -8612,8 +9047,8 @@ updateParticleSystem:
         STA.W $420B
         STZ.B $57
         RTS
-; [Effects] Spawns new particle effect. Entry: A=particle type, $00/$02=position, $04/$06=velocity.
-spawnParticle:
+; [DMA] DMA ch1: $7F:B000 -> VRAM at [$78]. Tilemap buffer.
+dmaTilemapToVRAM: ; $00D927
         LDA.B #$80
         STA.W $2115
         LDY.B $78
@@ -8632,8 +9067,8 @@ spawnParticle:
         STA.W $420B
         STZ.B $57
         RTS
-; [Effects] Draws all active particles to OAM. Entry: scans particle list, creates OAM entries.
-drawParticles:
+; [DMA] DMA ch1: $7F:D000 -> VRAM $5C00. Overlay tilemap.
+dmaOverlayToVRAM: ; $00D954
         LDA.B #$80
         STA.W $2115
         LDY.W #$5C00
@@ -8683,8 +9118,8 @@ drawParticles:
         db $30,$00,$34,$00,$38,$00,$3C,$00,$40,$00,$44,$00,$48,$00,$4C,$00
         db $50,$00,$54,$00,$58,$00,$5C,$00,$60,$00,$64,$00,$68,$00,$6C,$00
         db $70,$00,$74,$00,$78,$00,$7C
-; [Transition] Handles map transition (fade out, load new map, fade in). Entry: A=destination map ID.
-handleMapTransition:
+; Check $05F5 flag, configure $2115/$4310/$4320 for DMA channels 1+2. VRAM upload setup.
+setupVramDMATransfer: ; $00DB69
         PHP
         SEP #$20
         LDA.W $05F5
@@ -8722,7 +9157,7 @@ handleMapTransition:
         LDA.B #$04
         STA.W $420B
         STZ.W $05F5
-CODE_80DBC6:
+CODE_80DBC6: ; $00DBC6
         LDA.B $5E
         BEQ CODE_80DBEA
         INC A
@@ -8731,43 +9166,43 @@ CODE_80DBC6:
         STA.W $2131
         STZ.B $5E
         BRA CODE_80DBEA
-CODE_80DBD6:
+CODE_80DBD6: ; $00DBD6
         db $8D,$55,$43,$A5,$5F,$8D,$21,$21,$A9,$C0,$8D,$52,$43,$A9,$20,$8D
         db $0B,$42,$64,$5E
-CODE_80DBEA:
+CODE_80DBEA: ; $00DBEA
         LDA.B $57
         BEQ CODE_80DC06
         CMP.B #$FE
         BEQ CODE_80DBFC
         CMP.B #$FF
         BNE CODE_80DC01
-        JSR.W drawParticles
+        JSR.W dmaOverlayToVRAM
         JMP.W CODE_80DC06
-CODE_80DBFC:
-        JSR.W spawnParticle
+CODE_80DBFC: ; $00DBFC
+        JSR.W dmaTilemapToVRAM
         BRA CODE_80DC06
-CODE_80DC01:
-        JSR.W updateParticleSystem
+CODE_80DC01: ; $00DC01
+        JSR.W dmaTextTileToVRAM
         BRA CODE_80DC06
-CODE_80DC06:
+CODE_80DC06: ; $00DC06
         PLP
         RTL
-; [LevelLoad] Loads map data from ROM. Entry: A=map ID. Loads tiles, collision, objects to WRAM.
-loadMapData:
+; PHA/PHP, if $10==0 poll $4210 bit 7 until VBlank fires, PLP/PLA. Frame sync.
+waitForVblank: ; $00DC08
         PHA
         PHP
         SEP #$20
         LDA.B $10
         BNE CODE_80DC15
-CODE_80DC10:
+CODE_80DC10: ; $00DC10
         LDA.W $4210
         BPL CODE_80DC10
-CODE_80DC15:
+CODE_80DC15: ; $00DC15
         PLP
         PLA
         RTL
 ; [LevelLoad] Sets up objects/NPCs for current map. Entry: reads object data from map, spawns entities.
-setupMapObjects:
+setupMapObjects: ; $00DC18
         PHP
         REP #$30
         SEP #$20
@@ -8800,7 +9235,7 @@ setupMapObjects:
         LDA.B #$00
         LDX.W #$210D
         LDY.W #$0010
-CODE_80DC63:
+CODE_80DC63: ; $00DC63
         SEP #$20
         STA.W $0000,X
         STA.W $0000,X
@@ -8918,8 +9353,8 @@ CODE_80DC63:
         db $21,$AD,$15,$21,$C2,$30,$A0,$10,$00,$A5,$02,$8D,$18,$21,$1A,$88
         db $D0,$F9,$85,$02,$A5,$12,$18,$69,$20,$00,$85,$12,$C6,$00,$D0,$D3
         db $28,$6B
-; [Collision] Checks for map triggers (doors, warps, events). Entry: tests player position against trigger areas.
-checkMapTrigger:
+; Write $2116=#$7800 (VRAM addr), $2115=#$80 (increment by 1 on high-byte write). BG3 tilemap access.
+setupVramBG3Write: ; $00DDB2
         PHP
         CLC
         REP #$20
@@ -8932,7 +9367,7 @@ checkMapTrigger:
         REP #$20
         LDY.W #$1000
         LDA.W #$0000
-CODE_80DDCE:
+CODE_80DDCE: ; $00DDCE
         STA.W $2118
         DEY
         BNE CODE_80DDCE
@@ -8940,14 +9375,14 @@ CODE_80DDCE:
         STA.W $2116
         LDY.W #$0800
         LDA.W #$0000
-CODE_80DDE0:
+CODE_80DDE0: ; $00DDE0
         STA.W $2118
         DEY
         BNE CODE_80DDE0
         PLP
         RTL
 ; [Script] Executes map script when trigger activated. Entry: A=script ID. Runs script commands.
-executeMapScript:
+executeMapScript: ; $00DDE8
         PHP
         CLC
         REP #$20
@@ -8959,14 +9394,14 @@ executeMapScript:
         LDA.W $2115
         REP #$20
         PLA
-CODE_80DDFD:
+CODE_80DDFD: ; $00DDFD
         STA.W $2118
         DEY
         BNE CODE_80DDFD
         PLP
         RTL
 ; [Text] Loads font tile data to VRAM - writes each byte to both $2118 and $2119 (2bpp from 1bpp source). Entry: X=VRAM address, Y=tile count, $12/$14=font data pointer.
-loadFontTile:
+loadFontTile: ; $00DE05
         PHP
         REP #$20
         STX.W $2116
@@ -8976,10 +9411,10 @@ loadFontTile:
         LDA.B #$80
         STA.W $2115
         LDA.W $2115
-CODE_80DE1A:
+CODE_80DE1A: ; $00DE1A
         PHY
         LDX.W #$0008
-CODE_80DE1E:
+CODE_80DE1E: ; $00DE1E
         LDA.B [$12],Y
         STA.W $2118
         STA.W $2119
@@ -8990,7 +9425,7 @@ CODE_80DE1E:
         PLY
         INY
         LDX.W #$0008
-CODE_80DE30:
+CODE_80DE30: ; $00DE30
         LDA.B [$12],Y
         STA.W $2118
         STA.W $2119
@@ -9006,8 +9441,8 @@ CODE_80DE30:
         db $08,$18,$C2,$20,$A9,$00,$40,$8D,$16,$21,$E2,$20,$A9,$80,$8D,$15
         db $21,$AD,$15,$21,$C2,$20,$A0,$00,$40,$A9,$00,$00,$8D,$18,$21,$88
         db $D0,$FA,$28,$6B
-; [Effects] Updates water ripple effect. Entry: animates water tiles, applies distortion.
-updateWaterEffect:
+; [OAM] STA $2101 (OBSEL), JSR writeOAMBuffer.
+setupOAMTransfer: ; $00DE68
         PHY
         PHX
         PHA
@@ -9017,12 +9452,12 @@ updateWaterEffect:
         REP #$10
         LDA.B #$00
         STA.W $2101
-        JSR.W updateFireEffect
+        JSR.W writeOAMBuffer
         REP #$30
         LDX.W #$0000
         LDY.W #$0100
         LDA.W #$E000
-CODE_80DE85:
+CODE_80DE85: ; $00DE85
         STA.W $0100,X
         INX
         INX
@@ -9031,7 +9466,7 @@ CODE_80DE85:
         SEP #$20
         LDY.W #$0020
         LDA.B #$AA
-CODE_80DE94:
+CODE_80DE94: ; $00DE94
         STA.W $0100,X
         INX
         DEY
@@ -9041,8 +9476,8 @@ CODE_80DE94:
         PLX
         PLY
         RTL
-; [Effects] Updates fire animation effect. Entry: animates flame sprites, light flicker.
-updateFireEffect:
+; [OAM] STA $2102 (OAMADD), writes OAM low+high table.
+writeOAMBuffer: ; $00DEA0
         PHY
         PHA
         PHP
@@ -9052,7 +9487,7 @@ updateFireEffect:
         SEP #$20
         LDY.W #$0200
         LDA.B #$00
-CODE_80DEB2:
+CODE_80DEB2: ; $00DEB2
         SEP #$20
         STA.W $2104
         DEY
@@ -9060,7 +9495,7 @@ CODE_80DEB2:
         LDY.W #$0020
         SEP #$20
         LDA.B #$FF
-CODE_80DEC1:
+CODE_80DEC1: ; $00DEC1
         SEP #$20
         STA.W $2104
         DEY
@@ -9077,8 +9512,8 @@ CODE_80DEC1:
         db $B7,$12,$8D,$04,$21,$C8,$A5,$02,$18,$69,$10,$85,$02,$C6,$06,$D0
         db $DD,$4C,$F8,$DE,$C2,$20,$68,$85,$02,$68,$85,$04,$68,$85,$06,$68
         db $85,$12,$68,$85,$14,$28,$68,$FA,$7A,$6B
-; [Effects] Updates smoke particle effect. Entry: animates smoke plumes, dissipation.
-updateSmokeEffect:
+; [Math] STA $4202, INC $52, table lookup, reads $4216. RTL.
+hardwareMultiplyRng: ; $00DF47
         PHP
         PHX
         SEP #$20
@@ -9103,8 +9538,8 @@ updateSmokeEffect:
         PLX
         PLP
         RTL
-; [Effects] Updates lightning flash effect. Entry: random flashes, screen brightening.
-updateLightningEffect:
+; [RNG] INC $52, table at $DFB7,X. PRNG.
+getRandomValue: ; $00DF72
         PHP
         PHX
         SEP #$20
@@ -9120,8 +9555,8 @@ updateLightningEffect:
         PLX
         PLP
         RTL
-; [Effects] Updates weather particles (rain, snow). Entry: moves particles, respawns off-screen.
-updateWeatherParticles:
+; [DMA] DMA ch1: X=VMADD, Y=size, $14=bank. Generic VRAM DMA.
+dmaToVRAMGeneric: ; $00DF8C
         PHP
         SEP #$20
         LDA.B #$80
@@ -9163,8 +9598,8 @@ updateWeatherParticles:
         db $00,$00,$00,$02,$02,$FE,$00,$00,$02,$02,$00,$00,$01,$01,$00,$00
         db $01,$01,$FF,$00,$04,$04,$02,$00,$01,$03,$03,$01,$00,$01,$02,$01
         db $00,$00,$01,$01,$00,$00,$01,$01,$00,$00,$FF
-; [Effects] Updates day/night cycle lighting. Entry: adjusts palette based on time of day.
-updateDayNightCycle:
+; [Interrupt] H-IRQ handler: acks $4211, sets BG bases, scroll, screen designation. RTI.
+irqBgSwapHandler: ; $00E102
         SEI
         PHA
         PHP
@@ -9188,24 +9623,24 @@ updateDayNightCycle:
         LDA.B #$05
         STA.W $212C
         STZ.W $212D
-CODE_80E13A:
+CODE_80E13A: ; $00E13A
         LDA.B $66
         STA.W $4209
         PLP
         PLA
         CLI
         RTI
-; [Palette] Cycles palette colors for effects. Entry: rotates color values in CGRAM.
-updatePaletteCycle:
+; Single RTI instruction. Empty interrupt handler stub.
+emptyIRQHandler: ; $00E143
         RTI
-; [Effects] Updates color math for special effects. Entry: adjusts $2130-$2132 registers.
-updateColorMath:
+; [Memory] Word-copy. A=bytes, [$12]=src, [$16]=dst. RTL.
+memcpyWords: ; $00E144
         PHP
         REP #$20
         LSR A
         TAX
         LDY.W #$0000
-CODE_80E14C:
+CODE_80E14C: ; $00E14C
         LDA.B [$12],Y
         STA.B [$16],Y
         INY
@@ -9214,8 +9649,8 @@ CODE_80E14C:
         BNE CODE_80E14C
         PLP
         RTL
-; [Effects] Updates screen blend/fade effect. Entry: adjusts transparency levels.
-updateBlendEffect:
+; [Memory] Word-fill. A=bytes, X=fill, [$12]=dst. RTL.
+memfillWords: ; $00E157
         PHP
         REP #$20
         PHX
@@ -9223,7 +9658,7 @@ updateBlendEffect:
         TAX
         LDY.W #$0000
         PLA
-CODE_80E161:
+CODE_80E161: ; $00E161
         STA.B [$12],Y
         INY
         INY
@@ -9244,10 +9679,10 @@ CODE_80E161:
         db $E6,$04,$A5,$02,$18,$69,$10,$85,$02,$C9,$80,$D0,$D0,$A5,$04,$29
         db $F0,$18,$69,$10,$85,$04,$A5,$00,$18,$69,$10,$85,$00,$C9,$80,$D0
         db $BA,$28,$6B
-; [Effects] Updates motion blur for fast movement. Entry: applies afterimage effect.
-updateMotionBlur:
+; [Init] Scene init: loadMapData, force blank, disable IRQ/DMA, clear state.
+initMapScene: ; $00E22D
         PHP
-        JSL.L loadMapData
+        JSL.L waitForVblank
         SEP #$20
         LDA.B #$02
         STA.B $10
@@ -9258,6 +9693,8 @@ updateMotionBlur:
         STZ.B $84
         STZ.W $420C
         REP #$20
+; [Init] STZ/INC $0A87 - debug mode patch site
+debugFlagInit: ; $00E24A
         STZ.W $0A87
         LDA.W #$0000
         TCD
@@ -9290,7 +9727,7 @@ updateMotionBlur:
         STA.B $56
         STA.B $59
         JSL.L setupMapObjects
-        JSL.L updateWaterEffect
+        JSL.L setupOAMTransfer
         LDA.B #$00
         JSL.L updateDepthEffect
         SEP #$20
@@ -9343,7 +9780,7 @@ updateMotionBlur:
         PLP
         RTL
 ; [Scrolling] Updates depth/parallax effect. Entry: adjusts layer scrolling based on Z-depth.
-updateDepthEffect:
+updateDepthEffect: ; $00E31C
         PHP
         REP #$20
         LDX.W #$E353
@@ -9352,16 +9789,16 @@ updateDepthEffect:
         CMP.W #$0002
         BEQ CODE_80E331
         db $A2,$63,$E3,$80,$05
-CODE_80E331:
+CODE_80E331: ; $00E331
         LDX.W #$E373
         BRA CODE_80E336
-CODE_80E336:
+CODE_80E336: ; $00E336
         STX.B $12
         LDA.W #$0000
         STA.B $14
         LDX.W #$0000
         LDY.W #$0008
-CODE_80E343:
+CODE_80E343: ; $00E343
         LDA.B [$12]
         STA.W $06F0,X
         INC.B $12
@@ -9375,8 +9812,8 @@ CODE_80E343:
         db $0F,$FF,$00,$64,$08,$F7,$41,$08,$F7,$02,$FF,$00,$81,$00,$FF,$00
         db $2A,$FF,$00,$58,$20,$DF,$35,$FF,$00,$02,$00,$FF,$81,$FF,$00,$00
         db $1E,$FF,$00,$6A,$10,$F0,$81,$FF,$00,$00,$00,$00,$00,$00,$00,$00
-; [Effects] Updates lens flare effect for light sources. Entry: calculates flare position, brightness.
-updateLensFlare:
+; [Palette] Palette upload: $2121 addr, $2122 data loop.
+uploadPaletteCGRAM: ; $00E383
         PHY
         PHP
         LDA.B $14
@@ -9393,7 +9830,7 @@ updateLensFlare:
         LDA.B $0B,S
         STA.B $15
         LDY.W #$0000
-CODE_80E3A1:
+CODE_80E3A1: ; $00E3A1
         SEP #$20
         LDA.B [$12],Y
         STA.W $2122
@@ -9411,8 +9848,8 @@ CODE_80E3A1:
         PLP
         PLY
         RTS
-; [Effects] Updates dynamic shadow casting. Entry: calculates shadow positions based on light.
-updateShadowEffect:
+; [Helper] Checks $10 mode, zeros $10/$4A, waits $4A.
+waitForModeSync: ; $00E3BE
         PHP
         SEP #$20
         LDA.B $10
@@ -9422,39 +9859,39 @@ updateShadowEffect:
         BEQ CODE_80E3D7
         STZ.B $10
         STZ.B $4A
-CODE_80E3CF:
+CODE_80E3CF: ; $00E3CF
         LDA.B $4A
         BEQ CODE_80E3CF
         INC.B $10
-CODE_80E3D5:
+CODE_80E3D5: ; $00E3D5
         PLP
         RTL
-CODE_80E3D7:
-        JSL.L handleMapTransition
+CODE_80E3D7: ; $00E3D7
+        JSL.L setupVramDMATransfer
         BRA CODE_80E3D5
-; [Effects] Updates reflection effect on water/mirrors. Entry: renders flipped sprites.
-updateReflection:
+; [Helper] Calls waitForModeSync A times.
+repeatModeSync: ; $00E3DD
         PHP
         REP #$20
-CODE_80E3E0:
+CODE_80E3E0: ; $00E3E0
         CMP.W #$0000
         BEQ CODE_80E3EE
         PHA
-        JSL.L updateShadowEffect
+        JSL.L waitForModeSync
         PLA
         DEC A
         BRA CODE_80E3E0
-CODE_80E3EE:
+CODE_80E3EE: ; $00E3EE
         PLP
         RTL
-; [Effects] Updates transparency levels for objects. Entry: adjusts alpha based on distance/layer.
-updateTransparency:
+; [Input] Reads $4218/$4219, XOR+AND edge detect to $50. RTL.
+readJoypadNewPress: ; $00E3F0
         PHP
         REP #$20
         LDA.B $4E
         PHA
         SEP #$20
-CODE_80E3F8:
+CODE_80E3F8: ; $00E3F8
         LDA.W $4212
         AND.B #$01
         BNE CODE_80E3F8
@@ -9471,13 +9908,13 @@ CODE_80E3F8:
         RTL
         db $08,$E2,$20,$AD,$12,$42,$29,$01,$D0,$F9,$AD,$1A,$42,$85,$4E,$AD
         db $1B,$42,$85,$4F,$28,$6B,$00,$00,$00,$00,$00,$80,$00,$00
-; [Effects] Updates multiple scanline effects. Entry: combines gradient, split, color changes.
-updateScanlineEffects:
+; [Entity] Clears $1000 (1KB), builds entries via buildObjectEntry.
+initObjectTable: ; $00E432
         PHP
         SEP #$20
         LDY.W #$0400
         LDX.W #$0000
-CODE_80E43B:
+CODE_80E43B: ; $00E43B
         STZ.W $1000,X
         INX
         DEY
@@ -9492,11 +9929,11 @@ CODE_80E43B:
         LDA.W #$E42A
         STA.B $40
         LDX.W #$1000
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.W #$8000
         STA.W $000C,X
         LDA.W $0E03
-        JSR.W updateVignetteEffect
+        JSR.W lookupDataTable
         STA.W $0006,X
         LDA.B $42
         STA.W $0AA9
@@ -9509,17 +9946,17 @@ CODE_80E43B:
         LDA.W #$E42A
         STA.B $40
         LDX.W #$1200
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.W #$8000
         STA.W $000C,X
         LDA.W #$60FF
         STA.W $0000,X
         LDA.W $0E83
-        JSR.W updateVignetteEffect
+        JSR.W lookupDataTable
         STA.W $0006,X
         LDA.B $42
         STA.W $0AAB
-CODE_80E4A9:
+CODE_80E4A9: ; $00E4A9
         LDA.W $0E20
         AND.W #$00FF
         BNE CODE_80E4BF
@@ -9528,12 +9965,12 @@ CODE_80E4A9:
         LDA.W #$3D00
         STA.W $0A9D
         BRA CODE_80E4CB
-CODE_80E4BF:
+CODE_80E4BF: ; $00E4BF
         LDA.W #$2800
         STA.W $0A9B
         LDA.W #$2D00
         STA.W $0A9D
-CODE_80E4CB:
+CODE_80E4CB: ; $00E4CB
         LDA.W #$0001
         STA.B $4C
         STZ.B $A5
@@ -9544,13 +9981,13 @@ CODE_80E4CB:
         STZ.W $0AA7
         PLP
         RTL
-; [Effects] Updates raster (per-scanline) effects. Entry: modifies HDMA tables in real-time.
-updateRasterEffects:
+; [Entity] Alt variant: clears $1000, different entry set.
+initObjectTableAlt: ; $00E4E2
         PHP
         SEP #$20
         LDY.W #$0400
         LDX.W #$0000
-CODE_80E4EB:
+CODE_80E4EB: ; $00E4EB
         STZ.W $1000,X
         INX
         DEY
@@ -9567,7 +10004,7 @@ CODE_80E4EB:
         LDA.W #$E42A
         STA.B $40
         LDX.W #$1000
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.B $22
         STA.W $0006,X
         LDA.W #$3000
@@ -9584,15 +10021,15 @@ CODE_80E4EB:
         STZ.W $0AA7
         PLP
         RTL
-; [Mode7] Updates Mode 7 transformation effects. Entry: rotates, scales background.
-updateMode7Effects:
+; Zero $1000 buffer (1024 bytes), setup entity from $E42A data table, store params to entity struct.
+initEntityObject: ; $00E53D
         PHP
         SEP #$20
         STA.W $0E03
         STZ.B $4C
         LDY.W #$0400
         LDX.W #$0000
-CODE_80E54B:
+CODE_80E54B: ; $00E54B
         STZ.W $1000,X
         INX
         DEY
@@ -9603,11 +10040,11 @@ CODE_80E54B:
         LDA.W #$E42A
         STA.B $40
         LDX.W #$1000
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.W #$8000
         STA.W $000C,X
         LDA.W $0E03
-        JSR.W updateVignetteEffect
+        JSR.W lookupDataTable
         STA.W $0006,X
         LDA.B $42
         STA.W $0AA9
@@ -9621,8 +10058,8 @@ CODE_80E54B:
         STA.W $0A9B
         PLP
         RTL
-; [Effects] Updates distortion/warp effect. Entry: applies wave distortion to tilemap.
-updateDistortionEffect:
+; [Entity] setObjectOffsets + buildObjectEntry.
+initSingleObject: ; $00E58F
         PHP
         SEP #$20
         STZ.B $4C
@@ -9630,17 +10067,17 @@ updateDistortionEffect:
         REP #$20
         LDX.W #$0000
         LDY.W #$0000
-        JSL.L updateChromaEffect
+        JSL.L setObjectOffsets
         LDA.W #$0000
         STA.B $42
         LDA.W #$E42A
         STA.B $40
         LDX.W #$1000
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.W #$8000
         STA.W $000C,X
         LDA.W $0E03
-        JSR.W updateVignetteEffect
+        JSR.W lookupDataTable
         STA.W $0006,X
         LDA.B $42
         STA.W $0AA9
@@ -9651,8 +10088,8 @@ updateDistortionEffect:
         STZ.B $A5
         PLP
         RTL
-; [Effects] Updates chromatic aberration effect. Entry: shifts color channels slightly.
-updateChromaEffect:
+; [Entity] X->$0A9F, Y->$0AA1, Y+$7C->$0AA3. RTL.
+setObjectOffsets: ; $00E5D6
         STX.W $0A9F
         TYA
         STA.W $0AA1
@@ -9660,8 +10097,8 @@ updateChromaEffect:
         ADC.W #$007C
         STA.W $0AA3
         RTL
-; [Effects] Updates vignette (darkened edges) effect. Entry: adjusts corner darkness.
-updateVignetteEffect:
+; [Helper] A=idx, ROM table bank $0D/$0C lookup.
+lookupDataTable: ; $00E5E5
         AND.W #$003F
         CMP.W #$001E
         BCS CODE_80E5FD
@@ -9673,7 +10110,7 @@ updateVignetteEffect:
         STA.B $42
         LDA.B [$40],Y
         RTS
-CODE_80E5FD:
+CODE_80E5FD: ; $00E5FD
         SEC
         SBC.W #$001E
         ASL A
@@ -9684,21 +10121,21 @@ CODE_80E5FD:
         STA.B $42
         LDA.B [$40],Y
         RTS
-; [Effects] Updates film grain/noise effect. Entry: adds random pixel noise.
-updateFilmGrain:
+; [Music] A=effect idx, JSR $F104. RTL.
+loadDspEffectParams: ; $00E611
         PHP
         REP #$20
         AND.W #$007F
-        JSR.W updateAudioEffects
+        JSR.W musicDSP_LoadEffectTable
         PLP
         RTL
-; [Effects] Updates CRT screen effect (scanlines, curvature). Entry: simulates old monitor.
-updateCRTEffect:
+; [Entity] 32-byte entry at X from [$40] stream. $0A9F/$0AA1 offsets.
+buildObjectEntry: ; $00E61C
         PHP
         REP #$20
         LDY.W #$0010
         PHX
-CODE_80E623:
+CODE_80E623: ; $00E623
         STZ.W $0000,X
         INX
         INX
@@ -9740,14 +10177,14 @@ CODE_80E623:
         LDA.W #$8000
         STA.W $000C,X
         BRA CODE_80E686
-CODE_80E680:
+CODE_80E680: ; $00E680
         LDA.W #$0003
         STA.W $000C,X
-CODE_80E686:
+CODE_80E686: ; $00E686
         PLP
         RTS
-; [Effects] Updates bloom/glow effect for bright areas. Entry: blurs bright pixels.
-updateBloomEffect:
+; [Entity] $3A=$0100, $3C=$0300, $3E=$0280, $9F=$8000.
+initObjectStreamReader: ; $00E688
         PHP
         REP #$20
         LDA.W #$0100
@@ -9769,7 +10206,7 @@ updateBloomEffect:
         BCS CODE_80E6B9
         AND.W #$0001
         BEQ CODE_80E6D3
-CODE_80E6B9:
+CODE_80E6B9: ; $00E6B9
         LDA.W #$0100
         STA.B $A5
         STZ.B $9D
@@ -9779,8 +10216,8 @@ CODE_80E6B9:
         STA.B $9B
         LDX.W #$1000
         LDA.W $0A97
-        JSR.W updateInstrument
-CODE_80E6D3:
+        JSR.W musicHelper_WriteSPCRegister
+CODE_80E6D3: ; $00E6D3
         LDA.W $0A89
         BEQ CODE_80E703
         INC A
@@ -9788,7 +10225,7 @@ CODE_80E6D3:
         CMP.W #$001F
         BCC CODE_80E6E4
         STZ.W $0A89
-CODE_80E6E4:
+CODE_80E6E4: ; $00E6E4
         LSR A
         LSR A
         AND.W #$0006
@@ -9803,8 +10240,8 @@ CODE_80E6E4:
         LDA.W $0A8D
         STA.B $9B
         PLA
-        JSR.W updateInstrument
-CODE_80E703:
+        JSR.W musicHelper_WriteSPCRegister
+CODE_80E703: ; $00E703
         LDA.W $0E5A
         BEQ CODE_80E745
         LDA.W $0A9D
@@ -9815,14 +10252,14 @@ CODE_80E703:
         STA.B $A5
         LDX.W #$1200
         LDY.W #$0010
-CODE_80E71D:
+CODE_80E71D: ; $00E71D
         LDA.W $0000,X
         BEQ CODE_80E72A
         PHY
-        JSR.W updateDepthOfField
-        JSR.W updatePostProcessing
+        JSR.W updateObjectPhysics
+        JSR.W renderObjectList
         PLY
-CODE_80E72A:
+CODE_80E72A: ; $00E72A
         TXA
         CLC
         ADC.W #$0020
@@ -9836,35 +10273,35 @@ CODE_80E72A:
         LDX.W #$1000
         LDY.W #$0010
         BRA CODE_80E764
-CODE_80E745:
+CODE_80E745: ; $00E745
         LDA.W $0A9B
         STA.B $A8
         LDA.W $0AA9
         STA.B $8F
         LDX.W #$1000
         LDY.W #$0020
-CODE_80E755:
+CODE_80E755: ; $00E755
         CPY.W #$0010
         BNE CODE_80E764
         LDA.W $0A9D
         STA.B $A8
         LDA.W $0AAB
         STA.B $8F
-CODE_80E764:
+CODE_80E764: ; $00E764
         LDA.W $0000,X
         BEQ CODE_80E771
         PHY
-        JSR.W updateDepthOfField
-        JSR.W updatePostProcessing
+        JSR.W updateObjectPhysics
+        JSR.W renderObjectList
         PLY
-CODE_80E771:
+CODE_80E771: ; $00E771
         TXA
         CLC
         ADC.W #$0020
         TAX
         DEY
         BNE CODE_80E755
-CODE_80E77A:
+CODE_80E77A: ; $00E77A
         LSR.B $9F
         LSR.B $9F
         BCC CODE_80E77A
@@ -9872,7 +10309,7 @@ CODE_80E77A:
         STA.B ($3C)
         LDA.W #$F0F0
         LDX.B $3A
-CODE_80E789:
+CODE_80E789: ; $00E789
         CPX.W #$0280
         BEQ CODE_80E79A
         STA.W $0000,X
@@ -9882,12 +10319,12 @@ CODE_80E789:
         INX
         INX
         BRA CODE_80E789
-CODE_80E79A:
+CODE_80E79A: ; $00E79A
         LDA.W $0AA1
         BNE CODE_80E7B5
         LDA.W #$F0F0
         LDX.B $3E
-CODE_80E7A4:
+CODE_80E7A4: ; $00E7A4
         CPX.W #$0300
         BEQ CODE_80E7B5
         STA.W $0000,X
@@ -9897,26 +10334,26 @@ CODE_80E7A4:
         INX
         INX
         BRA CODE_80E7A4
-CODE_80E7B5:
+CODE_80E7B5: ; $00E7B5
         PLP
         RTS
-; [Effects] Updates depth of field blur. Entry: blurs distant/close objects.
-updateDepthOfField:
+; [Entity] 2-bit state dispatch, velocity->position with fractional.
+updateObjectPhysics: ; $00E7B7
         LDA.W $0001,X
         AND.W #$0003
         BNE CODE_80E7C0
         RTS
-CODE_80E7C0:
+CODE_80E7C0: ; $00E7C0
         CMP.W #$0001
         BEQ CODE_80E804
         CMP.W #$0003
         BNE CODE_80E7CD
         JMP.W $E84F
-CODE_80E7CD:
+CODE_80E7CD: ; $00E7CD
         LDA.W $0012,X
         BNE CODE_80E7D5
         JMP.W $E845
-CODE_80E7D5:
+CODE_80E7D5: ; $00E7D5
         DEC A
         STA.W $0012,X
         LDA.W $0003,X
@@ -9938,20 +10375,20 @@ CODE_80E7D5:
         STA.W $0019,X
         REP #$20
         RTS
-CODE_80E804:
+CODE_80E804: ; $00E804
         LDA.W $0014,X
         CLC
         ADC.W $0012,X
         BCS CODE_80E811
         STA.W $0014,X
         RTS
-CODE_80E811:
+CODE_80E811: ; $00E811
         LDA.W $0000,X
         AND.W #$0C00
         BEQ CODE_80E833
         db $BD,$02,$00,$9D,$04,$00,$BD,$16,$00,$9D,$18,$00,$22,$72,$DF,$00
         db $48,$22,$72,$DF,$00,$7A,$20,$5C,$F4,$60
-CODE_80E833:
+CODE_80E833: ; $00E833
         LDA.W $0002,X
         STA.W $0004,X
         LDA.W $0016,X
@@ -9978,7 +10415,7 @@ CODE_80E833:
         ADC.W $0010,X
         STA.W $0017,X
         BRA CODE_80E89E
-CODE_80E877:
+CODE_80E877: ; $00E877
         LDA.W $0017,X
         CLC
         ADC.W $0010,X
@@ -9994,16 +10431,16 @@ CODE_80E877:
         DEC A
         STA.W $001A,X
         LDA.W #$8400
-CODE_80E89B:
+CODE_80E89B: ; $00E89B
         STA.W $0017,X
-CODE_80E89E:
+CODE_80E89E: ; $00E89E
         LDA.W $001A,X
         BNE CODE_80E8A6
         JMP.W $E845
-CODE_80E8A6:
+CODE_80E8A6: ; $00E8A6
         RTS
-; [Effects] Updates all post-processing effects. Entry: combines multiple visual effects.
-updatePostProcessing:
+; [OAM] Iterates objects, copies pos to $99/$9B for OAM.
+renderObjectList: ; $00E8A7
         SEP #$20
         LDA.W $0001,X
         AND.B #$03
@@ -10015,7 +10452,7 @@ updatePostProcessing:
         LDA.W $0018,X
         STA.B $9B
         JMP.W CODE_80E975
-CODE_80E8C1:
+CODE_80E8C1: ; $00E8C1
         SEP #$20
         LDA.W $0015,X
         STA.B $42
@@ -10045,7 +10482,7 @@ CODE_80E8C1:
         STA.B $99
         BRA CODE_80E91D
         db $E2,$20
-CODE_80E900:
+CODE_80E900: ; $00E900
         LDA.W $000E,X
         STA.W $4202
         LDA.B $40
@@ -10060,7 +10497,7 @@ CODE_80E900:
         CLC
         ADC.W $0004,X
         STA.B $99
-CODE_80E91D:
+CODE_80E91D: ; $00E91D
         SEP #$20
         LDA.W $000C,X
         LSR A
@@ -10090,7 +10527,7 @@ CODE_80E91D:
         STA.B $9B
         BRA CODE_80E975
         db $E2,$20
-CODE_80E958:
+CODE_80E958: ; $00E958
         LDA.W $0010,X
         STA.W $4202
         LDA.B $40
@@ -10105,7 +10542,7 @@ CODE_80E958:
         CLC
         ADC.W $0018,X
         STA.B $9B
-CODE_80E975:
+CODE_80E975: ; $00E975
         LDA.W $0000,X
         AND.W #$2000
         BEQ CODE_80E98B
@@ -10116,7 +10553,7 @@ CODE_80E975:
         ADC.W #$0100
         STA.B $99
         INC.B $A7
-CODE_80E98B:
+CODE_80E98B: ; $00E98B
         LDA.W $0006,X
         CMP.W #$8000
         BCS CODE_80E9A3
@@ -10125,11 +10562,11 @@ CODE_80E98B:
         PHA
         STZ.B $A8
         LDA.B $40
-        JSR.W updateInstrument
+        JSR.W musicHelper_WriteSPCRegister
         PLA
         STA.B $A8
         RTS
-CODE_80E9A3:
+CODE_80E9A3: ; $00E9A3
         STA.B $8D
         LDA.W $0008,X
         LSR A
@@ -10150,14 +10587,14 @@ CODE_80E9A3:
         SBC.W #$0010
         STA.B $99
         BRA CODE_80E9D9
-CODE_80E9CD:
+CODE_80E9CD: ; $00E9CD
         LDA.W #$0010
         STA.B $9D
         LDA.B $99
         SEC
         SBC.B $40
         STA.B $99
-CODE_80E9D9:
+CODE_80E9D9: ; $00E9D9
         LDA.B $99
         STA.B $91
         STA.B $95
@@ -10173,14 +10610,14 @@ CODE_80E9D9:
         CMP.W #$00F0
         BNE CODE_80E9FA
         JMP.W $EA9E
-CODE_80E9FA:
+CODE_80E9FA: ; $00E9FA
         BCC CODE_80E9FF
         JMP.W $EAC8
-CODE_80E9FF:
+CODE_80E9FF: ; $00E9FF
         CMP.W #$0080
         BCC CODE_80EA07
         JMP.W $EA6A
-CODE_80EA07:
+CODE_80EA07: ; $00EA07
         CMP.W #$0070
         BCC CODE_80EA80
         SEP #$20
@@ -10195,17 +10632,17 @@ CODE_80EA07:
         BEQ CODE_80EA20
         LDA.B #$02
         TSB.B $42
-CODE_80EA20:
+CODE_80EA20: ; $00EA20
         LDA.B $42
         AND.B #$20
         BEQ CODE_80EA33
         REP #$20
         LDA.B $41
         INC.B $8D
-        JSR.W updateInstrument
+        JSR.W musicHelper_WriteSPCRegister
         BRA CODE_80EA94
         db $E2,$20
-CODE_80EA33:
+CODE_80EA33: ; $00EA33
         LDA.B $A7
         BNE CODE_80EA44
         LDA.B $9D
@@ -10215,11 +10652,11 @@ CODE_80EA33:
         CLC
         ADC.B #$08
         STA.B $99
-CODE_80EA44:
+CODE_80EA44: ; $00EA44
         REP #$20
         LDA.B $41
         INC.B $8D
-        JSR.W updateInstrument
+        JSR.W musicHelper_WriteSPCRegister
         LDA.B $9D
         CMP.W #$0010
         BNE CODE_80EA5F
@@ -10228,7 +10665,7 @@ CODE_80EA44:
         ADC.W #$0008
         STA.B $99
         JMP.W $E9E9
-CODE_80EA5F:
+CODE_80EA5F: ; $00EA5F
         LDA.B $99
         SEC
         SBC.W #$0008
@@ -10243,9 +10680,9 @@ CODE_80EA5F:
         CLC
         ADC.B $40
         ORA.W #$2200
-        JSR.W updateInstrument
+        JSR.W musicHelper_WriteSPCRegister
         BRA CODE_80EA94
-CODE_80EA80:
+CODE_80EA80: ; $00EA80
         PHA
         AND.W #$000F
         STA.B $40
@@ -10255,8 +10692,8 @@ CODE_80EA80:
         CLC
         ADC.B $40
         ORA.W #$2000
-        JSR.W updateInstrument
-CODE_80EA94:
+        JSR.W musicHelper_WriteSPCRegister
+CODE_80EA94: ; $00EA94
         LDA.B $99
         CLC
         ADC.B $9D
@@ -10272,7 +10709,7 @@ CODE_80EA94:
         STZ.B $A7
         REP #$20
         JMP.W $E9E9
-CODE_80EAB3:
+CODE_80EAB3: ; $00EAB3
         LDA.B $9B
         CLC
         ADC.W #$0008
@@ -10287,103 +10724,120 @@ CODE_80EAB3:
         BEQ CODE_80EAB3
         CMP.W #$00FE
         BNE CODE_80EAD5
-        JMP.W CODE_80EC14
-CODE_80EAD5:
+        JMP.W musicNote_CheckTimer
+CODE_80EAD5: ; $00EAD5
         CMP.W #$00FD
         BNE CODE_80EADD
         JMP.W $EC32
-CODE_80EADD:
+CODE_80EADD: ; $00EADD
         CMP.W #$00FC
         BNE CODE_80EAE5
         JMP.W $ED63
-CODE_80EAE5:
+CODE_80EAE5: ; $00EAE5
         CMP.W #$00F1
         BNE CODE_80EAED
         JMP.W $EC75
-CODE_80EAED:
+CODE_80EAED: ; $00EAED
         CMP.W #$00F2
         BNE CODE_80EAF5
         JMP.W $ED34
-CODE_80EAF5:
+CODE_80EAF5: ; $00EAF5
         CMP.W #$00F3
-        BNE CODE_80EB00
-        JSR.W updateTempo
+        BNE musicCmd_DispatchHigh
+        JSR.W musicHelper_GetVoiceSlot
         JMP.W $ED79
-CODE_80EB00:
+; [Music] Dispatch $F4-$FB music commands to handlers
+musicCmd_DispatchHigh: ; $00EB00
         CMP.W #$00F4
-        BNE CODE_80EB0B
-        JSR.W updateTempo
-        JMP.W $EDA6
-CODE_80EB0B:
+        BNE musicCmd_CheckF5
+        JSR.W musicHelper_GetVoiceSlot
+        JMP.W musicCmd_F4_ReadParams
+; [Music] Check for $F5 command (set envelope params)
+musicCmd_CheckF5: ; $00EB0B
         CMP.W #$00F5
-        BNE CODE_80EB16
-        JSR.W updateTempo
-        JMP.W $EDD6
-CODE_80EB16:
+        BNE musicCmd_CheckF6
+        JSR.W musicHelper_GetVoiceSlot
+        JMP.W musicCmd_F5_ReadParams
+; [Music] Check for $F6 command (loop/repeat control)
+musicCmd_CheckF6: ; $00EB16
         CMP.W #$00F6
-        BNE CODE_80EB21
-        JSR.W updateTempo
-        JMP.W $EE09
-CODE_80EB21:
+        BNE musicCmd_CheckF7
+        JSR.W musicHelper_GetVoiceSlot
+        JMP.W musicCmd_F6_Loop
+; [Music] Check for $F7 command (note with pitch data)
+musicCmd_CheckF7: ; $00EB21
         CMP.W #$00F7
-        BNE CODE_80EB29
+        BNE musicCmd_CheckF8
         JMP.W CODE_80EA94
-CODE_80EB29:
+; [Music] Check for $F8 command (voice setup)
+musicCmd_CheckF8: ; $00EB29
         CMP.W #$00F8
-        BNE CODE_80EB31
-        JMP.W $EE7A
-CODE_80EB31:
+        BNE musicCmd_CheckFA
+        JMP.W musicCmd_F8_VoiceSetup
+; [Music] Check for $FA command (channel setup)
+musicCmd_CheckFA: ; $00EB31
         CMP.W #$00FA
-        BNE CODE_80EB39
-        JMP.W $EEC1
-CODE_80EB39:
+        BNE musicCmd_CheckFB
+        JMP.W musicCmd_FA_ChannelSetup
+; [Music] Check for $FB command (end track/return)
+musicCmd_CheckFB: ; $00EB39
         CMP.W #$00FB
-        BNE CODE_80EB41
-        JMP.W $F0F3
-CODE_80EB41:
+        BNE musicCmd_DispatchNote
+        JMP.W musicCmd_FB_EndTrack
+; [Music] Dispatch by note/command byte range: $E0+, $D0+, $C0+, $B0+, $A0+, $90+, $80+, $70+, $60+
+musicCmd_DispatchNote: ; $00EB41
         LDA.B $41
         AND.W #$00FF
         INC.B $8D
         CMP.W #$00E0
-        BCC CODE_80EB50
-        JMP.W $EBAD
-CODE_80EB50:
+        BCC musicCmd_RangeD0
+        JMP.W musicCmd_RangeE0
+; [Music] Handle $D0-$DF range — write indexed value
+musicCmd_RangeD0: ; $00EB50
         CMP.W #$00D0
-        BCC CODE_80EB58
+        BCC musicCmd_RangeC0
         JMP.W $ED10
-CODE_80EB58:
+; [Music] Handle $C0-$CF range — write indexed value
+musicCmd_RangeC0: ; $00EB58
         CMP.W #$00C0
-        BCC CODE_80EB60
+        BCC musicCmd_RangeB0
         JMP.W $ECF2
-CODE_80EB60:
+; [Music] Handle $B0-$BF range — spawn sub-voice
+musicCmd_RangeB0: ; $00EB60
         CMP.W #$00B0
-        BCC CODE_80EB68
+        BCC musicCmd_RangeA0
         JMP.W $EC9C
-CODE_80EB68:
+; [Music] Handle $A0-$AF range — jump table dispatch
+musicCmd_RangeA0: ; $00EB68
         CMP.W #$00A0
-        BCC CODE_80EB70
-        JMP.W $EE2C
-CODE_80EB70:
+        BCC musicCmd_Range90
+        JMP.W musicCmd_A0_JumpTable
+; [Music] Handle $90-$9F range — pitch adjust (signed)
+musicCmd_Range90: ; $00EB70
         CMP.W #$0090
-        BCC CODE_80EB78
-        JMP.W $EDA3
-CODE_80EB78:
+        BCC musicCmd_Range80
+        JMP.W musicCmd_F4_PitchAdjust
+; [Music] Handle $80-$8F range — multi-byte note data
+musicCmd_Range80: ; $00EB78
         CMP.W #$0080
-        BCC CODE_80EB80
+        BCC musicCmd_Range70
         JMP.W $ED76
-CODE_80EB80:
+; [Music] Handle $70-$7F range — check voice status
+musicCmd_Range70: ; $00EB80
         CMP.W #$0070
-        BCC CODE_80EB88
+        BCC musicCmd_Range60
         db $4C,$52,$ED
-CODE_80EB88:
+; [Music] Handle $60-$6F range — rest/duration. Store to $1C/$1D.
+musicCmd_Range60: ; $00EB88
         CMP.W #$0060
-        BCC CODE_80EB90
-        JMP.W $EDD3
-CODE_80EB90:
+        BCC musicCmd_Range60_Store
+        JMP.W musicCmd_F5_SetEnvelope
+; [Music] Store duration low 6 bits to voice timer $1C/$1D, set next ptr
+musicCmd_Range60_Store: ; $00EB90
         AND.W #$003F
         PHX
         PHA
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         TYX
         PLA
         SEP #$20
@@ -10394,70 +10848,87 @@ CODE_80EB90:
         LDA.B $8D
         STA.W $0006,X
         JMP.W $E9E9
+; [Music] Handle $E0-$EB command range dispatch
+musicCmd_RangeE0: ; $00EBAD
         CMP.W #$00E1
-        BNE CODE_80EBB5
+        BNE musicCmd_E2
         db $4C,$5E,$EC
-CODE_80EBB5:
+; [Music] $E2: set loop return address
+musicCmd_E2: ; $00EBB5
         CMP.W #$00E2
-        BNE CODE_80EBBD
+        BNE musicCmd_E0
         JMP.W $EC8E
-CODE_80EBBD:
+; [Music] $E0: jump — load new music data pointer from [$8D]
+musicCmd_E0: ; $00EBBD
         CMP.W #$00E0
-        BNE CODE_80EBC9
+        BNE musicCmd_E3
         LDA.B [$8D]
         STA.B $8D
         JMP.W $E9E9
-CODE_80EBC9:
+; [Music] $E3: call subroutine (via $F174)
+musicCmd_E3: ; $00EBC9
         CMP.W #$00E3
-        BNE CODE_80EBD1
-        JMP.W $F174
-CODE_80EBD1:
+        BNE musicCmd_E4
+        JMP.W musicStream_ReadVoiceParam
+; [Music] $E4: return from subroutine (via $F126)
+musicCmd_E4: ; $00EBD1
         CMP.W #$00E4
-        BNE CODE_80EBD9
-        JMP.W $F126
-CODE_80EBD9:
+        BNE musicCmd_E5
+        JMP.W musicCmd_E4_Return
+; [Music] $E5: loop back (via $F162)
+musicCmd_E5: ; $00EBD9
         CMP.W #$00E5
-        BNE CODE_80EBE1
-        JMP.W $F162
-CODE_80EBE1:
+        BNE musicCmd_E6
+        JMP.W musicCmd_E5_LoopBack
+; [Music] $E6: conditional branch (via $F251)
+musicCmd_E6: ; $00EBE1
         CMP.W #$00E6
-        BNE CODE_80EBE9
-        JMP.W $F251
-CODE_80EBE9:
+        BNE musicCmd_E7
+        JMP.W musicCmd_E6_CondFlag
+; [Music] $E7: set register (via $F26E)
+musicCmd_E7: ; $00EBE9
         CMP.W #$00E7
-        BNE CODE_80EBF1
-        JMP.W $F26E
-CODE_80EBF1:
+        BNE musicCmd_E8
+        JMP.W musicCmd_E7_SetReg
+; [Music] $E8: compare/test (via $F2A8)
+musicCmd_E8: ; $00EBF1
         CMP.W #$00E8
-        BNE CODE_80EBF9
-        JMP.W $F2A8
-CODE_80EBF9:
+        BNE musicCmd_E9
+        JMP.W musicCmd_E8_Compare
+; [Music] $E9: branch on compare (via $F2BF)
+musicCmd_E9: ; $00EBF9
         CMP.W #$00E9
-        BNE CODE_80EC01
-        JMP.W $F2BF
-CODE_80EC01:
+        BNE musicCmd_EA
+        JMP.W musicCmd_E9_BranchByte
+; [Music] $EA: arithmetic op (via $F2CD)
+musicCmd_EA: ; $00EC01
         CMP.W #$00EA
-        BNE CODE_80EC09
-        JMP.W $F2CD
-CODE_80EC09:
+        BNE musicCmd_EB
+        JMP.W musicCmd_EA_CondJump
+; [Music] $EB: bitwise op (via $F2D8)
+musicCmd_EB: ; $00EC09
         CMP.W #$00EB
-        BNE CODE_80EC11
-        JMP.W $F2D8
-CODE_80EC11:
+        BNE musicCmd_Unknown
+        JMP.W musicCmd_EB_SetTimer
+; [Music] Unknown command — skip, jump back to main loop
+musicCmd_Unknown: ; $00EC11
         JMP.W $E9E9
-CODE_80EC14:
+; [Music] Check note timer — if zero, reload duration and advance; else decrement
+musicNote_CheckTimer: ; $00EC14
         SEP #$20
         LDA.W $001C,X
-        BNE CODE_80EC23
+        BNE musicNote_Reload
         LDA.W $001D,X
         STA.W $001C,X
-        BRA CODE_80EC2A
-CODE_80EC23:
+        BRA musicNote_Advance
+; [Music] Timer zero — reload from $1D, set $1C
+musicNote_Reload: ; $00EC23
         DEC A
         STA.W $001C,X
         REP #$20
         RTS
-CODE_80EC2A:
+; [Music] Advance music data pointer after note completes
+musicNote_Advance: ; $00EC2A
         REP #$20
         LDA.B $8D
         STA.W $0006,X
@@ -10467,11 +10938,11 @@ CODE_80EC2A:
         LDA.W $001E,X
         BNE CODE_80EC42
         db $A5,$8D,$3A,$9D,$06,$00,$60
-CODE_80EC42:
+CODE_80EC42: ; $00EC42
         STA.B $8D
         STZ.W $001E,X
         JMP.W $E9E9
-CODE_80EC4A:
+CODE_80EC4A: ; $00EC4A
         TAY
         DEY
         DEY
@@ -10481,9 +10952,11 @@ CODE_80EC4A:
         TYA
         BNE CODE_80EC5B
         LDA.B $A3
-        BNE CODE_80EC14
-CODE_80EC5B:
+        BNE musicNote_CheckTimer
+CODE_80EC5B: ; $00EC5B
         JMP.W $E9E9
+; [Music] $E1: push return address to music stack $0F00, jump to target
+musicCmd_E1: ; $00EC5E
         db $A5,$A1,$A8,$1A,$1A,$85,$A1,$A5,$8D,$1A,$1A,$99,$00,$0F,$A7,$8D
         db $85,$8D,$E6,$A3,$4C,$E9,$E9
         LDA.B [$8D]
@@ -10509,7 +10982,7 @@ CODE_80EC5B:
         STA.B $8D
         JMP.W $E9E9
         PHX
-        JSR.W updateVolume
+        JSR.W musicHelper_GetVoicePtr
         PHA
         LDA.B $8F
         STA.B $42
@@ -10519,7 +10992,7 @@ CODE_80EC5B:
         AND.W #$F0FF
         STA.B $44
         TYX
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.B $44
         STA.W $0000,X
         LDA.W $0004,X
@@ -10539,7 +11012,7 @@ CODE_80EC5B:
         LDA.B $42
         BNE CODE_80ECDD
         JMP.W $E9E9
-CODE_80ECDD:
+CODE_80ECDD: ; $00ECDD
         SEP #$20
         LDA.W $000D,X
         CMP.B #$80
@@ -10547,10 +11020,10 @@ CODE_80ECDD:
         LDA.B $40
         ORA.B #$80
         STA.W $000D,X
-CODE_80ECED:
+CODE_80ECED: ; $00ECED
         REP #$20
         JMP.W $E9E9
-        JSR.W updatePanning
+        JSR.W musicHelper_GetChannelIndex
         STY.B $40
         LDA.B [$8D]
         PHA
@@ -10565,7 +11038,7 @@ CODE_80ECED:
         PLA
         STA.W $0000,Y
         JMP.W $E9E9
-        JSR.W updatePanning
+        JSR.W musicHelper_GetChannelIndex
         STY.B $40
         LDA.B [$8D]
         STA.B $42
@@ -10582,7 +11055,7 @@ CODE_80ECED:
         ADC.B $42
         STA.W $0000,Y
         JMP.W $E9E9
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         STY.B $40
         LDA.B [$8D]
         AND.W #$00FF
@@ -10598,15 +11071,15 @@ CODE_80ECED:
         JMP.W $E9E9
         db $20,$2B,$F3,$B9,$00,$00,$29,$00,$03,$F0,$03,$4C,$D4,$F1,$4C,$E9
         db $E9
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         LDA.W $0000,Y
         AND.W #$0300
         BEQ CODE_80ED73
         INC.B $8D
-        JMP.W $F1D4
-CODE_80ED73:
+        JMP.W musicPtr_Rewind
+CODE_80ED73: ; $00ED73
         JMP.W $E9E9
-        JSR.W updateVolume
+        JSR.W musicHelper_GetVoicePtr
         PHX
         TYX
         LDA.B [$8D]
@@ -10618,11 +11091,11 @@ CODE_80ED73:
         AND.W #$00FF
         TAY
         PLA
-CODE_80ED8C:
-        JSR.W updateSoundEngine
+CODE_80ED8C: ; $00ED8C
+        JSR.W musicVoice_SetTarget
         LDA.B [$8D]
         INC.B $8D
-        JSR.W updateFilter
+        JSR.W musicHelper_SignExtendNegate
         ASL A
         ASL A
         CLC
@@ -10630,7 +11103,11 @@ CODE_80ED8C:
         STA.W $0012,X
         PLX
         JMP.W $E9E9
-        JSR.W updateVolume
+; [Music] $F4/$90+: signed pitch adjustment on voice
+musicCmd_F4_PitchAdjust: ; $00EDA3
+        JSR.W musicHelper_GetVoicePtr
+; [Music] Read pitch adjust params: signed offset + duration
+musicCmd_F4_ReadParams: ; $00EDA6
         PHX
         TYX
         LDA.B [$8D]
@@ -10639,7 +11116,7 @@ CODE_80ED8C:
         CMP.W #$0080
         BCC CODE_80EDB7
         ORA.W #$FF00
-CODE_80EDB7:
+CODE_80EDB7: ; $00EDB7
         CLC
         ADC.W $0004,X
         PHA
@@ -10649,22 +11126,26 @@ CODE_80EDB7:
         CMP.W #$0080
         BCC CODE_80EDCB
         db $09,$00,$FF
-CODE_80EDCB:
+CODE_80EDCB: ; $00EDCB
         CLC
         ADC.W $0018,X
         TAY
         PLA
         BRA CODE_80ED8C
-        JSR.W updateVolume
+; [Music] $F5/$60+: set envelope params (attack, decay, sustain rate)
+musicCmd_F5_SetEnvelope: ; $00EDD3
+        JSR.W musicHelper_GetVoicePtr
+; [Music] Read envelope: attack rate ($0E), decay rate ($10), sustain ($12)
+musicCmd_F5_ReadParams: ; $00EDD6
         PHX
         TYX
         LDA.B [$8D]
         INC.B $8D
-        JSR.W updateFilter
+        JSR.W musicHelper_SignExtendNegate
         STA.W $000E,X
         LDA.B [$8D]
         INC.B $8D
-        JSR.W updateFilter
+        JSR.W musicHelper_SignExtendNegate
         STA.W $0010,X
         LDA.B [$8D]
         INC.B $8D
@@ -10677,23 +11158,29 @@ CODE_80EDCB:
         STA.W $0000,X
         PLX
         JMP.W $E9E9
+; [Music] $F6: loop control — decrement counter $1A, repeat or advance
+musicCmd_F6_Loop: ; $00EE09
         LDA.W $001A,X
-        BEQ CODE_80EE1E
+        BEQ musicCmd_F6_Init
         DEC A
         STA.W $001A,X
-        BNE CODE_80EE19
+        BNE musicCmd_F6_Continue
         INC.B $8D
         JMP.W $E9E9
-CODE_80EE19:
+; [Music] Loop counter nonzero — advance and loop back
+musicCmd_F6_Continue: ; $00EE19
         INC.B $8D
-        JMP.W $F1D4
-CODE_80EE1E:
+        JMP.W musicPtr_Rewind
+; [Music] Loop counter zero — initialize from stream byte
+musicCmd_F6_Init: ; $00EE1E
         LDA.B [$8D]
         AND.W #$00FF
         INC.B $8D
         ASL A
         STA.W $001A,X
-        JMP.W $F1D4
+        JMP.W musicPtr_Rewind
+; [Music] $A0-$AF: indirect jump table dispatch at $EE3A
+musicCmd_A0_JumpTable: ; $00EE2C
         AND.W #$001F
         ASL A
         ASL A
@@ -10710,7 +11197,7 @@ CODE_80EE1E:
         db $EA
         JMP.W $F0E3
         db $EA
-        JMP.W $F0F3
+        JMP.W musicCmd_FB_EndTrack
         db $EA
         JMP.W $F0F9
         db $EA
@@ -10730,19 +11217,21 @@ CODE_80EE1E:
         db $EA
         JMP.W $F1DC
         db $EA
-        JSR.W updateReverb
+; [Music] $F8: setup voice — read params, configure channel base + target
+musicCmd_F8_VoiceSetup: ; $00EE7A
+        JSR.W musicStream_ReadSignedByte
         STA.B $40
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         CMP.W #$FF81
         BNE CODE_80EE8F
         LDY.W #$0001
         LDA.W $0AA3
         BRA CODE_80EE95
-CODE_80EE8F:
+CODE_80EE8F: ; $00EE8F
         CLC
         ADC.B $97
         LDY.W #$0000
-CODE_80EE95:
+CODE_80EE95: ; $00EE95
         STA.B $9B
         STA.B $93
         TYA
@@ -10759,19 +11248,21 @@ CODE_80EE95:
         STA.B $99
         STA.B $91
         JMP.W $E9E9
-CODE_80EEB5:
+CODE_80EEB5: ; $00EEB5
         LDA.B $95
         SEC
         SBC.B $40
         STA.B $99
         STA.B $91
         JMP.W $E9E9
+; [Music] $FA: channel setup — clear flags, configure base/target addresses
+musicCmd_FA_ChannelSetup: ; $00EEC1
         SEP #$20
         STZ.B $A7
         REP #$20
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         STA.B $40
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         CLC
         ADC.B $9B
         STA.B $9B
@@ -10783,7 +11274,7 @@ CODE_80EEB5:
         ADC.B $40
         STA.B $99
         JMP.W $E9E9
-CODE_80EEE5:
+CODE_80EEE5: ; $00EEE5
         LDA.B $99
         SEC
         SBC.B $40
@@ -10801,7 +11292,7 @@ CODE_80EEE5:
         SBC.B $40
         AND.W #$00FF
         BRA CODE_80EF1A
-CODE_80EF0A:
+CODE_80EF0A: ; $00EF0A
         LDA.W #$4000
         STA.B $42
         LDA.B [$8D]
@@ -10809,7 +11300,7 @@ CODE_80EF0A:
         AND.W #$00FF
         SEC
         SBC.W #$0010
-CODE_80EF1A:
+CODE_80EF1A: ; $00EF1A
         STA.B $40
         LDA.B [$8D]
         INC.B $8D
@@ -10829,23 +11320,23 @@ CODE_80EF1A:
         ORA.B $42
         STA.W $0A97
         JMP.W $E9E9
-CODE_80EF49:
+CODE_80EF49: ; $00EF49
         CMP.W #$00FF
         BNE CODE_80EF6A
         LDY.W #$0E00
         CPX.W #$1200
         BCS CODE_80EF59
         LDY.W #$0E80
-CODE_80EF59:
+CODE_80EF59: ; $00EF59
         LDA.W $0052,Y
         BNE CODE_80EF63
         INC.B $8D
         JMP.W $E9E9
-CODE_80EF63:
+CODE_80EF63: ; $00EF63
         LDA.B [$8D]
         INC.B $8D
         AND.W #$00FF
-CODE_80EF6A:
+CODE_80EF6A: ; $00EF6A
         SEC
         SBC.W #$0010
         STA.W $0A8D
@@ -10863,56 +11354,56 @@ CODE_80EF6A:
         AND.B #$7F
         STA.B $5F
         BRA CODE_80EFA4
-CODE_80EF93:
+CODE_80EF93: ; $00EF93
         db $18,$69,$C0,$85,$5F,$A5,$A9,$29,$01,$F0,$06,$A5,$5F,$49,$20,$85
         db $5F
-CODE_80EFA4:
+CODE_80EFA4: ; $00EFA4
         REP #$20
         INC.B $8D
-        JSR.W updateEcho
+        JSR.W musicStream_ReadWord
         STA.W $0DC0
         CMP.W #$FFFF
         BNE CODE_80EFCD
         db $A5,$5F,$29,$3F,$00,$0A,$DA,$AA,$BF,$00,$CF,$7F,$8D,$C1,$0D,$E2
         db $20,$AD,$C2,$0D,$8D,$C0,$0D,$C2,$20,$FA
-CODE_80EFCD:
+CODE_80EFCD: ; $00EFCD
         SEP #$20
         LDA.B #$02
         STA.B $5E
         REP #$20
-        JMP.W $F0F3
+        JMP.W musicCmd_FB_EndTrack
         LDA.W #$0010
         STA.B $44
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         SEP #$20
         CMP.B #$80
         BCC CODE_80EFEC
         AND.B #$7F
         STA.B $5F
         BRA CODE_80EFFD
-CODE_80EFEC:
+CODE_80EFEC: ; $00EFEC
         db $18,$69,$C0,$85,$5F,$A5,$A9,$29,$01,$F0,$06,$A5,$5F,$49,$20,$85
         db $5F
-CODE_80EFFD:
+CODE_80EFFD: ; $00EFFD
         REP #$20
-        JSR.W updateEcho
+        JSR.W musicStream_ReadWord
         CMP.W #$FFFF
         BEQ CODE_80F00F
         STA.B $40
         LDA.B $8F
         STA.B $42
         BRA CODE_80F02C
-CODE_80F00F:
+CODE_80F00F: ; $00F00F
         db $A5,$5F,$29,$3F,$00,$0A,$18,$69,$00,$CF,$85,$40,$A9,$7F,$00,$85
         db $42,$80,$0A,$A9,$20,$00,$85,$44,$A9,$00,$00,$80,$B4
-CODE_80F02C:
+CODE_80F02C: ; $00F02C
         LDA.B $44
         PHX
         PHY
         PHA
         LDX.W #$0000
         TAY
-CODE_80F035:
+CODE_80F035: ; $00F035
         LDA.B [$40]
         STA.W $0DC0,X
         INC.B $40
@@ -10928,7 +11419,7 @@ CODE_80F035:
         ASL A
         STA.B $5E
         REP #$20
-        JMP.W $F0F3
+        JMP.W musicCmd_FB_EndTrack
         LDA.W $001A,X
         BEQ CODE_80F06B
         DEC A
@@ -10938,11 +11429,11 @@ CODE_80F035:
         INC.B $8D
         INC.B $8D
         JMP.W $E9E9
-CODE_80F064:
+CODE_80F064: ; $00F064
         LDA.B [$8D]
         STA.B $8D
         JMP.W $E9E9
-CODE_80F06B:
+CODE_80F06B: ; $00F06B
         LDA.B [$8D]
         INC.B $8D
         INC.B $8D
@@ -10953,61 +11444,63 @@ CODE_80F06B:
         DEC A
         BNE CODE_80F07F
         db $4C,$E9,$E9
-CODE_80F07F:
+CODE_80F07F: ; $00F07F
         STA.W $001A,X
         STY.B $8D
         JMP.W $E9E9
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         LDA.W $0000,Y
         EOR.W #$4000
         STA.W $0000,Y
         LDA.B $8D
         STA.W $0006,X
         RTS
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         LDA.W $0000,Y
         ORA.W #$0300
         STA.W $0000,Y
-        JSR.W updateChorus
+        JSR.W musicStream_ReadByteThenExtend
         STA.W $000E,Y
-        JSR.W updateChorus
+        JSR.W musicStream_ReadByteThenExtend
         ASL A
         STA.W $0010,Y
-        JSR.W updateChorus
+        JSR.W musicStream_ReadByteThenExtend
         STA.W $0012,Y
-        JSR.W updateChorus
+        JSR.W musicStream_ReadByteThenExtend
         STA.W $0014,Y
         LDA.B [$8D]
         INC.B $8D
         AND.W #$00FF
         STA.W $001A,Y
         JMP.W $E9E9
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         SEP #$20
         STA.B $68
         REP #$20
         JMP.W $E9E9
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         SEP #$20
         STA.B $69
         REP #$20
         JMP.W $E9E9
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         STA.B $60
         JMP.W $E9E9
-        JSR.W updateReverb
+        JSR.W musicStream_ReadSignedByte
         STA.B $62
         JMP.W $E9E9
+; [Music] $FB: end track — store final pointer, RTS
+musicCmd_FB_EndTrack: ; $00F0F3
         LDA.B $8D
         STA.W $0006,X
         RTS
         PHX
-        JSR.W updateReverb
-        JSR.W updateAudioEffects
+        JSR.W musicStream_ReadSignedByte
+        JSR.W musicDSP_LoadEffectTable
         PLX
         JMP.W $E9E9
-; [Music] Updates audio DSP effects. Entry: sends commands to SPC700 for reverb/echo.
-updateAudioEffects:
+; [Music] Load DSP effect parameters from table. A=effect index, looks up from $0D8004.
+musicDSP_LoadEffectTable: ; $00F104
         ASL A
         TAX
         LDA.L $0D8004,X
@@ -11017,100 +11510,116 @@ updateAudioEffects:
         LDA.W #$E42A
         STA.B $40
         LDX.W #$11E0
-        JSR.W updateCRTEffect
+        JSR.W buildObjectEntry
         LDA.W #$8F00
         STA.W $000C,X
         PLA
         STA.W $0006,X
         RTS
-        JSR.W updateEcho
+; [Music] $E4: return from music subroutine. Reads return address, dispatches based on value.
+musicCmd_E4_Return: ; $00F126
+        JSR.W musicStream_ReadWord
         CMP.W #$8000
-        BCS CODE_80F137
+        BCS musicCmd_E4_Special
         CLC
         ADC.W $0A9B
         STA.B $A8
         JMP.W $E9E9
-CODE_80F137:
+; [Music] Return value >= $8000 — special dispatch (not normal return)
+musicCmd_E4_Special: ; $00F137
         INC A
-        BEQ CODE_80F14A
+        BEQ musicCmd_E4_Special3
         INC A
-        BEQ CODE_80F156
+        BEQ musicCmd_E4_Normal
         CPX.W #$1200
-        BCC CODE_80F145
+        BCC musicCmd_E4_Special2
         db $49,$01,$00
-CODE_80F145:
+; [Music] Return value == $FFFF — alternate special return
+musicCmd_E4_Special2: ; $00F145
         AND.W #$0001
-        BNE CODE_80F156
-CODE_80F14A:
+        BNE musicCmd_E4_Normal
+; [Music] Return value == $FFFE — third special return type
+musicCmd_E4_Special3: ; $00F14A
         LDA.W $0A9B
         EOR.W #$1000
         STA.W $0A9B
         JMP.W $E9E9
-CODE_80F156:
+; [Music] Normal return: add base $0A9B to offset, set as new music ptr
+musicCmd_E4_Normal: ; $00F156
         LDA.W $0A9D
         EOR.W #$1000
         STA.W $0A9D
         JMP.W $E9E9
-        JSR.W updateTempo
+; [Music] $E5: clear loop flags (high nibble of +$01) and return to main loop
+musicCmd_E5_LoopBack: ; $00F162
+        JSR.W musicHelper_GetVoiceSlot
         SEP #$20
         LDA.W $0001,Y
         AND.B #$F0
         STA.W $0001,Y
         REP #$20
         JMP.W $E9E9
+; [Music] Read voice parameter byte from stream. $FF triggers smoke effect; $29 is special; else used as voice index.
+musicStream_ReadVoiceParam: ; $00F174
         LDA.B [$8D]
         AND.W #$00FF
         INC.B $8D
         CMP.W #$00FF
-        BNE CODE_80F189
+        BNE musicStream_ReadVoiceParam_Check29
         LDA.W #$0064
-        JSL.L updateSmokeEffect
-        BRA CODE_80F1B1
-CODE_80F189:
+        JSL.L hardwareMultiplyRng
+        BRA musicStream_ReadVoiceParam_Done
+; [Music] Check if param == $29 (special voice)
+musicStream_ReadVoiceParam_Check29: ; $00F189
         CMP.W #$0029
         BEQ CODE_80F1C9
         TAY
         CPY.W #$0028
-        BNE CODE_80F19D
+        BNE musicStream_ReadVoiceParam_Normal
         LDA.L $7EEA88
         AND.W #$0004
-        BRA CODE_80F1B1
-CODE_80F19D:
+        BRA musicStream_ReadVoiceParam_Done
+; [Music] Normal voice param: compute voice table offset
+musicStream_ReadVoiceParam_Normal: ; $00F19D
         LDA.W $0000,X
         AND.W #$2000
-        BEQ CODE_80F1AB
+        BEQ musicStream_ReadVoiceParam_Offset
         TYA
         CLC
         ADC.W #$0080
         TAY
-CODE_80F1AB:
+; [Music] Compute final voice offset from param
+musicStream_ReadVoiceParam_Offset: ; $00F1AB
         LDA.W $0E00,Y
         AND.W #$00FF
-CODE_80F1B1:
+; [Music] Voice param resolved, return Y=voice ptr
+musicStream_ReadVoiceParam_Done: ; $00F1B1
         PHA
         LDA.B [$8D]
         AND.W #$00FF
         INC.B $8D
         STA.B $40
-        JSR.W updateEcho
+        JSR.W musicStream_ReadWord
         TAY
         PLA
         CMP.B $40
         BCC CODE_80F1C6
         STY.B $8D
-CODE_80F1C6:
+CODE_80F1C6: ; $00F1C6
         JMP.W $E9E9
-CODE_80F1C9:
+CODE_80F1C9: ; $00F1C9
         LDA.W #$0000
         CPX.W #$1200
-        BCC CODE_80F1B1
+        BCC musicStream_ReadVoiceParam_Done
         db $1A,$80,$DD
+; [Music] Rewind music data pointer by 2 (DEC DEC), store to +$06. Used for loop-back.
+musicPtr_Rewind: ; $00F1D4
         LDA.B $8D
         DEC A
         DEC A
         STA.W $0006,X
         RTS
-        JSR.W updateTempo
+        JSR.W musicHelper_GetVoiceSlot
         PHX
         TYX
         LDA.W $0004,X
@@ -11118,7 +11627,7 @@ CODE_80F1C9:
         BEQ CODE_80F21D
         BCS CODE_80F1FB
         db $85,$40,$A9,$C8,$00,$38,$E5,$40,$9D,$12,$00,$A9,$00,$01,$80,$0A
-CODE_80F1FB:
+CODE_80F1FB: ; $00F1FB
         SEC
         SBC.W #$00C8
         STA.W $0012,X
@@ -11131,16 +11640,16 @@ CODE_80F1FB:
         LDA.W $0000,X
         ORA.W #$0200
         STA.W $0000,X
-CODE_80F21D:
+CODE_80F21D: ; $00F21D
         PLX
         JMP.W $E9E9
-        JSR.W updateEcho
+        JSR.W musicStream_ReadWord
         CMP.W #$FFFF
         BNE CODE_80F231
         LDA.W $0A99
         STA.B $8D
-        JMP.W $F0F3
-CODE_80F231:
+        JMP.W musicCmd_FB_EndTrack
+CODE_80F231: ; $00F231
         STA.B $40
         PHY
         LDY.W #$0200
@@ -11148,33 +11657,39 @@ CODE_80F231:
         AND.W #$2000
         BEQ CODE_80F242
         db $A0,$00,$00
-CODE_80F242:
+CODE_80F242: ; $00F242
         LDA.W $1006,Y
         STA.W $0A99
         LDA.B $40
         STA.W $1006,Y
         PLY
         JMP.W $E9E9
-        JSR.W updateEcho
+; [Music] $E6: conditional flag. $FFFF toggles $0AA5; else stores to $0AA7/$0AAD.
+musicCmd_E6_CondFlag: ; $00F251
+        JSR.W musicStream_ReadWord
         CMP.W #$FFFF
-        BNE CODE_80F265
+        BNE musicCmd_E6_StoreFlag
         LDA.W $0AA5
         EOR.W #$0001
         STA.W $0AA5
         JMP.W $E9E9
-CODE_80F265:
+; [Music] Store conditional flag value
+musicCmd_E6_StoreFlag: ; $00F265
         STA.W $0AA7
         STA.W $0AAD
         JMP.W $E9E9
+; [Music] $E7: read byte, if nonzero compute screen brightness/fade from $99. Sets $6B/$6D.
+musicCmd_E7_SetReg: ; $00F26E
         LDA.B [$8D]
         INC.B $8D
         AND.W #$00FF
         STA.B $40
-        BNE CODE_80F280
+        BNE musicCmd_E7_CalcBrightness
         STZ.B $6B
         STZ.B $6D
         JMP.W $E9E9
-CODE_80F280:
+; [Music] Compute brightness: $100 - $99, store to display vars
+musicCmd_E7_CalcBrightness: ; $00F280
         LDA.W #$0100
         SEC
         SBC.B $99
@@ -11189,58 +11704,68 @@ CODE_80F280:
         AND.W #$4000
         BEQ CODE_80F2A5
         db $A5,$6B,$18,$65,$40,$85,$6B
-CODE_80F2A5:
+CODE_80F2A5: ; $00F2A5
         JMP.W $E9E9
-        JSR.W updateEcho
+; [Music] $E8: read two words, store to $0AA7 (mask) and $0AAD (compare value). $8F to $0AAF.
+musicCmd_E8_Compare: ; $00F2A8
+        JSR.W musicStream_ReadWord
         ORA.W #$FC00
         STA.W $0AA7
-        JSR.W updateEcho
+        JSR.W musicStream_ReadWord
         STA.W $0AAD
         LDA.B $8F
         STA.W $0AAF
         JMP.W $E9E9
+; [Music] $E9: read byte from stream, store to +$0D as branch offset
+musicCmd_E9_BranchByte: ; $00F2BF
         SEP #$20
         LDA.B [$8D]
         STA.W $000D,X
         REP #$20
         INC.B $8D
         JMP.W $E9E9
+; [Music] $EA: if $0AA7 flag nonzero, rewind ptr (loop); else skip
+musicCmd_EA_CondJump: ; $00F2CD
         LDA.W $0AA7
-        BEQ CODE_80F2D5
-        JMP.W $F1D4
-CODE_80F2D5:
+        BEQ musicCmd_EA_Skip
+        JMP.W musicPtr_Rewind
+; [Music] Flag zero — skip to main loop
+musicCmd_EA_Skip: ; $00F2D5
         JMP.W $E9E9
+; [Music] $EB: read byte from stream, store to $81 as timer/counter value
+musicCmd_EB_SetTimer: ; $00F2D8
         SEP #$20
         LDA.B [$8D]
         STA.B $81
         REP #$20
         INC.B $8D
         JMP.W $E9E9
-; [Music] Updates reverb effect parameters. Entry: adjusts echo delay, feedback.
-updateReverb:
+; [Music] Read byte from music stream [$8D], sign-extend if >= $80. Returns signed 16-bit in A.
+musicStream_ReadSignedByte: ; $00F2E5
         LDA.B [$8D]
         INC.B $8D
         AND.W #$00FF
         CMP.W #$0080
-        BCC CODE_80F2F4
+        BCC musicStream_ReadSignedByte_Done
         ORA.W #$FF00
-CODE_80F2F4:
+; [Music] Return path for signed byte read
+musicStream_ReadSignedByte_Done: ; $00F2F4
         RTS
-; [Music] Updates echo effect parameters. Entry: sets echo delay, volume.
-updateEcho:
+; [Music] Read 16-bit word from music stream [$8D]. Advances pointer by 2.
+musicStream_ReadWord: ; $00F2F5
         LDA.B [$8D]
         INC.B $8D
         INC.B $8D
         RTS
-; [Music] Updates chorus effect parameters. Entry: sets modulation depth, rate.
-updateChorus:
+; [Music] Read byte from stream, fall through to sign-extend/negate helper
+musicStream_ReadByteThenExtend: ; $00F2FC
         LDA.B [$8D]
         INC.B $8D
-; [Music] Updates audio filter parameters. Entry: sets low-pass/high-pass cutoff.
-updateFilter:
+; [Music] Sign-extend and negate byte: if >= $80, invert and ASL*4; else pass through. For pitch/volume deltas.
+musicHelper_SignExtendNegate: ; $00F300
         AND.W #$00FF
         CMP.W #$0080
-        BCC CODE_80F318
+        BCC musicHelper_SignExtendNegate_Pos
         DEC A
         EOR.W #$00FF
         AND.W #$00FF
@@ -11251,38 +11776,40 @@ updateFilter:
         DEC A
         EOR.W #$FFFF
         RTS
-CODE_80F318:
+; [Music] Positive path: just ASL*4
+musicHelper_SignExtendNegate_Pos: ; $00F318
         ASL A
         ASL A
         ASL A
         ASL A
         RTS
-; [Music] Updates audio panning (left/right balance). Entry: sets channel pan positions.
-updatePanning:
+; [Music] Extract channel index from A low nibble. If $0E, read extra param via $F374.
+musicHelper_GetChannelIndex: ; $00F31D
         REP #$20
         AND.W #$000F
         CMP.W #$000E
-        BNE updateVolume
-        JSR.W updateTempo
+        BNE musicHelper_GetVoicePtr
+        JSR.W musicHelper_GetVoiceSlot
         RTS
-; [Music] Updates master volume and fade. Entry: adjusts overall sound volume.
-updateVolume:
+; [Music] Get voice table pointer in Y ($1000 or $1200) from channel index. Checks bit13 of entity flags.
+musicHelper_GetVoicePtr: ; $00F32B
         REP #$20
         AND.W #$000F
         STA.B $40
         LDY.W #$1000
         LDA.W $0000,X
         AND.W #$2000
-        BEQ CODE_80F340
+        BEQ musicHelper_GetVoicePtr_Select
         LDY.W #$1200
-CODE_80F340:
+; [Music] Select voice table offset based on channel
+musicHelper_GetVoicePtr_Select: ; $00F340
         LDA.B $40
         CMP.W #$000F
         BNE CODE_80F34C
         TXY
         LDA.W #$000E
         RTS
-CODE_80F34C:
+CODE_80F34C: ; $00F34C
         CMP.W #$000E
         BEQ CODE_80F360
         PHA
@@ -11298,11 +11825,11 @@ CODE_80F34C:
         TAY
         PLA
         RTS
-CODE_80F360:
+CODE_80F360: ; $00F360
         db $64,$40,$B9,$00,$00,$F0,$0A,$98,$18,$69,$20,$00,$A8,$E6,$40,$80
         db $F1,$A5,$40,$60
-; [Music] Updates music tempo/speed. Entry: adjusts playback rate.
-updateTempo:
+; [Music] Get voice slot pointer in Y from $000D,X channel field. Computes Y = (field & 0xF) * 32 + $1000.
+musicHelper_GetVoiceSlot: ; $00F374
         REP #$20
         LDA.W $000D,X
         AND.W #$000F
@@ -11322,11 +11849,11 @@ updateTempo:
         CLC
         ADC.W #$0200
         TAY
-CODE_80F395:
+CODE_80F395: ; $00F395
         PLA
         RTS
-; [Music] Updates instrument parameters. Entry: modifies sound sample properties.
-updateInstrument:
+; [Music] Write value ($40) to SPC voice register. Handles timing sync with A6/A7 flags.
+musicHelper_WriteSPCRegister: ; $00F397
         REP #$20
         STA.B $40
         SEP #$20
@@ -11334,7 +11861,7 @@ updateInstrument:
         LDA.B $A6
         BEQ CODE_80F3A6
         JMP.W $F40F
-CODE_80F3A6:
+CODE_80F3A6: ; $00F3A6
         LDA.W $0001,X
         AND.B #$20
         EOR.B $A5
@@ -11350,14 +11877,14 @@ CODE_80F3A6:
         STA.B ($3A)
         INC.B $3A
         BRA CODE_80F3CF
-CODE_80F3C3:
+CODE_80F3C3: ; $00F3C3
         LDA.B $99
         STA.B ($3A)
         INC.B $3A
         LDA.B $9B
         STA.B ($3A)
         INC.B $3A
-CODE_80F3CF:
+CODE_80F3CF: ; $00F3CF
         REP #$20
         LDA.B $9A
         LSR A
@@ -11373,7 +11900,7 @@ CODE_80F3CF:
         STA.B $9F
         INC.B $3C
         INC.B $3C
-CODE_80F3EF:
+CODE_80F3EF: ; $00F3EF
         LDA.B $9D
         CMP.W #$0010
         BNE CODE_80F401
@@ -11383,7 +11910,7 @@ CODE_80F3EF:
         INC.B $3A
         INC.B $3A
         RTS
-CODE_80F401:
+CODE_80F401: ; $00F401
         LDA.B $40
         ORA.B $A8
         EOR.W #$4000
@@ -11407,14 +11934,14 @@ CODE_80F401:
         STA.B ($3E)
         INC.B $3E
         BRA CODE_80F43A
-CODE_80F42E:
+CODE_80F42E: ; $00F42E
         LDA.B $99
         STA.B ($3E)
         INC.B $3E
         LDA.B $9B
         STA.B ($3E)
         INC.B $3E
-CODE_80F43A:
+CODE_80F43A: ; $00F43A
         REP #$20
         LDA.B $9D
         CMP.W #$0010
@@ -11425,7 +11952,7 @@ CODE_80F43A:
         INC.B $3E
         INC.B $3E
         RTS
-CODE_80F44E:
+CODE_80F44E: ; $00F44E
         LDA.B $40
         ORA.B $A8
         EOR.W #$4000
@@ -11433,8 +11960,8 @@ CODE_80F44E:
         INC.B $3E
         INC.B $3E
         RTS
-; [Music] Updates entire sound engine state. Entry: processes all audio channels, effects.
-updateSoundEngine:
+; [Music] Set voice target position/pitch. Stores A to +$02, Y to +$16, compares target to +$18 for interpolation.
+musicVoice_SetTarget: ; $00F45C
         REP #$20
         STA.W $0002,X
         STA.B $40
@@ -11452,11 +11979,11 @@ updateSoundEngine:
         STA.B $46
         ORA.W #$8000
         BRA CODE_80F485
-CODE_80F480:
+CODE_80F480: ; $00F480
         SEC
         SBC.B $44
         STA.B $46
-CODE_80F485:
+CODE_80F485: ; $00F485
         STA.W $0010,X
         LDA.W $0004,X
         STA.B $44
@@ -11469,11 +11996,11 @@ CODE_80F485:
         STA.B $48
         ORA.W #$8000
         BRA CODE_80F4A4
-CODE_80F49F:
+CODE_80F49F: ; $00F49F
         SEC
         SBC.B $44
         STA.B $48
-CODE_80F4A4:
+CODE_80F4A4: ; $00F4A4
         STA.W $000E,X
         SEP #$20
         STZ.B $45

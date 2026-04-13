@@ -1489,14 +1489,14 @@
         db $D5,$D5,$55,$D7,$75,$55,$55,$35,$55,$47,$55,$54,$51,$51,$75,$7F
         db $5F,$47,$74,$7F,$17,$55,$51,$1D,$75,$54,$B5,$57,$35,$74,$51,$77
 ; [Helper] External library initialization. Entry: sets up library routines.
-externalLibInit:
+externalLibInit: ; $2BDD00
         PHP
         REP #$30
         PHA
         PHX
         PHY
         LDA.W #$BBAA
-CODE_ABDD09:
+CODE_ABDD09: ; $2BDD09
         CMP.W $2140
         BNE CODE_ABDD09
         SEP #$20
@@ -1508,19 +1508,19 @@ CODE_ABDD09:
         SEP #$20
         LDA.B #$CC
         STA.W $2140
-CODE_ABDD24:
+CODE_ABDD24: ; $2BDD24
         CMP.W $2140
         BNE CODE_ABDD24
         LDX.W #$0000
         LDY.W #$1D08
         LDA.B #$00
-CODE_ABDD31:
+CODE_ABDD31: ; $2BDD31
         PHA
         LDA.L $2BE2A2,X
         STA.W $2141
         PLA
         STA.W $2140
-CODE_ABDD3D:
+CODE_ABDD3D: ; $2BDD3D
         CMP.W $2140
         BNE CODE_ABDD3D
         INC A
@@ -1535,12 +1535,12 @@ CODE_ABDD3D:
         STA.W $2142
         SEP #$20
         PLA
-CODE_ABDD58:
+CODE_ABDD58: ; $2BDD58
         CLC
         ADC.B #$03
         BEQ CODE_ABDD58
         STA.W $2140
-CODE_ABDD60:
+CODE_ABDD60: ; $2BDD60
         CMP.W $2140
         BNE CODE_ABDD60
         SEP #$20
@@ -1554,8 +1554,8 @@ CODE_ABDD60:
         PLA
         PLP
         RTL
-; [Math] External math function 1. Entry: performs complex calculations.
-externalMathFunc1:
+; [Music] Stores Y→$B8, A→$BA; sets source addr for SPC transfer
+spcSetSourceAddr: ; $2BDD78
         PHP
         SEP #$20
         REP #$10
@@ -1569,8 +1569,8 @@ externalMathFunc1:
         PLA
         PLP
         RTL
-; [Math] External math function 2. Entry: additional math operations.
-externalMathFunc2:
+; [Music] Stores Y→$BB, A→$BD; sets SPC-side dest addr
+spcSetDestAddr: ; $2BDD89
         PHP
         SEP #$20
         REP #$10
@@ -1589,8 +1589,8 @@ externalMathFunc2:
         db $8C,$42,$21,$A9,$0A,$20,$9E,$E1,$20,$BD,$E1,$7A,$FA,$68,$28,$6B
         db $08,$E2,$20,$C2,$10,$48,$DA,$5A,$8D,$42,$21,$A9,$01,$20,$9E,$E1
         db $20,$BD,$E1,$7A,$FA,$68,$28,$6B
-; External graphics function 1. Entry: advanced graphics operations.
-externalGraphicsFunc1:
+; [Music] Sends cmd $02 to SPC700; prepares bulk transfer
+spcBeginTransfer: ; $2BDDE2
         PHP
         SEP #$20
         REP #$10
@@ -1598,15 +1598,15 @@ externalGraphicsFunc1:
         PHX
         PHY
         LDA.B #$02
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
-; External graphics function 2. Entry: additional graphics operations.
-externalGraphicsFunc2:
+; [Music] Sends cmd $03 to SPC700; initiates transfer sequence
+spcStartTransfer: ; $2BDDF7
         PHP
         SEP #$20
         REP #$10
@@ -1614,15 +1614,15 @@ externalGraphicsFunc2:
         PHX
         PHY
         LDA.B #$03
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
 ; [Music] External sound function 1. Entry: advanced audio processing.
-externalSoundFunc1:
+externalSoundFunc1: ; $2BDE0C
         PHP
         SEP #$20
         REP #$10
@@ -1631,7 +1631,7 @@ externalSoundFunc1:
         PHY
         PHA
         LDA.B #$04
-        JSR.W externalSearchFunc
+        JSR.W spcInitHandshake
         PLA
         PHA
         STZ.B $AD
@@ -1674,7 +1674,7 @@ externalSoundFunc1:
         STA.W $2142
         LDA.B $B1
         STA.W $2143
-        JSR.W externalAIFunc
+        JSR.W spcPortWriteWait
         LDA.W $2142
         BNE CODE_ABDEBB
         LDY.W #$0004
@@ -1683,14 +1683,14 @@ externalSoundFunc1:
         INY
         LDA.B [$C1],Y
         STA.W $2142
-        JSR.W externalAIFunc
+        JSR.W spcPortWriteWait
         INY
         LDA.B [$C1],Y
         STA.W $2141
         INY
         LDA.B [$C1],Y
         STA.W $2142
-        JSR.W externalAIFunc
+        JSR.W spcPortWriteWait
         LDA.B $BF
         ROL A
         ROL A
@@ -1714,15 +1714,15 @@ externalSoundFunc1:
         ADC.B $BA
         STA.B $C0
         JSR.W externalFinalFunc
-CODE_ABDEBB:
-        JSR.W externalPathfindingFunc
+CODE_ABDEBB: ; $2BDEBB
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
 ; [Music] External sound function 2. Entry: additional audio operations.
-externalSoundFunc2:
+externalSoundFunc2: ; $2BDEC3
         PHP
         SEP #$20
         REP #$10
@@ -1730,15 +1730,15 @@ externalSoundFunc2:
         PHX
         PHY
         LDA.B #$06
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
-; [Memory] External memory function 1. Entry: advanced memory operations.
-externalMemoryFunc1:
+; [Music] Sends cmd $08; reads ptr+size from table; transfers sample data
+spcLoadSampleBlock: ; $2BDED8
         PHP
         SEP #$20
         REP #$10
@@ -1747,7 +1747,7 @@ externalMemoryFunc1:
         PHY
         PHA
         LDA.B #$08
-        JSR.W externalSearchFunc
+        JSR.W spcInitHandshake
         PLA
         PHA
         STZ.B $AD
@@ -1790,7 +1790,7 @@ externalMemoryFunc1:
         STA.W $2142
         LDA.B $B1
         STA.W $2143
-        JSR.W externalAIFunc
+        JSR.W spcPortWriteWait
         LDA.B $BF
         ROL A
         ROL A
@@ -1814,14 +1814,14 @@ externalMemoryFunc1:
         ADC.B $BD
         STA.B $C0
         JSR.W externalFinalFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
-; [Memory] External memory function 2. Entry: additional memory operations.
-externalMemoryFunc2:
+; [Music] Iterates sample set table; calls spcLoadSampleBlock per entry until $FF
+spcLoadSampleSet: ; $2BDF6B
         PHP
         SEP #$20
         REP #$10
@@ -1830,16 +1830,16 @@ externalMemoryFunc2:
         PHY
         STY.B $C4
         STA.B $C6
-        JSL.L externalGraphicsFunc1
+        JSL.L spcBeginTransfer
         JSL.L externalSoundFunc2
         LDY.W #$0000
         LDA.B [$C4],Y
         CMP.B #$FF
         BNE CODE_ABDF8C
         JML.L $2BE034
-CODE_ABDF8C:
+CODE_ABDF8C: ; $2BDF8C
         PHY
-        JSL.L externalMemoryFunc1
+        JSL.L spcLoadSampleBlock
         STZ.B $AD
         ASL A
         ROL.B $AD
@@ -1899,7 +1899,7 @@ CODE_ABDF8C:
         ADC.B $B3
         BMI CODE_ABE001
         db $38,$E9,$80,$E6,$C0
-CODE_ABE001:
+CODE_ABE001: ; $2BE001
         STA.B $B3
         LDY.B $B2
         JSR.W externalUtilityFunc1
@@ -1907,7 +1907,7 @@ CODE_ABE001:
         STA.B $B4
         CMP.B #$00
         BEQ CODE_ABE02E
-CODE_ABE011:
+CODE_ABE011: ; $2BE011
         JSR.W externalUtilityFunc1
         STA.B $B5
         LDX.B $BE
@@ -1924,7 +1924,7 @@ CODE_ABE011:
         STA.B $C0
         DEC.B $B4
         BNE CODE_ABE011
-CODE_ABE02E:
+CODE_ABE02E: ; $2BE02E
         PLY
         INY
         JML.L $2BDF82
@@ -1934,15 +1934,15 @@ CODE_ABE02E:
         PLP
         RTL
 ; [Helper] External utility function 1. Entry: general-purpose operations.
-externalUtilityFunc1:
+externalUtilityFunc1: ; $2BE039
         LDA.B [$BE],Y
         INY
         BMI CODE_ABE043
         db $E6,$C0,$A0,$00,$80
-CODE_ABE043:
+CODE_ABE043: ; $2BE043
         RTS
 ; [Helper] External utility function 2. Entry: additional utility operations.
-externalUtilityFunc2:
+externalUtilityFunc2: ; $2BE044
         PHP
         SEP #$20
         REP #$10
@@ -1954,15 +1954,15 @@ externalUtilityFunc2:
         STY.W $2143
         REP #$10
         LDA.B #$10
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
 ; [Helper] External utility function 3. Entry: specialized utility operations.
-externalUtilityFunc3:
+externalUtilityFunc3: ; $2BE063
         PHP
         SEP #$20
         REP #$10
@@ -1973,8 +1973,8 @@ externalUtilityFunc3:
         STY.W $2142
         REP #$10
         LDA.B #$11
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
@@ -1983,8 +1983,8 @@ externalUtilityFunc3:
         db $08,$E2,$20,$C2,$10,$48,$DA,$5A,$84,$AC,$A5,$AC,$8D,$42,$21,$A5
         db $AD,$8D,$43,$21,$A9,$14,$20,$9E,$E1,$20,$BD,$E1,$7A,$FA,$68,$28
         db $6B
-; [Memory] External compression/decompression function. Entry: data compression operations.
-externalCompressionFunc:
+; [Music] Sends cmd $15 + register(A) + value(Y) to SPC700
+spcSetDspRegister: ; $2BE0A0
         PHP
         SEP #$20
         REP #$10
@@ -1996,8 +1996,8 @@ externalCompressionFunc:
         LDA.B $AC
         STA.W $2143
         LDA.B #$15
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
@@ -2005,8 +2005,8 @@ externalCompressionFunc:
         RTL
         db $08,$E2,$20,$C2,$10,$48,$DA,$5A,$84,$AC,$8D,$42,$21,$A5,$AC,$8D
         db $43,$21,$A9,$16,$20,$9E,$E1,$20,$BD,$E1,$7A,$FA,$68,$28,$6B
-; [Memory] External encryption/decryption function. Entry: data security operations.
-externalEncryptionFunc:
+; [Music] Sends cmd $17 + SFX ID(A) + param(Y) to SPC700
+spcPlaySfx: ; $2BE0DE
         PHP
         SEP #$20
         REP #$10
@@ -2018,15 +2018,15 @@ externalEncryptionFunc:
         LDA.B $AC
         STA.W $2143
         LDA.B #$17
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
         PLP
         RTL
-; [Memory] External CRC32 calculation function. Entry: checksum generation.
-externalCRC32Func:
+; [Music] Sends cmd $18 + track ID(A) to SPC700
+spcPlayMusic: ; $2BE0FD
         PHP
         SEP #$20
         REP #$10
@@ -2035,8 +2035,8 @@ externalCRC32Func:
         PHY
         STA.W $2142
         LDA.B #$18
-        JSR.W externalSearchFunc
-        JSR.W externalPathfindingFunc
+        JSR.W spcInitHandshake
+        JSR.W spcEchoWaitReset
         PLY
         PLX
         PLA
@@ -2049,8 +2049,8 @@ externalCRC32Func:
         db $42,$21,$A9,$1D,$20,$9E,$E1,$20,$BD,$E1,$7A,$FA,$68,$28,$6B,$08
         db $E2,$20,$C2,$10,$DA,$A9,$1E,$20,$9E,$E1,$20,$BD,$E1,$AD,$43,$21
         db $85,$AC,$85,$AD,$A4,$AC,$AD,$42,$21,$FA,$28,$6B
-; [Memory] External sorting algorithm function. Entry: data sorting operations.
-externalSortFunc:
+; [Music] Writes A→$2142, Y(lo)→$2143; direct SPC port manipulation
+spcWritePort2: ; $2BE181
         PHP
         SEP #$20
         REP #$10
@@ -2068,12 +2068,12 @@ externalSortFunc:
         PLA
         PLP
         RTL
-; [Memory] External search algorithm function. Entry: data search operations.
-externalSearchFunc:
+; [Music] Sets $B6=$88; waits echo on $2140; sends cmd from A via $2141
+spcInitHandshake: ; $2BE19E
         PHA
         LDA.B #$88
         STA.B $B6
-CODE_ABE1A3:
+CODE_ABE1A3: ; $2BE1A3
         CMP.W $2140
         BNE CODE_ABE1A3
         PLA
@@ -2082,34 +2082,34 @@ CODE_ABE1A3:
         STA.W $2140
         INC.B $B6
         LDA.B $B6
-CODE_ABE1B5:
+CODE_ABE1B5: ; $2BE1B5
         CMP.W $2140
         BNE CODE_ABE1B5
         INC.B $B6
         RTS
-; [AI] External pathfinding algorithm function. Entry: A* or similar pathfinding.
-externalPathfindingFunc:
+; [Music] Writes $B6→$2140; waits echo; clears $2141; resets handshake
+spcEchoWaitReset: ; $2BE1BD
         LDA.B $B6
         CMP.B #$88
         BNE CODE_ABE1C5
         db $A9,$80
-CODE_ABE1C5:
+CODE_ABE1C5: ; $2BE1C5
         STA.W $2140
-CODE_ABE1C8:
+CODE_ABE1C8: ; $2BE1C8
         CMP.W $2140
         BNE CODE_ABE1C8
         LDA.B #$00
         STA.W $2141
         LDA.B #$20
-CODE_ABE1D4:
+CODE_ABE1D4: ; $2BE1D4
         DEC A
         BNE CODE_ABE1D4
         RTS
-; [AI] External AI decision function. Entry: complex AI decision making.
-externalAIFunc:
+; [Music] Writes $B6→$2140; waits echo; increments $B6
+spcPortWriteWait: ; $2BE1D8
         LDA.B $B6
         STA.W $2140
-CODE_ABE1DD:
+CODE_ABE1DD: ; $2BE1DD
         CMP.W $2140
         BNE CODE_ABE1DD
         INC.B $B6
@@ -2122,7 +2122,7 @@ CODE_ABE1DD:
         db $60,$E6,$C0,$A0,$00,$80,$80,$D3,$E6,$C0,$A0,$00,$80,$80,$D2,$E6
         db $C0,$A0,$00,$80,$80,$D6
 ; [Helper] External final library function. Entry: cleanup or final operations.
-externalFinalFunc:
+externalFinalFunc: ; $2BE24B
         PHA
         LDA.B $B6
         EOR.B #$FF
@@ -2131,7 +2131,7 @@ externalFinalFunc:
         STZ.B $BE
         STZ.B $BF
         LDX.B $B0
-CODE_ABE25B:
+CODE_ABE25B: ; $2BE25B
         LDA.B [$BE],Y
         STA.W $2141
         LDA.B $B6
@@ -2140,7 +2140,7 @@ CODE_ABE25B:
         BPL CODE_ABE294
         DEX
         BEQ CODE_ABE289
-CODE_ABE26B:
+CODE_ABE26B: ; $2BE26B
         CMP.W $2142
         BNE CODE_ABE26B
         LDA.B [$BE],Y
@@ -2150,24 +2150,24 @@ CODE_ABE26B:
         INC.B $B6
         INY
         BPL CODE_ABE29B
-CODE_ABE27F:
+CODE_ABE27F: ; $2BE27F
         DEX
         BEQ CODE_ABE289
-CODE_ABE282:
+CODE_ABE282: ; $2BE282
         CMP.W $2140
         BEQ CODE_ABE25B
         BRA CODE_ABE282
-CODE_ABE289:
+CODE_ABE289: ; $2BE289
         LDA.B $B6
         INC.B $B6
-CODE_ABE28D:
+CODE_ABE28D: ; $2BE28D
         CMP.W $2140
         BNE CODE_ABE28D
         PLA
         RTS
-CODE_ABE294:
+CODE_ABE294: ; $2BE294
         db $E6,$C0,$A0,$00,$80,$80,$CD
-CODE_ABE29B:
+CODE_ABE29B: ; $2BE29B
         INC.B $C0
         LDY.W #$8000
         BRA CODE_ABE27F

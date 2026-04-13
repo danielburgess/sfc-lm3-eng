@@ -1,5 +1,7 @@
         org $8A8000
 
+; [Script] 4 entries linking script engine to text/bytecode tables
+scriptMetaTable: ; $0A8000
         db $9B,$BA,$22
         db $00
         db $B2,$BB,$03
