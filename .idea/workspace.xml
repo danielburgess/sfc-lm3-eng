@@ -4,18 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Added windowed script file caching. some script fixes.">
-      <change afterPath="$PROJECT_DIR$/en_ptr_data/script_ext.old" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/text_finder.py" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Removed garbage from script_ext and reformatted to use the window format.">
+      <change afterPath="$PROJECT_DIR$/lm3_annotation_notes.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AI_IPC_PROMPT.md" beforeDir="false" afterPath="$PROJECT_DIR$/AI_IPC_PROMPT.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/event-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/event-text.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script_ext.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +40,7 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/en_ptr_data",
+    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -59,8 +52,8 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/en_ptr_data" />
       <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -397,7 +390,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776047746573</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Removed garbage from script_ext and reformatted to use the window format.">
+      <option name="closed" value="true" />
+      <created>1776061211441</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1776061211441</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -418,7 +419,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional." />
     <MESSAGE value="New text blocks have been identified for translation." />
     <MESSAGE value="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL" />
     <MESSAGE value="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding." />
@@ -443,6 +443,7 @@
     <MESSAGE value="More changes and fixes." />
     <MESSAGE value="Aded new master rom hacking database for ai to reference. Added recent changes." />
     <MESSAGE value="Added windowed script file caching. some script fixes." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added windowed script file caching. some script fixes." />
+    <MESSAGE value="Removed garbage from script_ext and reformatted to use the window format." />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed garbage from script_ext and reformatted to use the window format." />
   </component>
 </project>

@@ -6,35 +6,35 @@
 <<<window[0]:$0004-$0005>>>
 
 <<<window[1]:$0010-$0028>>>
-[FF7F00]雪ダルマを　くずしてみました‥‥[FFFE00]
+[FF7F00]You knocked over the snowman...[FFFE00]
 <<<window[2]:$005E-$0092>>>
-[FF7F00]なんと、中から〃やくそう〃が出てきた![nl]勇者軍は〃やくそう〃を　手に入れた。[FFFE00]
+[FF7F00]An Herb came out from inside![nl]The Hero Army obtained an Herb.[FFFE00]
 <<<window[3]:$009D-$00D5>>>
-[FF7F00]なんと、中から〃ばんのうやく〃が出てきた![nl]勇者軍は〃ばんのうやく〃を　手に入れた。[FFFE00]
+[FF7F00]A Panacea came out from inside![nl]The Hero Army obtained a Panacea.[FFFE00]
 <<<window[4]:$00E0-$011C>>>
-[FF7F00]なんと、中から〃ちからのドロップ〃が出てきた![nl]勇者軍は〃ちからのドロップ〃を　手に入れた。[FFFE00]
+[FF7F00]A Power Drop came out from inside![nl]The Hero Army obtained a Power Drop.[FFFE00]
 <<<window[5]:$0127-$0144>>>
-[FF7F00]なんと、中から冷凍ミカンが出てきた![FFFE00]
+[FF7F00]A frozen tangerine came out from inside![FFFE00]
 <<<window[6]:$0152-$0185>>>
-[msg][special]「あっ、それは隠しておいた俺さまのミカン![nl][wait30]　野郎ども、とりかえせーー!」
+[msg][special]"Hey, that's the tangerine I hid![nl][wait30] You punks, give it back!!"
 <<<window[7]:$01C2-$01C8>>>
-滋[nl]ぃ[P]
+
 <<<window[8]:$01FA-$0217>>>
-[FF7F00]なんと、中からアイスクリームが出てきた![FFFE00]
+[FF7F00]Ice cream came out from inside![FFFE00]
 <<<window[9]:$0225-$0256>>>
-[msg][special]「うっ、それは俺さまの今日のおやつ![nl][wait30]　野郎ども、とりかえせーー!」
+[msg][special]"Ugh, that's my snack for today![nl][wait30] You scoundrels, give it back!!"
 <<<window[10]:$026B-$0272>>>
-雌[R]「[P][04]
+
 <<<window[11]:$0278-$027F>>>
-ぇ滋「[P]ぇ
+
 <<<window[12]:$029B-$02CC>>>
-[FF7F00]なんと、中から冷凍ヌイグルミが出てきた![nl]やった!　プーちゃんをみつけたぞ★[FFFE00]
+[FF7F00]A frozen stuffed animal came out from inside![nl]Alright! We found a teddy bear![FFFE00]
 <<<window[13]:$02DA-$030E>>>
-[msg][special]「ぬぬぬ、俺さまの　おきにいりのクマちゃんまでも![nl][wait30]　もう　かんべんならーーん!」
+[msg][special]"Grrr, even my favorite teddy bear![nl][wait30] I can't take it anymooore!!"
 <<<window[14]:$0321-$033E>>>
-[FF7F00]魔物のボスが　山からおりて来ました。[FFFE00]
+[FF7F00]The monster boss came down from the mountain.[FFFE00]
 <<<window[15]:$034E-$0368>>>
-[FF7F00]‥‥が、なにも見つかりませんでした。[FFFE00]
+[FF7F00]...but nothing was found.[FFFE00]
 
 <<$327696:3[$328836]>>
 
@@ -50,7 +50,7 @@
 
 <<$327696:9[$329071]>>
 <<<window[0]:$0021-$003A>>>
-[FF7F00]魔物のボスが　姿をあらわした![FFFE00]
+[FF7F00]The monster boss has appeared![FFFE00]
 
 <<$327696:10[$329195]>>
 
@@ -62,53 +62,53 @@
 
 <<$327696:14[$329311]>>
 <<<window[0]:$0034-$0072>>>
-[msg][special]「きけ～～～～い!![wait30]　オレたちゃ　泣く子も黙る[nl]　魔獣盗賊団　スカルボンバーズ　だ!!」
+[msg][special]"Listen uuuup!![wait30] We're the fearsome[nl] Bone Bombers, terror of all!!"
 <<<window[1]:$0076-$00B9>>>
-[msg][special]「この村の宝は、あらいざらい　このトランプ様が[nl]　頂くことにした。[wait30]ありがたく思えよ。[wait30]ヒャッハッハ」
+[msg][special]"This village's treasure is all mine now,[nl] by order of Lord Trump.[wait30] Be grateful.[wait30] Hyahaha!"
 <<<window[2]:$00C3-$00E5>>>
-[msg][special]「おう、ヤローども、[wait20]てってー的にやっちまえ!」
+[msg][special]"Oi, you lot,[wait20] wreck 'em good!!"
 <<<window[3]:$00E9-$00FB>>>
-[msg][special]「ギッギーーーー!!」
+[msg][special]"Giigyaaaa!!"
 <<<window[4]:$0114-$0120>>>
-[msg][special]「ギー!」
+[msg][special]"Gyee!"
 <<<window[5]:$0149-$0155>>>
-[msg][special]「ギー!」
+[msg][special]"Gyee!"
 <<<window[6]:$017E-$018A>>>
-[msg][special]「とう!」
+[msg][special]"Hiyah!"
 <<<window[7]:$01B1-$01B5>>>
 
 <<<window[8]:$01DB-$0211>>>
-[msg][special]「迎えが来たようだな。[nl][wait30]　よし、あとは　おまえらにまかせる。[wait30]しっかりヤレよ!」
+[msg][special]"Looks like my ride's here.[nl][wait30] Alright, I'll leave the rest to you.[wait30] Don't screw up!"
 <<<window[9]:$021B-$0229>>>
-[msg][special]「ヒッヒー!」
+[msg][special]"Hee hee!"
 <<<window[10]:$022B-$0239>>>
 
 <<<window[11]:$0271-$027F>>>
-[msg][special]「ギギギ‥‥」
+[msg][special]"Gigigigi..."
 <<<window[12]:$0281-$0295>>>
 
 <<<window[13]:$02A9-$02AE>>>
-飲けお
+
 <<<window[14]:$02DB-$02F1>>>
-[msg][special]「あいつら、何者なんだ!」
+[msg][special]"Who the heck are those guys!?"
 <<<window[15]:$02FB-$032F>>>
-[msg][special]「ピーコック、君は急いで家にもどるんだ![nl][wait30]　あいつらは　僕たちがひきうけた」
+[msg][special]"Peacock, hurry back home![nl][wait30] We'll hold them off!"
 <<<window[16]:$0339-$0347>>>
-[msg][special]「は、はいッ」
+[msg][special]"Y-yes, sir!"
 <<<window[17]:$035A-$035E>>>
 
 <<<window[18]:$0362-$0387>>>
-[msg][special]「オレたち　ボンバーズの見習部隊だ、[wait20]ペリペリ」
+[msg][special]"We're the Bone Bombers' trainee squad,[wait20] peri peri!"
 <<<window[19]:$038B-$03BC>>>
-[msg][special]「おまえら、なにもんだ？[nl][wait30]　じゃますると　ただじゃおかねえぞ、[wait30]ペリペリ」
+[msg][special]"Who do you think you are?[nl][wait30] Get in our way and you'll pay,[wait30] peri peri!"
 <<<window[20]:$03C6-$03F6>>>
-[msg][special]「それはこっちのセリフだよ。[nl][wait30]　いこう、モーモー。[wait30]村を守るんだ!」
+[msg][special]"That's our line.[nl][wait30] Let's go, Mo.[wait30] We're protecting this village!"
 
 <<$327696:15[$330344]>>
 <<<window[0]:$0023-$0038>>>
-[msg][special]「いただき～～　ギッギー!」
+[msg][special]"I'll take that~~ Giigyee!"
 <<<window[1]:$0053-$0073>>>
-[msg][special]「まってくれ、その石を　持って行かないで!」
+[msg][special]"Wait, don't take that stone!"
 <<<window[2]:$0082-$0088>>>
 
 
@@ -116,13 +116,13 @@
 <<<window[0]:$000C-$0021>>>
 
 <<<window[1]:$002A-$0057>>>
-[msg][special]「ここは俺様の管轄だ。[nl][wait30]　勝手に入ってくるんじゃねえ!」
+[msg][special]"This is my turf.[nl][wait30] Don't come in here without permission!"
 <<<window[2]:$0061-$0082>>>
-[msg][special]「一歩でも動いてみやがれ、ブッとばしたるぞ!」
+[msg][special]"Move one step and I'll knock you flat!"
 <<<window[3]:$0093-$00AD>>>
-[msg][special]「こんなところにまで　ボンバーズが!」
+[msg][special]"The Bone Bombers, even here!?"
 <<<window[4]:$00B7-$00C8>>>
-[msg][special]「いくぞ　みんな!」
+[msg][special]"Let's go, everyone!"
 
 <<$327696:17[$330688]>>
 <<<window[0]:$001A-$001B>>>
@@ -132,19 +132,19 @@
 <<<window[2]:$00AA-$00AE>>>
 
 <<<window[3]:$00B7-$00C3>>>
-[msg][special]「きたな」
+[msg][special]"There they are."
 <<<window[4]:$00D4-$00EC>>>
-[msg][special]「くそっ、早速おでましだぜ!」
+[msg][special]"Damn, they're already here!"
 <<<window[5]:$00FD-$012F>>>
-[msg][special]「お前たちを　足止めしろとの御命令だ。[nl][wait30]　ヤロウども、やっちまえ!」
+[msg][special]"Orders are to hold you here.[nl][wait30] Boys, get 'em!"
 <<<window[6]:$0133-$0145>>>
-[msg][special]「ペリペリーーー!!」
+[msg][special]"Peri periii!!"
 <<<window[7]:$0158-$016D>>>
-[msg][special]「よし、おれは家を壊す」
+[msg][special]"Right, I'll smash the house."
 <<<window[8]:$017E-$019A>>>
-[msg][special]「いくぞ、みんな。[wait30]ゆだんするなよ!」
+[msg][special]"Let's go, everyone.[wait30] Stay on guard!"
 <<<window[9]:$019E-$01AC>>>
-[msg][special]「おーーー!」
+[msg][special]"Yeaaah!"
 
 <<$327696:18[$331135]>>
 <<<window[0]:$002C-$002E>>>
@@ -158,59 +158,59 @@
 <<<window[4]:$0062-$0063>>>
 
 <<<window[5]:$006C-$009B>>>
-[msg][special]「やったぜ、ヴァイスのおかしらは![nl][wait30]　すっげー力を　手に入れたぜ!」
+[msg][special]"We did it! Boss Weiss[nl][wait30] got his hands on incredible power!"
 <<<window[6]:$00A5-$00CE>>>
-[msg][special]「おれたちは　遂にみつけたんだ![nl][wait30]　伝説の秘宝を!」
+[msg][special]"We finally found it![nl][wait30] The legendary treasure!"
 <<<window[7]:$00D3-$00D4>>>
 
 <<<window[8]:$00D8-$00E3>>>
-[msg][special]「ん？」
+[msg][special]"Hm?"
 <<<window[9]:$00E5-$010A>>>
 
 <<<window[10]:$010E-$0126>>>
-[msg][special]「おっとヤベ、だれかきやがったぜ」
+[msg][special]"Whoops, someone's coming!"
 <<<window[11]:$0130-$014B>>>
-[msg][special]「さっきのガイコツじゃ　ねえだろうな？」
+[msg][special]"It's not those skeletons again, is it?"
 <<<window[12]:$0150-$0151>>>
 
 <<<window[13]:$0155-$0175>>>
-[msg][special]「さあな。[wait30]とにかく、はやいとこずらかろうぜ」
+[msg][special]"Who knows.[wait30] Anyway, let's scram!"
 <<<window[14]:$0195-$01C4>>>
-[msg][special]「なかは　けっこう複雑そうだね。[nl][wait30]　シャルル、案内してくれるかな」
+[msg][special]"It looks pretty complex inside.[nl][wait30] Charley, can you guide us?"
 <<<window[15]:$01CE-$01FA>>>
-[msg][special]「ごめんなさい。[nl][wait20]　わたしも　そんなに詳しいわけじゃないから‥‥」
+[msg][special]"I'm sorry.[nl][wait20] I don't really know this place that well either..."
 <<<window[16]:$0204-$0217>>>
-[msg][special]「いいかげんなもんだな」
+[msg][special]"That's not very reassuring."
 <<<window[17]:$0221-$0233>>>
-[msg][special]「しかたないでしょ!」
+[msg][special]"It can't be helped!"
 <<<window[18]:$023D-$0255>>>
-[msg][special]「とにかく　先へ進んでみよう」
+[msg][special]"Anyway, let's press on ahead."
 
 <<$327696:19[$331739]>>
 <<<window[0]:$004A-$0054>>>
 
 <<<window[1]:$0077-$00A2>>>
-[msg][special]「ジャスバンに　こんな部屋があったのね。[nl][wait30]　知らなかったわ」
+[msg][special]"I didn't know Jasban had a room like this.[nl][wait30] I had no idea."
 <<<window[2]:$00AC-$00B9>>>
-[msg][special]「おいおい」
+[msg][special]"Hey, hey..."
 <<<window[3]:$00BD-$00DA>>>
-[msg][special]「おーい、俺を　おいて行かないでくれー」
+[msg][special]"Heey, don't leave me behind!"
 <<<window[4]:$00ED-$00F1>>>
 
 <<<window[5]:$00F5-$0114>>>
-[msg][special]「おっと![wait30]　バカヤロー、気をつけろい!」
+[msg][special]"Whoa![wait30] Watch where you're going, idiot!"
 <<<window[6]:$0125-$015F>>>
-[msg][special]「おいっ、ちょっと待てよ![wait20]　何か落としたぞ![nl][wait20]　おいっ![wait20]　‥‥いっちゃったよ」
+[msg][special]"Hey, wait![wait20] You dropped something![nl][wait20] Hey![wait20] ...they're gone."
 <<<window[7]:$0170-$018D>>>
-[msg][special]「何だこりゃ？[wait20]　変な石コロだな」
+[msg][special]"What's this?[wait20] Some kind of weird stone."
 <<<window[8]:$0197-$01AD>>>
-[msg][special]「‥‥いまのは　誰なのよ？」
+[msg][special]"...who were they just now?"
 <<<window[9]:$01B7-$01F0>>>
-[msg][special]「盗掘団ね。[wait30]彼らが　荒らし回ったから[nl]　結界が　役に立たなくなってるのよ」
+[msg][special]"Grave robbers.[wait30] They ransacked the place,[nl] so the seal is no longer working."
 <<<window[10]:$01FA-$020B>>>
-[msg][special]「なんてことなの!」
+[msg][special]"How terrible!"
 <<<window[11]:$0215-$0237>>>
-[msg][special]「話はあとだ。[wait30]奥の祭壇に行ってみよう」
+[msg][special]"We can talk later.[wait30] Let's check the altar deeper in."
 
 <<$327696:20[$332313]>>
 <<<window[0]:$0062-$0063>>>
@@ -224,13 +224,13 @@
 <<<window[0]:$0072-$0078>>>
 
 <<<window[1]:$00CA-$00F0>>>
-[msg][special]「兄貴、ヴァイスの兄貴、[wait20]外は大丈夫です」
+[msg][special]"Boss, Boss Weiss,[wait20] all clear outside!"
 <<<window[2]:$0105-$012A>>>
-[msg][special]「よし、目的のブツは手に入れた。[wait30]ズラかるぞ!」
+[msg][special]"Good, we got what we came for.[wait30] Let's bail!"
 <<<window[3]:$0161-$0165>>>
 
 <<<window[4]:$0169-$017A>>>
-[msg][special]「ズラかるニャー!」
+[msg][special]"Time to scram, meow!"
 <<<window[5]:$01BB-$01C4>>>
 
 
@@ -240,49 +240,49 @@
 <<<window[1]:$004E-$0050>>>
 
 <<<window[2]:$006F-$0090>>>
-[msg][special]「おや？[wait30]　洞くつの中から　声がするぞ？」
+[msg][special]"Hm?[wait30] I hear voices from inside the cave."
 <<<window[3]:$0094-$00C2>>>
-[msg][special]？？？「なんだよこりゃ!？[nl][wait30]　　　　いってえ　どうなってやがんでい!？」
+[msg][special]???"What the heck is this!?[nl][wait30]     What's going on here!?"
 <<<window[4]:$00C6-$00D6>>>
-[msg][special]？？？「‥‥むう」
+[msg][special]???"...hmph."
 <<<window[5]:$00E7-$00F3>>>
 
 <<<window[6]:$00F7-$010A>>>
-[msg][special]「あっ、おまえ達は!」
+[msg][special]"Oh, it's you guys!"
 <<<window[7]:$012A-$0133>>>
 
 
 <<$327696:23[$333262]>>
 <<<window[0]:$005F-$0080>>>
-[msg][special]「ひどい、[wait20]めちゃくちゃに　荒らされているわ」
+[msg][special]"This is awful.[wait20] The whole place has been ransacked."
 <<<window[1]:$008A-$009A>>>
-[msg][special]「なんだいこりゃ」
+[msg][special]"What's all this?"
 <<<window[2]:$00A4-$00D5>>>
-[msg][special]「石板に　なにか書いてあったみたい。[nl][wait30]　それが　削り取られているわ」
+[msg][special]"It looks like there was something written on this tablet.[nl][wait30] But it's been scraped away."
 <<<window[3]:$00DF-$00EF>>>
-[msg][special]「読めるかい？」
+[msg][special]"Can you read it?"
 <<<window[4]:$00F9-$0107>>>
-[msg][special]「まって‥‥」
+[msg][special]"Wait..."
 <<<window[5]:$011E-$0152>>>
-[msg][special]「[P][R][S]‥‥[wait20]　んと、災厄をここに‥‥[nl][wait20]　ねがう‥‥[wait20]　忘れるな‥‥」
+[msg][special]"[P][R][S]...[wait20] um, calamity here...[nl][wait20] wish...[wait20] do not forget..."
 <<<window[6]:$015C-$0199>>>
-[msg][special]「‥‥ダメ、断片的にしか　読めないわ。[nl][wait30]　肝心なところが　削り取られちゃってるみたい」
+[msg][special]"...no good, I can only read fragments.[nl][wait30] The important parts have been scraped off."
 <<<window[7]:$01A3-$01C2>>>
-[msg][special]「ラドック教授なら　わかるんじゃないかな？」
+[msg][special]"Maybe Professor Raddoc could figure it out?"
 <<<window[8]:$01CC-$01F8>>>
-[msg][special]「そうね、でも‥‥[nl][wait30]　どうやって　これを伝えればいいのかしら‥‥」
+[msg][special]"True, but...[nl][wait30] how would we even get this to him...?"
 <<<window[9]:$020A-$021D>>>
-[msg][special]「そんなん簡単だぜ」
+[msg][special]"That's easy!"
 <<<window[10]:$0269-$0298>>>
-[FF060C]リイム達は　謎の石板をたずさえて[FF060F]ラドック教授の元を　訪ねることに
+[FF060C]Carrying the mysterious tablet,[FF060F]the party visits Professor Raddoc.
 <<<window[11]:$02AC-$02EC>>>
-[FF060B]はたして　ジャスバンで何があったのか？[FF0C0E]盗掘団が、[FF0311]そして　ボンバーズが狙っていたものは　何なのか？
+[FF060B]What happened at Jasban?[FF0C0E]What were the robbers[FF0311]and the Bone Bombers after?
 
 <<$327696:24[$334025]>>
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$0019-$0050>>>
-[msg][special]「おまえたちをジャスバンに　近づけるわけには[nl]　いかなかったのに～～![wait30]　‥‥‥‥ガクッ」
+[msg][special]"I couldn't let you get near Jasban...[nl] not if I could help it~~![wait30] ...urgh..."
 <<<window[2]:$0052-$0059>>>
 
 <<<window[3]:$005C-$005E>>>
@@ -290,23 +290,23 @@
 
 <<$327696:25[$334120]>>
 <<<window[0]:$0017-$0060>>>
-[msg][special]「ありがとうございます。[nl][wait30]　これは残った家から　かきあつめたものです」[FFFE00][cls]「どうぞ、おやくにたててください」[FFFE00]
+[msg][special]"Thank you so much.[nl][wait30] We gathered these from the remaining houses."[FFFE00][cls]"Please, put them to good use."[FFFE00]
 <<<window[1]:$006B-$00A8>>>
-[FF7F00]勇者軍は〃ちからのリング＋3〃を　いただいた。[FFFE00][nl]勇者軍は〃けいけんのたね〃を　いただいた。[FFFE00]
+[FF7F00]The Hero Army received a Power Ring +3.[FFFE00][nl]The Hero Army received an Exp Seed.[FFFE00]
 <<<window[2]:$00C3-$00FE>>>
-[FF7F00]勇者軍は〃ちからのリング〃を　いただいた。[FFFE00][nl]勇者軍は〃まもりのブレス〃を　いただいた。[FFFE00]
+[FF7F00]The Hero Army received a Power Ring.[FFFE00][nl]The Hero Army received a Def Brace.[FFFE00]
 <<<window[3]:$010E-$012A>>>
-[FF7F00]勇者軍は〃やくそう〃を　いただいた。[FFFE00]
+[FF7F00]The Hero Army received an Herb.[FFFE00]
 <<<window[4]:$0140-$018A>>>
-[msg][special]「ああ、村が壊滅してしまったぁ～～～」[FFFE00][cls]「あんたら、たよりにならないな。[nl][wait30]　さっさと　出ていってくれ!」[FFFE00]
+[msg][special]"Ahh, the village is destroyed~~~"[FFFE00][cls]"You lot are useless.[nl][wait30] Just get out of here!"[FFFE00]
 <<<window[5]:$01A5-$01BC>>>
-[FF070E]勇者軍は　ジャスバンを目指す
+[FF070E]The Hero Army heads for Jasban.
 
 <<$327696:26[$334577]>>
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$0019-$0035>>>
-[msg][special]「ひー、竜巻がまにあわなかったか‥‥」
+[msg][special]"Eek, the tornado didn't make it in time..."
 <<<window[2]:$0037-$003E>>>
 
 <<<window[3]:$0041-$0043>>>
@@ -316,47 +316,47 @@
 <<<window[0]:$0003-$0006>>>
 
 <<<window[1]:$0014-$002E>>>
-[msg][special]「よし、教授のところへ　急ごう」
+[msg][special]"Right, let's hurry to the professor."
 <<<window[2]:$0051-$006A>>>
-[FF060E]勇者軍は　ライナーク城へむかいます
+[FF060E]The Hero Army heads for Linark Castle.
 <<<window[3]:$0083-$009E>>>
-[FF050E]勇者軍は　再びマテドラルへむかうことに
+[FF050E]The Hero Army heads for Matedral once more.
 
 <<$327696:28[$334816]>>
 <<<window[0]:$0062-$007F>>>
 
 <<<window[1]:$008F-$00A6>>>
-[msg][special]「ずいぶん　荒らされてるなあ」
+[msg][special]"This place has been trashed pretty bad."
 <<<window[2]:$00B0-$00C4>>>
-[msg][special]「ホント、ひどいわね‥‥」
+[msg][special]"Really, it's terrible..."
 <<<window[3]:$00C8-$00DC>>>
-[msg][special]「ギッギッギーーーー!!」
+[msg][special]"Giigiigiii!!"
 <<<window[4]:$00DE-$00F0>>>
 
 <<<window[5]:$0105-$011B>>>
-[msg][special]「しまった、新手かっ!？」
+[msg][special]"Damn, more of them!?"
 <<<window[6]:$0132-$0146>>>
-[msg][special]「ギッギッギーーーー!!」
+[msg][special]"Giigiigiii!!"
 <<<window[7]:$0169-$0176>>>
-[msg][special]「せいっ!!」
+[msg][special]"Hyaah!!"
 <<<window[8]:$01A9-$01AD>>>
 
 <<<window[9]:$01B0-$01B3>>>
 
 <<<window[10]:$01B8-$01C5>>>
-[msg][special]「君は!」
+[msg][special]"You're--!"
 <<<window[11]:$01D3-$01F7>>>
-[msg][special]「フフ、危ないところだったな。[wait30]もう大丈夫だ」
+[msg][special]"Heh, that was a close one.[wait30] You're safe now."
 <<<window[12]:$0218-$0240>>>
-[FF040C]勇者軍は、王様とラドック教授の待つ[FF0C0F]ライナーク城へ
+[FF040C]The Hero Army heads to Linark Castle[FF0C0F]where the King and Prof. Raddoc await.
 <<<window[13]:$0269-$028F>>>
-[FF080C]勇者軍は　魔石を求めて[FF090F]ジリジリ砂漠にむかいます
+[FF080C]In search of Prismarite,[FF090F]the Hero Army heads for the Great Desert.
 
 <<$327696:29[$335486]>>
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$0019-$0036>>>
-[msg][special]「ヒーーーー、ごめんなさい。[wait30]ペリペリ」
+[msg][special]"Heee, I'm sorry![wait30] Peri peri!"
 <<<window[2]:$0038-$0042>>>
 
 <<<window[3]:$0045-$0047>>>
@@ -368,19 +368,19 @@
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$0019-$0032>>>
-[msg][special]「ギッギー、[wait20]オボエテロヨー!」
+[msg][special]"Giigyee,[wait20] you'll pay for this!"
 
 <<$327696:32[$335641]>>
 <<<window[0]:$0002-$0012>>>
 
 <<<window[1]:$0040-$0060>>>
-[FF7F01]なんと、宝箱の中から　魔物があらわれた![FFFE00]
+[FF7F01]A monster appeared from inside the treasure chest![FFFE00]
 <<<window[2]:$0076-$0077>>>
 
 
 <<$327696:33[$335761]>>
 <<<window[0]:$0011-$0023>>>
-[FF7F00]扉が　開きました。[FFFE00]
+[FF7F00]The door has opened.[FFFE00]
 
 <<$327696:34[$335802]>>
 <<<window[0]:$0005-$000F>>>
@@ -392,53 +392,53 @@
 
 <<$327696:37[$335868]>>
 <<<window[0]:$0016-$0039>>>
-[FF7F00]宝箱の底に　スイッチがありました。押してみます。[FFFE00]
+[FF7F00]There's a switch at the bottom of the chest. You press it.[FFFE00]
 
 <<$327696:38[$335927]>>
 <<<window[0]:$0000-$0020>>>
-[FF7F00]宝箱を開けたら、怪しい煙が　ふきだした![FFFE00]
+[FF7F00]You opened the chest and suspicious smoke poured out![FFFE00]
 <<<window[1]:$0027-$0032>>>
 
 <<<window[2]:$0042-$005C>>>
-[FF7F00]‥‥が、運よく避けることができた。[FFFE00]
+[FF7F00]...but you managed to dodge it in time.[FFFE00]
 <<<window[3]:$007E-$00AE>>>
-[FF7F00]伝染病に　かかってしまった!![nl]攻撃力ダウン!　HPも減っちゃうゾ。[FFFE00]
+[FF7F00]You caught the plague!![nl]Attack power down! HP will decrease too.[FFFE00]
 <<<window[4]:$00C1-$00EA>>>
-[FF7F00]毒に　おかされてしまった!![nl]少しずつ　HPが減っていきます。[FFFE00]
+[FF7F00]You've been poisoned!![nl]HP will slowly decrease.[FFFE00]
 <<<window[5]:$00FD-$0127>>>
-[FF7F00]全身が　マヒしてしまった!![nl]しばらくの間、行動できません。[FFFE00]
+[FF7F00]Your whole body is paralyzed!![nl]You can't move for a while.[FFFE00]
 <<<window[6]:$013A-$016B>>>
-[FF7F00]呪いを　かけられてしまった!![nl]回復・補助魔法が　きかなくなりました。[FFFE00]
+[FF7F00]You've been cursed!![nl]Healing and support magic no longer work.[FFFE00]
 
 <<$327696:39[$336291]>>
 
 <<$327696:40[$336306]>>
 <<<window[0]:$0009-$0022>>>
-[FF7F00]魔物のボスが　姿をあらわした![FFFE00]
+[FF7F00]The monster boss has appeared![FFFE00]
 
 <<$327696:41[$336306]>>
 
 <<$327696:42[$336356]>>
 <<<window[0]:$006F-$0092>>>
-[msg][special]「この砂漠を越えたところに　遺跡があるんだね」
+[msg][special]"So the ruins are just past this desert, huh."
 <<<window[1]:$009C-$00B7>>>
-[msg][special]「それにしても　でっけー遺跡だモー」
+[msg][special]"Man, what huge ruins, Mo~!"
 <<<window[2]:$00C1-$00DD>>>
-[msg][special]「ええ、ずーっと昔から　あるんですって」
+[msg][special]"Yes, it's been here since a very long time ago."
 <<<window[3]:$00E7-$00FE>>>
-[msg][special]「ここに魔石が　あるのか？」
+[msg][special]"Is there Prismarite here?"
 <<<window[4]:$0108-$013D>>>
-[msg][special]「そう伝えられているわ。[wait30]ボンバーズの連中が[nl]　来てなければ　いいんだけど‥‥」
+[msg][special]"That's what they say.[wait30] I just hope the Bone Bombers[nl] haven't shown up..."
 <<<window[5]:$0147-$015A>>>
-[msg][special]「さあ、行きましょう」
+[msg][special]"Come, let's go."
 <<<window[6]:$015E-$0173>>>
-[msg][special]「‥‥？[wait30]　あれは!!」
+[msg][special]"...?[wait30] What's that!!"
 <<<window[7]:$0175-$0184>>>
 
 <<<window[8]:$01A3-$01BE>>>
-[msg][special]「ヤツらも　ここに目をつけていたのか」
+[msg][special]"So they had their eyes on this place too."
 <<<window[9]:$01C8-$01D9>>>
-[msg][special]「いそぎましょう!」
+[msg][special]"Let's hurry!"
 
 <<$327696:43[$336836]>>
 <<<window[0]:$004A-$004B>>>
@@ -446,31 +446,31 @@
 <<<window[1]:$004E-$0054>>>
 
 <<<window[2]:$0064-$0075>>>
-[msg][special]「うわっ、すごいな」
+[msg][special]"Whoa, this is amazing!"
 <<<window[3]:$007F-$009E>>>
-[msg][special]「おもしろい。[wait30]ブロックで　できているのね」
+[msg][special]"How neat.[wait30] It's all made of blocks."
 <<<window[4]:$00A8-$00D2>>>
-[msg][special]「ここに　子供たちがいるのか？[nl][wait30]　誰も　いねえじゃねえか」
+[msg][special]"Are there kids here?[nl][wait30] I don't see anyone."
 <<<window[5]:$00DC-$0111>>>
-[msg][special]「あら、知らないの？[wait30]　昼間の　おもちゃは[nl]　おもちゃ箱に入ってるもんなのよ」
+[msg][special]"Don't you know?[wait30] During the day, toys[nl] stay inside their toy boxes."
 <<<window[6]:$011B-$0134>>>
-[msg][special]「？？？[wait30]　そーいうもんかねえ」
+[msg][special]"???[wait30] Is that how it works?"
 <<<window[7]:$013E-$0161>>>
-[msg][special]「でも、へんね。[wait30]　なんか　ふんいきが違うわ‥‥」
+[msg][special]"But, that's strange.[wait30] Something about this place feels different..."
 <<<window[8]:$0166-$0170>>>
 
 <<<window[9]:$0180-$0184>>>
 
 <<<window[10]:$0188-$01AC>>>
-[msg][special]「ココハ　オモチャノトウ。[wait30]ジャマモノハ　デテイケ!」
+[msg][special]"THIS IS TOY TOWER.[wait30] INTRUDERS GET OUT!"
 <<<window[11]:$01B1-$01B5>>>
 
 <<<window[12]:$01C0-$01E5>>>
-[msg][special]「おっと、[wait20]とても　楽しい場所とは思えねえなあ」
+[msg][special]"Whoa,[wait20] doesn't seem like a fun place at all."
 <<<window[13]:$01EF-$0220>>>
-[msg][special]「へんよね。[wait30]ここのおもちゃは　子供好きな[nl]　やさしい精霊だったはず」
+[msg][special]"That's odd.[wait30] The toys here were supposed to be[nl] gentle spirits who loved children."
 <<<window[14]:$0224-$0242>>>
-[msg][special]「なんで　こんなことになっちゃったのかしら？」
+[msg][special]"How could this have happened?"
 
 <<$327696:44[$337421]>>
 <<<window[0]:$004A-$004B>>>
@@ -478,61 +478,61 @@
 <<<window[1]:$004E-$0057>>>
 
 <<<window[2]:$007B-$0094>>>
-[msg][special]「!？[wait30]　何かしら、この箱」
+[msg][special]"!?[wait30] What's this box?"
 <<<window[3]:$009E-$00BC>>>
-[msg][special]「開けてみるしか‥‥[wait30]ないんじゃない？」
+[msg][special]"We've got no choice but to open it...[wait30] right?"
 <<<window[4]:$00D1-$00F0>>>
-[msg][special]「‥‥ダメだ、カギが　かかってて　開かないよ」
+[msg][special]"...no good, it's locked and won't open."
 <<<window[5]:$00FA-$010C>>>
-[msg][special]「オレに　まかせとけ」
+[msg][special]"Leave it to me!"
 <<<window[6]:$011F-$0126>>>
 
 <<<window[7]:$012F-$0137>>>
 
 <<<window[8]:$013B-$014A>>>
-[msg][special]「あいてて‥‥」
+[msg][special]"Oww..."
 <<<window[9]:$0160-$0177>>>
-[msg][special]「キ、キミ、ケガは　ないかい？」
+[msg][special]"A-are you okay? Are you hurt?"
 <<<window[10]:$017C-$017D>>>
 
 <<<window[11]:$0181-$019B>>>
-[msg][special]「わっ、ごめんなさい!　ぶたないで!」
+[msg][special]"Eek, I'm sorry! Don't hit me!"
 <<<window[12]:$01A5-$01C1>>>
-[msg][special]「だいじょうぶ。[wait30]そんなことしないさ」
+[msg][special]"Don't worry.[wait30] I wouldn't do that."
 <<<window[13]:$01C6-$01C7>>>
 
 <<<window[14]:$01CB-$01F5>>>
-[msg][special]「ホント？[nl][wait30]　お兄ちゃんたち　ガイコツの仲間じゃないの？」
+[msg][special]"Really?[nl][wait30] You guys aren't with the skeletons?"
 <<<window[15]:$01FF-$0217>>>
-[msg][special]「ん？[wait20]　ガイコツだって!？」
+[msg][special]"Hm?[wait20] Skeletons!?"
 <<<window[16]:$0227-$0228>>>
 
 <<<window[17]:$022C-$0238>>>
-[msg][special]「ひっ!」
+[msg][special]"Eek!"
 <<<window[18]:$0242-$0284>>>
-[msg][special]「平気よ、[wait20]顔は怖いけどワルモンじゃないわ。[nl][wait30]　お姉ちゃんたちは、あなたたちを　助けにきたのよ」
+[msg][special]"It's okay.[wait20] He looks scary but he's not a bad guy.[nl][wait30] We came here to rescue you."
 <<<window[19]:$0288-$029F>>>
-[msg][special]「ここにいるのは　あなただけ？」
+[msg][special]"Are you the only one here?"
 <<<window[20]:$02A4-$02A5>>>
 
 <<<window[21]:$02A9-$02D2>>>
-[msg][special]「みんな、うえのほうで　つかまってる‥‥[nl][wait30]　にげだしてきたの」
+[msg][special]"Everyone's caught upstairs...[nl][wait30] I managed to escape."
 <<<window[22]:$02D6-$0302>>>
-[msg][special]「ガイコツが　追いかけてきたから[nl]　あわてて　箱の中に隠れたんだ」
+[msg][special]"The skeletons chased me, so[nl] I hid inside the box in a panic."
 <<<window[23]:$030C-$034D>>>
-[msg][special]「そうだったのか。[wait20]　でも、もう安心していいよ。[nl][wait30]　ガイコツは、お兄ちゃんたちが　やっつけたからね」
+[msg][special]"I see.[wait20] But you're safe now.[nl][wait30] We already took care of the skeletons."
 <<<window[24]:$0351-$0366>>>
-[msg][special]「キミは　お家におかえり」
+[msg][special]"Now go on home, kid."
 <<<window[25]:$036B-$036C>>>
 
 <<<window[26]:$0370-$038E>>>
-[msg][special]「‥‥うん。[wait20]　お兄ちゃん、ありがとう」
+[msg][special]"...okay.[wait20] Thank you, mister."
 <<<window[27]:$0393-$03A0>>>
 
 <<<window[28]:$03A4-$03C6>>>
-[msg][special]「やっぱり子供たちは　ここに集められていたのね」
+[msg][special]"So the children were being held here after all."
 <<<window[29]:$03D0-$03E8>>>
-[msg][special]「先をいそごうぜ![wait20]　モー」
+[msg][special]"Let's move on![wait20] Mo~!"
 
 <<$327696:45[$338455]>>
 
@@ -540,7 +540,7 @@
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$0019-$002F>>>
-[msg][special]「ギギギ、トランプ様～～!」
+[msg][special]"Gigigigi, Lord Trump~~!"
 <<<window[2]:$0031-$0038>>>
 
 <<<window[3]:$003B-$003D>>>
@@ -552,33 +552,33 @@
 <<<window[1]:$004E-$0053>>>
 
 <<<window[2]:$006F-$008C>>>
-[msg][special]「やはり　ボンバーズのしわざだったのか‥‥」
+[msg][special]"So it was the Bone Bombers after all..."
 <<<window[3]:$0090-$00AA>>>
-[msg][special]「ヒャハハハハ、[wait20]御明答!」
+[msg][special]"Hyahahaha![wait20] Correct!"
 <<<window[4]:$00AF-$00C1>>>
 
 <<<window[5]:$00C5-$00F3>>>
-[msg][special]「いかにも、[wait20]ここのおもちゃを操っているのは[nl]　われら　ボンバーズよ!」
+[msg][special]"Indeed,[wait20] we Bone Bombers are the ones[nl] controlling the toys here!"
 <<<window[6]:$00FD-$010C>>>
-[msg][special]「トランプ!!」
+[msg][special]"Trump!!"
 
 <<$327696:48[$338817]>>
 <<<window[0]:$0028-$0051>>>
-[msg][special]「きましたね。[nl][wait30]　私のおもちゃで　遊んでいただきましょう」
+[msg][special]"So you've come.[nl][wait30] Let me entertain you with my toys."
 <<<window[1]:$0062-$007D>>>
-[msg][special]「あいつが　コントロールしているんだな」
+[msg][special]"He's the one controlling them!"
 <<<window[2]:$0087-$009F>>>
-[msg][special]「おっしゃー、[wait20]いくぜモー!」
+[msg][special]"Alright,[wait20] let's go, Mo~!"
 
 <<$327696:49[$338987]>>
 
 <<$327696:50[$339048]>>
 <<<window[0]:$0059-$0078>>>
-[msg][special]　どこからか　D[r.]．スカルの声がきこえてくる。
+[msg][special] D[r.]. Skull's voice echoes from somewhere.
 <<<window[1]:$007C-$009D>>>
-[msg][special]「ほほう、[wait20]よく　このコンベアを抜けてきたね」
+[msg][special]"Oho,[wait20] you made it past the conveyor."
 <<<window[2]:$00A1-$00DA>>>
-[msg][special]「さぁ、[wait20]階段を　登ってください。[nl][wait30]　あなたたちを　歓迎しますよ。[wait30]ヒャハ」
+[msg][special]"Now then,[wait20] please climb the stairs.[nl][wait30] I'll be welcoming you.[wait30] Hyaha!"
 <<<window[3]:$0107-$010B>>>
 
 
@@ -594,33 +594,33 @@
 <<<window[4]:$008B-$0094>>>
 
 <<<window[5]:$0096-$00C9>>>
-[msg][special]「うー、[wait20]さっさと　クイズ村にいこうぜ。[nl][wait30]　おれ寒いとこ　苦手だモー」
+[msg][special]"Brr,[wait20] let's hurry to Quiz Village.[nl][wait30] I hate the cold, Mo~!"
 <<<window[6]:$00E0-$0104>>>
-[msg][special]「そんな格好してるんだもの、[wait20]あたりまえでしょ!」
+[msg][special]"Well of course, dressed like that![wait20] Obviously!"
 <<<window[7]:$010E-$0142>>>
-[msg][special]「それにしても‥‥[wait30]　ねえ、すごい雪だるまだね。[nl][wait30]　みんなで　作るのかい？」
+[msg][special]"Still, though...[wait30] wow, look at that snowman.[nl][wait30] Did everyone make it together?"
 <<<window[8]:$0147-$0149>>>
 
 <<<window[9]:$014B-$014C>>>
 
 <<<window[10]:$0150-$016C>>>
-[msg][special]「ちがうの。[wait30]まものが　つくってるの」
+[msg][special]"Nuh-uh.[wait30] The monsters made it."
 <<<window[11]:$0176-$018C>>>
-[msg][special]「？[wait30]　たのしいのかな？」
+[msg][special]"?[wait30] Are they having fun?"
 <<<window[12]:$019A-$01B1>>>
-[msg][special]「もー、[wait20]なにいってんのよ」
+[msg][special]"Oh come on,[wait20] what are you saying?"
 <<<window[13]:$01B6-$01BB>>>
 
 <<<window[14]:$01D2-$01EA>>>
-[msg][special]「おうちついた![wait30]　あそこ!」
+[msg][special]"We're home![wait30] Over there!"
 <<<window[15]:$01FF-$0213>>>
-[msg][special]「おお、[wait20]ミーシャ!」
+[msg][special]"Oh,[wait20] Misha!"
 <<<window[16]:$0218-$021A>>>
 
 <<<window[17]:$021C-$021D>>>
 
 <<<window[18]:$0221-$023D>>>
-[msg][special]「あっ![wait20]　ママ、[wait20]ママーーーー」
+[msg][special]"Ah![wait20] Mama,[wait20] Mamaaaa!"
 <<<window[19]:$024D-$024F>>>
 
 
@@ -644,7 +644,7 @@
 
 <<$327696:61[$340190]>>
 <<<window[0]:$001C-$0035>>>
-[FF7F00]魔物のボスが　姿をあらわした![FFFE00]
+[FF7F00]The monster boss has appeared![FFFE00]
 
 <<$327696:62[$340249]>>
 
@@ -652,13 +652,13 @@
 
 <<$327696:64[$340290]>>
 <<<window[0]:$0029-$0120>>>
-[msg][special]「ここはクイズ村だチュー。[nl][wait30]　これからルールの説明をするチュー」[FFFE00][cls]「まずは小屋を訪ねて　問題をきくんだチュー」[FFFE00][cls]「答えは3択になっているから、[nl]　コレだと思うパネルを踏むチュー」[FFFE00][cls]「正解なら　ゲートが開くチュー」[FFFE00][cls]「問題には　誰が答えてもOKだチュー」[FFFE00][cls]「ただし、気をつけるチュー。[nl][wait30]　間違えると　床が抜けるんだチュー」[FFFE00][cls]「それでは、健闘を祈るでチュー」
+[msg][special]"This is Quiz Village, squeak.[nl][wait30] I'll explain the rules, squeak."[FFFE00][cls]"First, visit a hut to hear the question, squeak."[FFFE00][cls]"There are 3 choices, so step on[nl] the panel you think is correct, squeak."[FFFE00][cls]"If you're right, the gate opens, squeak."[FFFE00][cls]"Anyone can answer the questions, squeak."[FFFE00][cls]"But be careful, squeak.[nl][wait30] Get it wrong and the floor gives out, squeak."[FFFE00][cls]"Good luck, squeak!"
 <<<window[1]:$0122-$0129>>>
 
 <<<window[2]:$0134-$0156>>>
-[msg][special]「なんだって　こんなことしなきゃなんないんだよ　モー」
+[msg][special]"Why do we have to do this, Mo~?"
 <<<window[3]:$0160-$018F>>>
-[msg][special]「ブツブツいわないの。[nl][wait30]　さぁ、最初の問題を　聞きにいきましょ」
+[msg][special]"Stop complaining.[nl][wait30] Come on, let's go hear the first question."
 
 <<$327696:65[$340290]>>
 
@@ -672,23 +672,23 @@
 <<<window[3]:$0076-$008F>>>
 
 <<<window[4]:$00D5-$00FA>>>
-[msg][special]「ようこそってわけかい。[wait30]んじゃ、ご期待にこたえて」
+[msg][special]"So you're welcoming us, huh.[wait30] Well then, let's not disappoint."
 <<<window[5]:$010B-$012A>>>
-[msg][special]「待って、モーモー。[wait20]ワナかもしれないよ」
+[msg][special]"Wait, Mo.[wait20] It might be a trap."
 <<<window[6]:$012F-$013A>>>
 
 <<<window[7]:$013E-$015F>>>
-[msg][special]「ヒャハ![wait20]　ボンバーズのアジトに　ようこそ!」
+[msg][special]"Hyaha![wait20] Welcome to the Bone Bombers' hideout!"
 <<<window[8]:$0163-$0198>>>
-[msg][special]「こしぬけの　ボクちゃんは、[wait20]さっさと[nl]　おうちに帰ったほうが　いいんじゃないかな～」
+[msg][special]"Little cowards like you[wait20] should just[nl] run on home to mommy~"
 <<<window[9]:$019D-$01A1>>>
 
 <<<window[10]:$01A4-$01A8>>>
 
 <<<window[11]:$01AC-$01BB>>>
-[msg][special]「なんだとー!」
+[msg][special]"What did you say!?"
 <<<window[12]:$01CD-$01DB>>>
-[msg][special]「モーモー!」
+[msg][special]"Mo, no!"
 <<<window[13]:$0238-$023C>>>
 
 <<<window[14]:$0240-$0244>>>
@@ -700,35 +700,35 @@
 <<<window[17]:$0261-$026C>>>
 
 <<<window[18]:$0275-$028B>>>
-[msg][special]「なんだ、行き止まりだぜ」
+[msg][special]"What? A dead end!"
 <<<window[19]:$0296-$02A0>>>
 
 <<<window[20]:$02A4-$02C7>>>
-[msg][special]「もー、[wait20]考えなしに　突っ走っちゃうんだから」
+[msg][special]"Honestly,[wait20] always charging ahead without thinking."
 <<<window[21]:$02CC-$02D7>>>
 
 <<<window[22]:$02DB-$0317>>>
-[msg][special]「ようこそ　侵入者の諸君。[wait30]我輩は、[nl]　ここの管理を任されておる　D[r.]．スカルだ」
+[msg][special]"Welcome, intruders.[wait30] I am[nl] D[r.]. Skull, caretaker of this place."
 <<<window[23]:$031B-$0355>>>
-[msg][special]「このソロモンの塔は、[wait20]いたるところに　我輩の[nl]　生みだした仕掛けが　凝らしてある」
+[msg][special]"This Solomon Tower[wait20] is filled with[nl] traps of my own design."
 <<<window[24]:$0359-$0387>>>
-[msg][special]「ギミックを　うまくこなして、[nl]　フロアーを突破することが　できるかな？」
+[msg][special]"Can you handle the gimmicks[nl] and break through each floor?"
 <<<window[25]:$038B-$03BF>>>
-[msg][special]「みごと最上階まで　来られたら、[nl][wait20]　我輩が　お相手してさしあげよう」
+[msg][special]"If you make it to the top,[nl][wait20] I shall be your opponent."
 <<<window[26]:$03C3-$03F1>>>
-[msg][special]「まずは、お手並みはいけん。[nl][wait30]　そこの貼り紙を　よく見たまえ」
+[msg][special]"First, let's see what you've got.[nl][wait30] Take a good look at that notice."
 <<<window[27]:$03F6-$03FA>>>
 
 <<<window[28]:$03FD-$0400>>>
 
 <<<window[29]:$0409-$041D>>>
-[msg][special]「なにか書いてある‥‥」
+[msg][special]"There's something written here..."
 <<<window[30]:$042E-$0465>>>
-[msg][special]「〃パネルを踏みて、勇気を示せ。[nl][wait30]　　詳しくは　中へどうぞ〃[wait20]　だってさ」
+[msg][special]"'Step on the panels and show your courage.[nl][wait30]  For details, please proceed inside.'[wait20] It says."
 <<<window[31]:$046E-$0475>>>
 
 <<<window[32]:$0497-$04C7>>>
-[msg][special]「ふざけやがって![nl][wait30]　待ってろよ、[wait20]すぐに登っていってやるからな!」
+[msg][special]"Who does he think he is!?[nl][wait30] Just wait,[wait20] we're coming up there right now!"
 
 <<$327696:67[$341924]>>
 <<<window[0]:$001B-$0027>>>
@@ -738,17 +738,17 @@
 <<<window[2]:$005D-$0065>>>
 
 <<<window[3]:$006E-$008B>>>
-[msg][special]「コンニチハ、アソボウヨ。[wait30]アソボウヨ」
+[msg][special]"HELLO, LET'S PLAY.[wait30] LET'S PLAY."
 <<<window[4]:$0095-$00B0>>>
-[msg][special]「よかった。[wait20]元に戻ったみたい」
+[msg][special]"Thank goodness.[wait20] They're back to normal."
 <<<window[5]:$00B4-$00C8>>>
-[msg][special]「みんな、これを見て!」
+[msg][special]"Everyone, look at this!"
 <<<window[6]:$011D-$011F>>>
 
 <<<window[7]:$0122-$0124>>>
 
 <<<window[8]:$0138-$0151>>>
-[msg][special]「奥にも　部屋があったのか!」
+[msg][special]"There's a room further back!?"
 <<<window[9]:$01AC-$01CA>>>
 
 <<<window[10]:$01E0-$01E4>>>
@@ -758,35 +758,35 @@
 <<<window[12]:$020B-$020F>>>
 
 <<<window[13]:$0210-$0226>>>
-[msg][special]「ぼうやたち、だいじょうぶ？」
+[msg][special]"Are you boys alright?"
 <<<window[14]:$022D-$024F>>>
-[msg][special]「ガイコツに捕まっちゃったの。[wait20]えくっえくっ。」
+[msg][special]"The skeletons caught us.[wait20] *sob* *sob*"
 <<<window[15]:$0253-$0289>>>
-[msg][special]「ボクタチ、お父さんが　宝石を持ってくるまで[nl][wait30]　ここにいなくちゃダメなんだって」
+[msg][special]"They said we have to stay here until[nl][wait30] our dads bring them jewels."
 <<<window[16]:$0290-$02B2>>>
-[msg][special]「もう大丈夫なの。[wait30]お家に　帰れるのよ」
+[msg][special]"It's okay now.[wait30] You can go home."
 <<<window[17]:$02B9-$02DA>>>
-[msg][special]「ホント？[wait30]　帰っていいの？[wait30]　わーい!」
+[msg][special]"Really?[wait30] We can go?[wait30] Yaaay!"
 <<<window[18]:$02E6-$02F4>>>
-[msg]「わーい、わーい!」
+[msg]"Yaay, yaaay!"
 <<<window[19]:$0322-$0331>>>
-[msg][special]「どうしたの？」
+[msg][special]"What's wrong?"
 <<<window[20]:$034E-$034F>>>
 
 <<<window[21]:$0350-$0361>>>
-[msg][special]「‥‥かえれないの」
+[msg][special]"...I can't go home."
 <<<window[22]:$0368-$037B>>>
-[msg][special]「お家は　どこなの？」
+[msg][special]"Where is your home?"
 <<<window[23]:$0380-$0381>>>
 
 <<<window[24]:$0382-$03A1>>>
-[msg][special]「‥‥わかんない。[wait30]雪がふってるとこ‥‥」
+[msg][special]"...I don't know.[wait30] A place where it snows..."
 <<<window[25]:$03A8-$03C7>>>
-[msg][special]「ここいらで雪が降るのは　オーサムぐらいね」
+[msg][special]"The only snowy place around here is Awesome."
 <<<window[26]:$03CE-$03EF>>>
-[msg][special]「よし、お兄ちゃんたちが　送っていってあげるよ」
+[msg][special]"Alright, we'll take you there ourselves."
 <<<window[27]:$03FB-$0414>>>
-[FF060E]勇者軍は　雪ふるオーサムへむかった
+[FF060E]The Hero Army heads for snowy Awesome.
 
 <<$327696:68[$342983]>>
 <<<window[0]:$001B-$0027>>>
@@ -800,33 +800,33 @@
 <<<window[4]:$005A-$0065>>>
 
 <<<window[5]:$006E-$00B4>>>
-[msg][special]「いや～、お見事ですな。[wait30]で、[wait20]も、[wait20]頭を使わないと[nl]　このフロアーから上へ進むことは　できませんよ」
+[msg][special]"My, how impressive.[wait30] But[wait20] you[wait20] won't be able[nl] to go up from this floor without using your head."
 <<<window[6]:$00BE-$00C8>>>
-[msg][special]「？」
+[msg][special]"?"
 <<<window[7]:$00CD-$00CE>>>
 
 <<<window[8]:$00D2-$00FD>>>
-[msg][special]「よーく聴いてくださいよ。[nl][wait30]　一度しか　言いませんからね」
+[msg][special]"Listen very carefully.[nl][wait30] I'll only say this once."
 <<<window[9]:$0101-$0153>>>
-[msg][special]〃おわりは　始まりだ〃[FFFE00][nl]〃ここより上の道はない[wait20]　されど道はある〃[nl]〃戻るが　勝ち〃[nl]〃求める物は　土の下にあり〃[FFFE00]
+[msg][special]"The end is the beginning."[FFFE00][nl]"There is no path above,[wait20] yet a path exists."[nl]"Turning back wins."[nl]"What you seek lies beneath the earth."[FFFE00]
 <<<window[10]:$0155-$0156>>>
 
 <<<window[11]:$015A-$0186>>>
-[msg][special]「わかりましたかぁ？[nl][wait30]　では、がんばってくださいな。[wait20]ヒャハ!」
+[msg][special]"Did you understand?[nl][wait30] Well then, do your best.[wait20] Hyaha!"
 <<<window[12]:$018B-$018F>>>
 
 <<<window[13]:$019A-$01AC>>>
-[msg][special]「どういうことなの？」
+[msg][special]"What does that mean?"
 
 <<$327696:69[$343418]>>
 <<<window[0]:$005C-$0075>>>
-[msg][special]「この奥から　出てきたよね‥‥」
+[msg][special]"It came from back there, right...?"
 <<<window[1]:$007C-$0095>>>
-[msg][special]「みて![wait20]　外へ出られるわ」
+[msg][special]"Look![wait20] We can get outside!"
 <<<window[2]:$009C-$00AD>>>
-[msg][special]「よし、いくぞモー」
+[msg][special]"Right, let's go, Mo~!"
 <<<window[3]:$00C8-$00EA>>>
-[msg][special]「あ、バカ![wait20]　この先は　床がないのよ～～!」
+[msg][special]"Wait, you idiot![wait20] There's no floor up ahead~~!"
 <<<window[4]:$0136-$0137>>>
 
 <<<window[5]:$013A-$013C>>>
@@ -834,49 +834,49 @@
 <<<window[6]:$0142-$0146>>>
 
 <<<window[7]:$01AF-$01BC>>>
-[msg][special]「あいてて」
+[msg][special]"Oww..."
 <<<window[8]:$01CA-$01EA>>>
-[msg][special]「モーモーのバカぁ![wait20]　なんてことすんのよ!」
+[msg][special]"Mo, you idiot![wait20] What have you done!?"
 <<<window[9]:$01F8-$0214>>>
-[msg][special]「いたた‥‥[wait20]　え？[wait20]　ここは？」
+[msg][special]"Ow ow...[wait20] Huh?[wait20] Where are we?"
 <<<window[10]:$022B-$0239>>>
 
 <<<window[11]:$023D-$0257>>>
-[msg][special]「おやおや、頑丈な人達ですね」
+[msg][special]"My, what tenacious people."
 <<<window[12]:$0271-$0283>>>
-[msg][special]「またでやがったな!」
+[msg][special]"There he is again!"
 <<<window[13]:$0288-$0289>>>
 
 <<<window[14]:$028D-$02B8>>>
-[msg][special]「あなたたちの行動は[nl][wait20]　すべて観察させて頂いていますよ」
+[msg][special]"I've been observing[nl][wait20] your every move, you know."
 <<<window[15]:$02C2-$02D7>>>
-[msg][special]「教授を　かえしてよ!」
+[msg][special]"Give us back the professor!"
 <<<window[16]:$02DC-$02DD>>>
 
 <<<window[17]:$02E1-$0317>>>
-[msg][special]「こんなやり方は　好きじゃないんですけどね、[nl][wait20]　彼は　深く知りすぎてしまった」
+[msg][special]"I don't like doing things this way,[nl][wait20] but he learned too much."
 <<<window[18]:$031E-$034B>>>
-[msg][special]「事が無事にはこぶまで、[nl][wait20]　ヘタに行動されたくないんですよ」
+[msg][special]"Until things go smoothly,[nl][wait20] I can't have him acting rashly."
 <<<window[19]:$034F-$036A>>>
-[msg][special]「では、[wait20]また　お会いしましょう」
+[msg][special]"Well then,[wait20] until we meet again."
 <<<window[20]:$036F-$0373>>>
 
 <<<window[21]:$037B-$0396>>>
-[msg][special]「あっ、[wait10]コラ、[wait10]まちやがれ!」
+[msg][special]"Hey,[wait10] you,[wait10] get back here!"
 <<<window[22]:$03A0-$03AF>>>
-[msg][special]「教授‥‥」
+[msg][special]"Professor..."
 
 <<$327696:70[$344368]>>
 <<<window[0]:$0036-$0068>>>
-[msg][special]「ここは　ソロモンの裏庭。[nl][wait30]　そして、[wait20]ここが本当の入口ですよ」
+[msg][special]"This is Solomon's backyard.[nl][wait30] And[wait20] this is the real entrance."
 <<<window[1]:$006C-$008D>>>
-[msg][special]「急がばまわれっていうでしょう。[wait30]フッフッフ」
+[msg][special]"Haste makes waste, as they say.[wait30] Heh heh heh."
 <<<window[2]:$0091-$00C7>>>
-[msg][special]「どこかに![wait30]　どこかに　秘密があるんですよ。[nl][wait30]　よーく観察して下さいね」
+[msg][special]"Somewhere![wait30] There's a secret somewhere.[nl][wait30] Observe very carefully."
 
 <<$327696:71[$344586]>>
 <<<window[0]:$0062-$006E>>>
-[msg][special]「いくぞ」
+[msg][special]"Let's go."
 <<<window[1]:$00AF-$00B3>>>
 
 
@@ -890,9 +890,9 @@
 <<<window[3]:$0093-$0094>>>
 
 <<<window[4]:$009D-$00CE>>>
-[msg][special]「あらためて、[wait20]ようこそ　ソロモンの塔へ。[nl][wait30]　これからが　本番だよ」
+[msg][special]"Once again,[wait20] welcome to Solomon Tower.[nl][wait30] Now the real challenge begins."
 <<<window[5]:$00D2-$00FB>>>
-[msg][special]「この複雑な　ワープパネルの部屋を[nl]　突破できるかな？」
+[msg][special]"Can you break through this room[nl] of complex warp panels?"
 <<<window[6]:$0100-$010B>>>
 
 
@@ -902,23 +902,23 @@
 <<<window[1]:$0056-$0068>>>
 
 <<<window[2]:$00AE-$00BC>>>
-[msg][special]「教授!」
+[msg][special]"Professor!"
 <<<window[3]:$0118-$0121>>>
 
 <<<window[4]:$0137-$0156>>>
-[msg][special]　どこからか　D[r.]．スカルの声がきこえてくる。
+[msg][special] D[r.]. Skull's voice echoes from somewhere.
 <<<window[5]:$015A-$0174>>>
-[msg][special]「ついにここまで　きてしまいましたね」
+[msg][special]"So you've finally made it this far."
 <<<window[6]:$0182-$0190>>>
-[msg][special]「あそこだ!」
+[msg][special]"There he is!"
 <<<window[7]:$01AB-$01AC>>>
 
 <<<window[8]:$01AD-$01D3>>>
-[msg][special]「約束どおり、[wait20]この我輩が　お相手しましょう」
+[msg][special]"As promised,[wait20] I shall be your opponent."
 <<<window[9]:$01D8-$01FF>>>
 
 <<<window[10]:$0206-$0225>>>
-[msg][special]「さあ、[wait20]かかってきたまえ。[wait30]ヒャハ!」
+[msg][special]"Now then,[wait20] come at me.[wait30] Hyaha!"
 
 <<$327696:74[$345590]>>
 <<<window[0]:$004A-$0058>>>
@@ -926,37 +926,37 @@
 <<<window[1]:$0080-$0081>>>
 
 <<<window[2]:$008A-$009B>>>
-[msg][special]「シャーッ　グルル」
+[msg][special]"Hissss... Grrrr..."
 <<<window[3]:$00A0-$00A8>>>
 
 <<<window[4]:$00AF-$00B5>>>
 
 <<<window[5]:$00D3-$00E5>>>
-[msg][special]「姫は　どこだ!？」
+[msg][special]"Where's the princess!?"
 <<<window[6]:$00EF-$0100>>>
-[msg][special]「姫を　さがせ!」
+[msg][special]"Find the princess!"
 <<<window[7]:$0104-$0113>>>
-[msg][special]「そこまでよ!」
+[msg][special]"That's far enough!"
 <<<window[8]:$0115-$0134>>>
 
 <<<window[9]:$0138-$015E>>>
-[msg][special]「俺たちが来たからには、[wait20]好き勝手させねえぜ!」
+[msg][special]"Now that we're here,[wait20] you won't get your way!"
 
 <<$327696:75[$345947]>>
 
 <<$327696:76[$345958]>>
 <<<window[0]:$0029-$004E>>>
-[FF080C]勇者軍は　魔石を求めて[FF0A0F]クルクルの森にむかいます
+[FF080C]In search of Prismarite,[FF0A0F]the Hero Army heads for Spiral Forest.
 
 <<$327696:77[$346049]>>
 <<<window[0]:$001A-$0051>>>
-[FF040C]オレンジの魔石を　譲り受けた勇者軍は[FF050F]ハイエスト山脈を目指して出発します
+[FF040C]Having received the orange Prismarite,[FF050F]the Hero Army departs for the Highest Mountains.
 
 <<$327696:78[$346143]>>
 <<<window[0]:$001A-$0041>>>
-[FF070C]バルバル鳥を捕まえた勇者軍は[FF0A0F]クルクルの森へ戻ります
+[FF070C]Having caught the Barbal bird,[FF0A0F]the Hero Army returns to Spiral Forest.
 <<<window[1]:$005F-$0078>>>
-[FF060E]勇者軍は　おもちゃの塔へむかいます
+[FF060E]The Hero Army heads for the Toy Tower.
 
 <<$327696:79[$346276]>>
 
@@ -964,99 +964,99 @@
 
 <<$327696:81[$346295]>>
 <<<window[0]:$000D-$0046>>>
-[FF080B]クイズ村を訪ねた勇者軍は[FF0B0E]出迎えた村長に[FF0711]魔石を捜しにきたことを告げます
+[FF080B]The Hero Army visits Quiz Village[FF0B0E]and tells the village elder[FF0711]they've come in search of Prismarite.
 
 <<$327696:82[$346383]>>
 <<<window[0]:$001C-$005C>>>
-[FF070B]難解なクイズをみごと解きあかし[FF060E]アイイロの魔石を得た勇者軍は[FF0811]ラドック教授を訪ねることに
+[FF070B]Having brilliantly solved the quizzes[FF060E]and obtained the indigo Prismarite,[FF0811]the Hero Army visits Professor Raddoc.
 <<<window[1]:$0070-$0084>>>
-[FF080E]同刻　：　ジャスバン遺跡
+[FF080E]Meanwhile: Jasban Ruins
 <<<window[2]:$0101-$0105>>>
 
 <<<window[3]:$0165-$0189>>>
-[msg][special]「むう。[wait20]これが　カラードの秘宝だというのか‥‥」
+[msg][special]"Hmm.[wait20] So this is Prisma's treasure..."
 <<<window[4]:$018D-$01B9>>>
-[msg][special]「こうしちゃおれん、[nl][wait20]　一刻もはやく　この事を知らせねば!」
+[msg][special]"I must hurry![nl][wait20] I have to report this at once!"
 <<<window[5]:$01CC-$01E4>>>
-[msg][special]「ココで　なにしてるんだニャン？」
+[msg][special]"What are you doing here, meow?"
 <<<window[6]:$01E8-$0224>>>
-[msg][special]「セキバンを読めるヤツがいるとは　思わなかったニャ。[wait30]　コソコソ嗅ぎまわるのは　よくないニャン」
+[msg][special]"Didn't expect anyone could read the tablet, meow.[wait30] Snooping around is bad, meow."
 <<<window[7]:$022E-$0245>>>
-[msg][special]「あ、[wait20]ああ、[wait20]あ‥‥」
+[msg][special]"Ah,[wait20] aah,[wait20] ah..."
 <<<window[8]:$025E-$0274>>>
-[FF070E]勇者軍は　ライナークへむかった
+[FF070E]The Hero Army heads for Linark.
 <<<window[9]:$02D6-$02DA>>>
 
 <<<window[10]:$0317-$031A>>>
 
 <<<window[11]:$031F-$032F>>>
-[msg][special]「あっ、あれは!」
+[msg][special]"Ah, look!"
 <<<window[12]:$034B-$0375>>>
-[msg][special]「ヒャッハッハ![nl][wait20]　ライナークのチビスケ、きこえてるか～～～？」
+[msg][special]"Hyahaha![nl][wait20] Hey, Linark runts, can you hear me~~~?"
 <<<window[13]:$0379-$039D>>>
-[msg][special][wait30]「ネズミのラドックは[wait20]　俺たちがあずかった‼」
+[msg][special][wait30]"That rat Raddoc[wait20] is in our custody!!"
 <<<window[14]:$03A1-$03E0>>>
-[msg][special]「かえしてほしけりゃ、[wait20]お前らが集めた　魔石を[nl]　持って、[wait20]ソロモンの塔に　来るんだな!」
+[msg][special]"If you want him back,[wait20] bring the Prismarite[nl] you collected[wait20] to Solomon Tower!"
 <<<window[15]:$03E4-$041C>>>
-[msg][special]「もっとも、[wait20]お前らに　そんな勇気はねえかも[nl]　しんねえけどなぁ。[wait30]ヒャッハッハ!」
+[msg][special]"Then again,[wait20] you runts probably don't have[nl] the guts for that.[wait30] Hyahaha!"
 <<<window[16]:$0446-$045B>>>
-[FF080E]勇者軍は　急ぎマテドラルへ
+[FF080E]The Hero Army rushes to Matedral.
 <<<window[17]:$0479-$04A3>>>
-[FF090C]ラドック教授を救うべく[FF060F]勇者軍は　ソロモンの塔を目指す
+[FF090C]To rescue Professor Raddoc,[FF060F]the Hero Army heads for Solomon Tower.
 
 <<$327696:83[$347585]>>
 <<<window[0]:$0052-$007F>>>
 
 <<<window[1]:$008F-$00C7>>>
-[msg][special]「ギャハギャハ、[wait20]さあ　お姫さま、[wait20]カチューシャを[nl]　こっちに渡して貰いましょうか」
+[msg][special]"Gyahaha,[wait20] now then, Princess,[wait20] how about you[nl] hand over that headband?"
 <<<window[2]:$00DD-$00EB>>>
-[msg][special]「嫌です!」
+[msg][special]"No!"
 <<<window[3]:$00FC-$0113>>>
-[msg][special]「ギャハハ、[wait20]嫌だってよ」
+[msg][special]"Gyahaha,[wait20] she said no!"
 <<<window[4]:$0124-$0149>>>
-[msg][special]「グヘヘ、[wait20]気の強い　お姫さまだなぁ、[wait20]おい」
+[msg][special]"Guhehe,[wait20] feisty little princess,[wait20] eh?"
 <<<window[5]:$014E-$0156>>>
 
 <<<window[6]:$015A-$017A>>>
-[msg][special]「いつまで　強情はってられるかな、[wait20]ん～」
+[msg][special]"Wonder how long you can keep being stubborn,[wait20] hmm~?"
 <<<window[7]:$018B-$019A>>>
-[msg][special]「ギョッホッホ」
+[msg][special]"Gyohohoho!"
 <<<window[8]:$01C8-$01D5>>>
-[msg][special]「まてッ!」
+[msg][special]"Stop!"
 <<<window[9]:$01D7-$01E3>>>
 
 <<<window[10]:$0212-$0216>>>
 
 <<<window[11]:$022C-$0249>>>
-[msg][special]「汚い手で、姫に　さわるんじゃね(ぇ)!」
+[msg][special]"Keep your filthy hands off the princess!"
 <<<window[12]:$026D-$026F>>>
 
 <<<window[13]:$028F-$02A4>>>
 
 <<<window[14]:$02C6-$02F9>>>
-[FF070C]勇者軍は　急ぎマテドラルへむかう[FF050F]クレパスの氷河をぬけて　近道をすることに
+[FF070C]The Hero Army rushes to Matedral,[FF050F]taking a shortcut through Crevasse Glacier.
 
 <<$327696:84[$348361]>>
 <<<window[0]:$0021-$005B>>>
-[msg][special]「大変だ～～![wait20]　ハウサー教王が　暴漢に![nl][wait30]　誰か、[wait20]誰か　助けを!」
+[msg][special]"This is terrible~~![wait20] High Priest Hauser has been attacked![nl][wait30] Someone,[wait20] someone help!"
 <<<window[1]:$0074-$0093>>>
-[FF030E]勇者軍は、ヴァイスを追って　ライモス神殿へ
+[FF030E]The Hero Army pursues Weiss to Raimos Temple.
 
 <<$327696:85[$348521]>>
 <<<window[0]:$0030-$004E>>>
-[msg][special]「助かった、[wait20]これで　火が消えるね」
+[msg][special]"We're saved.[wait20] Now the fire can be put out."
 <<<window[1]:$0067-$0086>>>
-[FF030E]クルクルの森を抜け、勇者軍はライモスへむかう
+[FF030E]Through Spiral Forest, the Hero Army heads to Raimos.
 
 <<$327696:86[$348668]>>
 <<<window[0]:$001A-$0041>>>
-[FF080C]蒼月と別れた勇者軍は[FF080F]ヴァイスの待つガウディへむかう
+[FF080C]Parting ways with Fang,[FF080F]the Hero Army heads for Gaudi where Weiss awaits.
 <<<window[1]:$0055-$007F>>>
-[FF090C]神聖なる教会を舞台に[FF070F]最後の戦いが始まろうとしている
+[FF090C]In the sacred church,[FF070F]the final battle is about to begin.
 
 <<$327696:87[$348808]>>
 <<<window[0]:$000D-$004C>>>
-[FF070B]ついにあかされた　ジャスバンの真実[FF080E]ヴァイスの野望を阻止すべく[FF0811]勇者軍はライナークへ急いだ
+[FF070B]The truth of Jasban finally revealed.[FF080E]To stop Weiss's ambitions,[FF0811]the Hero Army rushes to Linark.
 
 <<$327696:88[$348897]>>
 <<<window[0]:$0002-$0008>>>
@@ -1064,7 +1064,7 @@
 <<<window[1]:$003E-$0041>>>
 
 <<<window[2]:$0051-$006A>>>
-[FF7F01]なんと、宝箱は　ミミックだった![FFFE00]
+[FF7F01]The treasure chest was a Mimic![FFFE00]
 <<<window[3]:$0080-$0081>>>
 
 
@@ -1080,9 +1080,9 @@
 <<<window[4]:$018A-$0190>>>
 
 <<<window[5]:$019B-$01A9>>>
-[msg][special]「ヴァイス!」
+[msg][special]"Weiss!"
 <<<window[6]:$01C1-$01F4>>>
-[msg][special]「おっと、[wait20]ここの相手は私です。[nl][wait30]　いきますよ、[wait20]ラララ～～～[~][~]」
+[msg][special]"Hold on,[wait20] I'm your opponent here.[nl][wait30] Here we go,[wait20] la la la~~~[~][~]"
 
 <<$327696:90[$349545]>>
 
@@ -1092,17 +1092,17 @@
 <<<window[1]:$000A-$000E>>>
 
 <<<window[2]:$001E-$0045>>>
-[msg][special]「ふふふ、[wait20]いまごろライナークは～[wait20]　ルルル～～～[~][~]」
+[msg][special]"Hehehe,[wait20] by now Linark is~[wait20] lu lu lu~~~[~][~]"
 
 <<$327696:92[$349646]>>
 
 <<$327696:93[$349665]>>
 <<<window[0]:$0024-$0057>>>
-[msg][special]「蒼月さまの　いった通りだな。[nl][wait30]　きさまらが　ここを通ると思っていたよ」
+[msg][special]"Just as Lord Fang predicted.[nl][wait30] We knew you'd come through here."
 <<<window[1]:$005B-$008D>>>
-[msg][special]「この氷河は　我らが封鎖した。[nl][wait30]　通りたければ　このオレさまを‥‥」
+[msg][special]"This glacier is sealed off by us.[nl][wait30] If you want to pass, you'll have to..."
 <<<window[2]:$009E-$00C0>>>
-[msg][special]「おのぞみどおり、ブッとばしてやるよ。[wait30]いくぞ!」
+[msg][special]"As you wish, I'll knock you flat![wait30] Let's go!"
 
 <<$327696:94[$349868]>>
 <<<window[0]:$004A-$0050>>>
@@ -1110,29 +1110,29 @@
 <<<window[1]:$005F-$0077>>>
 
 <<<window[2]:$008B-$00A6>>>
-[msg][special]「お？[wait30]　だれか、こっちに来るぞ」
+[msg][special]"Hm?[wait30] Someone's coming this way."
 <<<window[3]:$00B7-$00BF>>>
 
 <<<window[4]:$00C3-$00FE>>>
-[msg][special]「ライナークより　王の命をうけてまいりました。[nl][wait30]　ラドック教授からの　伝言があります」
+[msg][special]"I come from Linark by order of the King.[nl][wait30] I have a message from Professor Raddoc."
 <<<window[5]:$0102-$0130>>>
-[msg][special]〃虹の魔石に　秘密あり。[nl][wait30]　魔石の並びに　秘密あり〃
+[msg][special]"The rainbow Prismarites hold a secret.[nl][wait30] Their arrangement holds a secret."
 <<<window[6]:$0134-$0163>>>
-[msg][special]〃時がくれば　空が示してくれる。[nl][wait30]　すべては　光りの印すままに〃
+[msg][special]"When the time comes, the sky will show.[nl][wait30] All follows the mark of light."
 <<<window[7]:$016D-$017E>>>
-[msg][special]「なんのこっちゃ？」
+[msg][special]"What's that supposed to mean?"
 <<<window[8]:$0188-$01A1>>>
-[msg][special]「‥‥いまは、急いでマテドラルへ」
+[msg][special]"...for now, we must hurry to Matedral."
 <<<window[9]:$01AF-$01BA>>>
-[msg][special]「ああ」
+[msg][special]"Right."
 
 <<$327696:95[$350317]>>
 <<<window[0]:$0022-$0038>>>
-[msg][special]「ハデに　やってくれてるぜ!」
+[msg][special]"They're making quite a mess!"
 <<<window[1]:$0042-$0063>>>
-[msg][special]「教王が　心配だ。[wait30]一気にいくよ!」
+[msg][special]"I'm worried about the High Priest.[wait30] Let's charge in!"
 <<<window[2]:$0067-$0073>>>
-[msg][special]「おー!」
+[msg][special]"Yeah!"
 
 <<$327696:96[$350459]>>
 <<<window[0]:$0054-$005E>>>
@@ -1142,57 +1142,57 @@
 <<<window[2]:$0070-$0074>>>
 
 <<<window[3]:$007D-$00BB>>>
-[msg][special]「燃えろよ燃えろ～、[wait20]全てを　燃やすのだ～。[nl][wait30]　お前達を、ここから　進ませはしない～」
+[msg][special]"Burn, burn~[wait20] burn everything down~.[nl][wait30] We won't let you pass from here~"
 <<<window[4]:$00CC-$00EA>>>
-[msg][special]「くそっ、[wait20]ヤツら　炎を放ちやがった」
+[msg][special]"Damn,[wait20] they set the place on fire!"
 <<<window[5]:$00F4-$0107>>>
-[msg][special]「なんてことをするの!」
+[msg][special]"How could they!?"
 <<<window[6]:$0111-$012B>>>
-[msg][special]「クルクルの森が　燃えちゃうわ!」
+[msg][special]"Spiral Forest is going to burn down!"
 <<<window[7]:$0135-$014B>>>
-[msg][special]「いくぞ、[wait20]突進だ!」
+[msg][special]"Let's go,[wait20] charge!!"
 
 <<$327696:97[$350797]>>
 <<<window[0]:$000E-$001D>>>
-[FF7F09]も～えろよ、もえろ～。
+[FF7F09]Bu~rn away, burn away~
 <<<window[1]:$0042-$0056>>>
 
 <<<window[2]:$005F-$0087>>>
-[msg][special]「ヒャッヒャッヒャ![wait30]　いいぞ![wait20]　燃やせ燃やせー!」
+[msg][special]"Hyahyahya![wait30] Yes![wait20] Burn it! Burn it all!"
 <<<window[3]:$0091-$00A1>>>
-[msg][special]「やりすぎだぞ!」
+[msg][special]"You're going too far!"
 <<<window[4]:$00AF-$00D2>>>
-[msg][special]「るせえ![wait20]　俺様に　意見するんじゃねえ!」
+[msg][special]"Shut it![wait20] Don't tell me what to do!"
 <<<window[5]:$00DC-$0108>>>
-[msg][special]「我らの理想を　忘れたのか!？[nl][wait30]　ここまですることはない!」
+[msg][special]"Have you forgotten our ideals!?[nl][wait30] There's no need to go this far!"
 <<<window[6]:$0112-$014D>>>
-[msg][special]「理想!？[wait20]　知ったこっちゃねえよ。[nl][wait30]　俺様は、暴れられれば　それでいいんだよ!」
+[msg][special]"Ideals!?[wait20] I don't give a damn.[nl][wait30] As long as I can rampage, that's all I need!"
 <<<window[7]:$0151-$0189>>>
-[msg][special]「ヴァイスの小僧は　気に喰わねえが、[nl][wait20]　好きかってやれるぶん　気分がいいぜ(ぇ)」
+[msg][special]"I can't stand that Weiss brat,[nl][wait20] but at least I get to do whatever I want."
 <<<window[8]:$0193-$01CD>>>
-[msg][special]「どうしたんだ、[wait26]我らが　彼らに協力するのは[nl]　理想実現の為ではなかったのか？」
+[msg][special]"What's wrong with you?[wait26] We joined them[nl] to achieve our ideals, didn't we?"
 <<<window[9]:$01D7-$01EB>>>
-[msg][special]「ゴチャゴチャ言うな!」
+[msg][special]"Quit your blabbering!"
 <<<window[10]:$01EF-$021A>>>
-[msg][special]「燃えろ燃えろ～![nl][wait30]　あ～、いい気分だぜ、[wait20]ギャハハ」
+[msg][special]"Burn, burn~![nl][wait30] Ahh~, feels great![wait20] Gyahaha!"
 <<<window[11]:$022D-$022F>>>
 
 
 <<$327696:98[$351357]>>
 <<<window[0]:$0000-$0031>>>
-[FF7F00]なんと、宝箱は　ミミックだった![FFFE00][nl]おや？　ミミックが　話しかけてきたぞ。[FFFE00]
+[FF7F00]The chest was a Mimic![FFFE00][nl]Hm? The Mimic is trying to talk.[FFFE00]
 <<<window[1]:$0032-$0052>>>
-[msg][special]「HEY![wait20]　オレも連れてけよ、BABY!」
+[msg][special]"HEY![wait20] Take me with you, BABY!"
 <<<window[2]:$0081-$009B>>>
-[FF7F00]ミミックが　仲間に加わりました。[FFFE00]
+[FF7F00]The Mimic joined the party.[FFFE00]
 <<<window[3]:$009D-$00DE>>>
-[msg][special]「‥‥OH![wait20]　もう仲間は　満員なのかい!？[nl][wait30]　また来てくれよな、[wait20]BROTHER!」[FFFE00]
+[msg][special]"...OH![wait20] The party's full already!?[nl][wait30] Come back for me,[wait20] BROTHER!"[FFFE00]
 
 <<$327696:99[$351581]>>
 <<<window[0]:$0015-$0036>>>
-[msg][special]「あぁ、じれったい![wait20]　もう待てーん!」[FFFE00]
+[msg][special]"Ahh, so impatient![wait20] I can't wait any longer!"[FFFE00]
 <<<window[1]:$0046-$0061>>>
-[FF7F00]神殿の番人が　姿をあらわした![FFFE00]
+[FF7F00]The temple guardian has appeared![FFFE00]
 
 <<$327696:100[$351692]>>
 <<<window[0]:$0015-$0017>>>
@@ -1202,27 +1202,27 @@
 <<<window[2]:$008F-$00B1>>>
 
 <<<window[3]:$00BA-$00F5>>>
-[msg][special]「きたなチビスケ。[wait30]気に喰わねえんだよ、[nl][wait20]　いつもいつも　俺様の邪魔しやがって!」
+[msg][special]"So you're here, runts.[wait30] You tick me off,[nl][wait20] always getting in my way!"
 <<<window[4]:$00F9-$011B>>>
-[msg][special]「ボンバーズ最強軍団が　相手をしてやるよ」
+[msg][special]"The strongest Bone Bombers squad will fight you."
 <<<window[5]:$011F-$0156>>>
-[msg][special]「どーだ、[wait20]ビビったか？[nl][wait30]　てめえらも　これで最後だぜ。[wait30]ヒャッヒャッヒャ!」
+[msg][special]"Well?[wait20] Scared?[nl][wait30] This is the end for you.[wait30] Hyahyahya!"
 <<<window[6]:$0167-$017F>>>
-[msg][special]「おい![wait20]　ガイコツさんよ!」
+[msg][special]"Hey![wait20] Bag of bones!"
 <<<window[7]:$0189-$01A0>>>
-[msg][special]「逃げるなら　今のうちだぜ」
+[msg][special]"If you're gonna run, now's the time."
 <<<window[8]:$01A5-$01A6>>>
 
 <<<window[9]:$01AA-$01B8>>>
-[msg][special]「ヌガーー‼」
+[msg][special]"Nugaaa!!"
 <<<window[10]:$01BD-$01BE>>>
 
 <<<window[11]:$01C2-$01D4>>>
-[msg][special]「ぶっとばしちまえ‼」
+[msg][special]"Blow 'em away!!"
 <<<window[12]:$01D8-$01E6>>>
-[msg][special]「ギッギー‼」
+[msg][special]"Giigyee!!"
 <<<window[13]:$01F6-$020E>>>
-[msg][special]「勝負だ、[wait20]ボンバーズ!」
+[msg][special]"Bring it,[wait20] Bone Bombers!"
 
 <<$327696:101[$352225]>>
 
@@ -1232,7 +1232,7 @@
 <<<window[1]:$005D-$005E>>>
 
 <<<window[2]:$0067-$008B>>>
-[msg][special]「まだだ、まだだ![wait30]　まだ　終わりじゃね(ぇ)ーーー‼」
+[msg][special]"Not yet! Not yet![wait30] It's not over yeeet!!"
 <<<window[3]:$0090-$0092>>>
 
 <<<window[4]:$0097-$0099>>>
@@ -1240,25 +1240,25 @@
 <<<window[5]:$009E-$00A0>>>
 
 <<<window[6]:$00A7-$00B6>>>
-[msg][special]「まちやがれ!」
+[msg][special]"Get back here!"
 <<<window[7]:$00C0-$00CD>>>
-[msg][special]「いくぞ!」
+[msg][special]"Let's go!"
 
 <<$327696:103[$352476]>>
 <<<window[0]:$005A-$0060>>>
 
 <<<window[1]:$0074-$0087>>>
-[msg][special]「また　そろえんのかな」
+[msg][special]"Do we have to line them up again?"
 <<<window[2]:$0091-$00AB>>>
-[msg][special]「まって、このレバーは　なにかしら？」
+[msg][special]"Wait, what's this lever for?"
 <<<window[3]:$00B0-$00B8>>>
 
 <<<window[4]:$00D1-$00DC>>>
 
 <<<window[5]:$00E1-$00EF>>>
-[msg][special]「なるほどね」
+[msg][special]"I see..."
 <<<window[6]:$00F9-$0105>>>
-[msg][special]「え～～」
+[msg][special]"Huh~~?"
 
 <<$327696:104[$352744]>>
 <<<window[0]:$0037-$003B>>>
@@ -1270,9 +1270,9 @@
 <<<window[3]:$0085-$00A3>>>
 
 <<<window[4]:$00A7-$00B6>>>
-[msg][special]「おみごとです」
+[msg][special]"Well done."
 <<<window[5]:$00BA-$00FA>>>
-[msg][special]「あなた方が　我らボンバーズの同士だったなら、[nl][wait20]　これほど頼もしいことも　なかったでしょうに‥‥」
+[msg][special]"If only you were allies of the Bone Bombers,[nl][wait20] there would be nothing more reassuring..."
 <<<window[6]:$00FF-$0101>>>
 
 <<<window[7]:$0106-$0108>>>
@@ -1282,11 +1282,11 @@
 <<<window[9]:$01BA-$01C4>>>
 
 <<<window[10]:$01E4-$01F0>>>
-[msg][special]「リイム!」
+[msg][special]"Liam!"
 <<<window[11]:$01FD-$01FE>>>
 
 <<<window[12]:$0202-$0235>>>
-[msg][special]「私は　外で待ちましょう。[nl][wait30]　こころの準備ができたら　いらしてください」
+[msg][special]"I'll wait outside.[nl][wait30] Come when you're ready."
 <<<window[13]:$023A-$0247>>>
 
 
@@ -1304,21 +1304,21 @@
 <<<window[5]:$0062-$006E>>>
 
 <<<window[6]:$0070-$0089>>>
-[msg][special]「心の準備は　できましたか？」
+[msg][special]"Are you ready?"
 <<<window[7]:$0097-$00B9>>>
-[msg][special]「モーモー、[wait20]姫を連れて　ここから離れて!」
+[msg][special]"Mo,[wait20] take the princess and get away from here!"
 <<<window[8]:$00BE-$00BF>>>
 
 <<<window[9]:$00C3-$00EF>>>
-[msg][special]「心外ですね。[nl][wait30]　お姫様に手をだすつもりは　ありませんよ」
+[msg][special]"How rude.[nl][wait30] I have no intention of harming the princess."
 <<<window[10]:$00F3-$0105>>>
-[msg][special]「‥‥‥‥‥‥‥‥‥」
+[msg][special]"............"
 <<<window[11]:$010F-$012D>>>
-[msg][special]「‥‥ライム姫、[wait20]さがっていてください」
+[msg][special]"...Princess Lime,[wait20] please stand back."
 <<<window[12]:$013E-$0159>>>
 
 <<<window[13]:$015D-$0177>>>
-[msg][special]「リイム‥‥[wait30]　おきをつけて‥‥」
+[msg][special]"Liam...[wait30] please be careful..."
 
 <<$327696:106[$353764]>>
 <<<window[0]:$004A-$0050>>>
@@ -1326,13 +1326,13 @@
 <<<window[1]:$0067-$0072>>>
 
 <<<window[2]:$007B-$00A9>>>
-[msg][special]「ヴァイス、[wait20]ヤツらがくるぞ、[wait20]剣をとれ![nl][wait30]　迎え撃つぞ」
+[msg][special]"Weiss,[wait20] they're coming.[wait20] Draw your sword![nl][wait30] We fight!"
 <<<window[3]:$00AD-$00B9>>>
-[msg][special]「‥‥‥」
+[msg][special]"......"
 <<<window[4]:$00BE-$00BF>>>
 
 <<<window[5]:$00C3-$00FF>>>
-[msg][special]「なにしてやがんでい、[wait20]ほら、[wait20]おめえたち![nl][wait30]　闘いの準備だ![wait20]　おれに続け!」
+[msg][special]"What are you doing!?[wait20] Come on,[wait20] you lot![nl][wait30] Get ready to fight![wait20] Follow me!"
 <<<window[6]:$0125-$0127>>>
 
 <<<window[7]:$012C-$012E>>>
@@ -1340,57 +1340,57 @@
 <<<window[8]:$0133-$0134>>>
 
 <<<window[9]:$0138-$0177>>>
-[msg][special]「きやがったな、[wait20]ここが　お前らの墓場だ![nl][wait30]　さあ、いくぜ。[wait20]こんどこそギタギタにしてや‥」
+[msg][special]"So you're here.[wait20] This is your grave![nl][wait30] Come on,[wait20] this time I'll tear you to--"
 <<<window[10]:$0182-$0190>>>
-[msg][special]「もういいよ」
+[msg][special]"That's enough."
 <<<window[11]:$01B2-$01B7>>>
 
 <<<window[12]:$01FD-$0203>>>
 
 <<<window[13]:$020A-$0228>>>
-[msg][special]「なぜだ![wait20]　おれは‥[wait20]　うわーーー」
+[msg][special]"Why!?[wait20] I was...[wait20] waaaah!!"
 <<<window[14]:$022A-$022E>>>
 
 <<<window[15]:$0244-$024F>>>
 
 <<<window[16]:$0253-$0271>>>
-[msg][special]「あーあ、[wait20]まったく　めんどうくさいニャ」
+[msg][special]"Ahh,[wait20] such a pain, meow."
 <<<window[17]:$0275-$02AE>>>
-[msg][special]「キミは　勝てなかったじゃない。[nl][wait30]　なんどやっても　同じことだニャ。[wait30]用ずみだニャ」
+[msg][special]"You couldn't beat them, could you?[nl][wait30] No matter how many times, same result, meow.[wait30] You're done, meow."
 <<<window[18]:$02BF-$02DD>>>
-[msg][special]「あいつめ、[wait20]本性を現しやがったな」
+[msg][special]"That guy,[wait20] finally showed his true colors."
 
 <<$327696:107[$354509]>>
 <<<window[0]:$004A-$005F>>>
 
 <<<window[1]:$0069-$0081>>>
-[msg][special]「リイム、[wait20]おまえの勝ちだ」
+[msg][special]"Liam,[wait20] you win."
 <<<window[2]:$008C-$009B>>>
-[msg][special]「ヴァイス‥‥」
+[msg][special]"Weiss..."
 <<<window[3]:$009F-$00AD>>>
-[msg][special]「寄るな!」
+[msg][special]"Stay away!"
 <<<window[4]:$00B7-$00D8>>>
-[msg][special]「ヴァイス、[wait20]キミには　まだやるべきことがある」
+[msg][special]"Weiss,[wait20] you still have things you need to do."
 <<<window[5]:$00DC-$0108>>>
-[msg][special]「なにをすべきか、[nl][wait20]　それは　キミ自身が　解っているはずだよ」
+[msg][special]"What you should do—[nl][wait20] you already know the answer yourself."
 <<<window[6]:$010D-$010F>>>
 
 <<<window[7]:$0110-$0127>>>
-[msg][special]「しかし‥‥[wait30]　おれは‥‥」
+[msg][special]"But...[wait30] I..."
 <<<window[8]:$0132-$0152>>>
-[msg][special]「あなたの行動で　傷ついた人達がいるわ」
+[msg][special]"There are people who were hurt by your actions."
 <<<window[9]:$0156-$0186>>>
-[msg][special]「なにをすれば　いいのか？[nl][wait30]　それは、[wait20]これから考えれば　いいことよ」
+[msg][special]"What should you do?[nl][wait30] That's[wait20] something you can figure out from now on."
 <<<window[10]:$018B-$018D>>>
 
 <<<window[11]:$0191-$019E>>>
-[msg][special]「・・・・」
+[msg][special]"........"
 <<<window[12]:$01A2-$01C1>>>
-[msg][special]「ニャーン。[wait30]お話は　終わったかニャン」
+[msg][special]"Meow.[wait30] Are you done chatting, meow?"
 <<<window[13]:$01E3-$01E8>>>
 
 <<<window[14]:$01F3-$01FE>>>
-[msg]「あぶねえ!」
+[msg]"Look out!"
 <<<window[15]:$020C-$0220>>>
 
 <<<window[16]:$022C-$0233>>>
@@ -1398,29 +1398,29 @@
 <<<window[17]:$0341-$0346>>>
 
 <<<window[18]:$035A-$036E>>>
-[msg][special]「さあ、[wait20]いくニャン」
+[msg][special]"Now then,[wait20] let's go, meow."
 <<<window[19]:$0379-$0382>>>
-[msg]「うわ～」
+[msg]"Whoa~!"
 <<<window[20]:$0391-$039A>>>
-[msg]「きゃ～」
+[msg]"Kyaa~!"
 <<<window[21]:$03B7-$03BF>>>
-[msg]「モ～」
+[msg]"Mo~!"
 
 <<$327696:108[$355494]>>
 <<<window[0]:$004A-$005C>>>
 
 <<<window[1]:$00C9-$00DA>>>
-[msg][special]「う、[wait20]う～ん」
+[msg][special]"Ugh,[wait20] uuhn..."
 <<<window[2]:$00E8-$00F7>>>
-[msg][special]「‥‥ここは？」
+[msg][special]"...where are we?"
 <<<window[3]:$00FC-$00FD>>>
 
 <<<window[4]:$010D-$012F>>>
-[msg][special]「ようこそ。[wait30]ここは　魔界に通じるだニャン」
+[msg][special]"Welcome.[wait30] This leads to the demon realm, meow."
 <<<window[5]:$0159-$0171>>>
-[msg][special]「おいおい、[wait20]なんだよここは」
+[msg][special]"Hey, hey.[wait20] What is this place?"
 <<<window[6]:$017F-$01B5>>>
-[msg][special]「さっさと俺たちを　もとの所にもどしな。[nl][wait30]　あんまりおいたがひどいと　ゆるさないぜ」
+[msg][special]"Send us back where we came from, now.[nl][wait30] Push it too far and you'll regret it."
 
 <<$327696:109[$355943]>>
 <<<window[0]:$004F-$0055>>>
@@ -1430,27 +1430,27 @@
 <<<window[2]:$0096-$00B4>>>
 
 <<<window[3]:$00B8-$00E8>>>
-[msg][special]「また　お前たちかニャ。[nl][wait30]　ボクたちの邪魔は　しないほうがいいニャン」
+[msg][special]"You guys again, meow.[nl][wait30] You'd best not get in our way, meow."
 <<<window[4]:$00F2-$0135>>>
-[msg][special]「わかってんのか、[wait20]お前らの　大事なお姫様は[nl][wait20]　俺たちが　預かってんだからな。[wait30]ヒャハハ!」
+[msg][special]"You do realize,[wait20] we have your precious[nl][wait20] little princess in our custody.[wait30] Hyahaha!"
 <<<window[5]:$013F-$014A>>>
-[msg][special]「くっ」
+[msg][special]"Tch..."
 <<<window[6]:$014F-$017D>>>
-[K]持[P]吹‼甘[P][msg][special]「かれらの始末は[wait20]　私にまかせてもらえませんか」
+[K]持[P]吹‼甘[P][msg][special]"Let me[wait20] deal with them."
 <<<window[7]:$0187-$019B>>>
-[msg][special]「フン、[wait20]いいだろう」
+[msg][special]"Hmph,[wait20] very well."
 <<<window[8]:$019F-$01BF>>>
-[msg][special]「リイム、[wait20]これいじょう俺たちにかまうな!」
+[msg][special]"Liam,[wait20] stop meddling in our affairs!"
 <<<window[9]:$01D5-$01DA>>>
 
 <<<window[10]:$01F1-$01FE>>>
-[msg][special]「まてっ!」
+[msg][special]"Wait!"
 <<<window[11]:$0212-$0214>>>
 
 <<<window[12]:$0216-$0217>>>
 
 <<<window[13]:$021B-$0243>>>
-[msg][special]「待ちなさい。[nl][wait30]　お姫様を　助けたくはないんですか」
+[msg][special]"Wait.[nl][wait30] Don't you want to save the princess?"
 
 <<$327696:110[$356534]>>
 <<<window[0]:$0076-$007A>>>
@@ -1458,13 +1458,13 @@
 <<<window[1]:$009C-$00A2>>>
 
 <<<window[2]:$00AF-$00C7>>>
-眼甘[P][msg][special]「おぼえていろだニャン」
+眼甘[P][msg][special]"Remember this, meow!"
 <<<window[3]:$00CB-$0104>>>
-[msg][special]「いつか、[wait20]もっと強力な　なかまと一緒に[nl][wait20]　おまえたちに　復讐してやるニャン」
+[msg][special]"Someday,[wait20] with even more powerful allies,[nl][wait20] I'll get my revenge on you, meow!"
 <<<window[4]:$0115-$013E>>>
-[msg][special]「いつでもきやがれ。[nl][wait30]　魔界から　出られるもんならな!」
+[msg][special]"Bring it on any time.[nl][wait30] If you can even get out of the demon realm!"
 <<<window[5]:$01C5-$01D5>>>
-[msg][special]「くやしいニャー」
+[msg][special]"So frustrating, meow!"
 <<<window[6]:$01D7-$01DE>>>
 
 <<<window[7]:$01E8-$01ED>>>
@@ -1472,21 +1472,21 @@
 <<<window[8]:$021F-$0223>>>
 
 <<<window[9]:$02C4-$02D4>>>
-[FF0A0E]後日、ライナーク城
+[FF0A0E]Days later, Linark Castle
 <<<window[10]:$02FA-$030F>>>
-[FF070E]「大変です、大変で～～す」
+[FF070E]"Urgent news! Urgent ne~~ws!"
 <<<window[11]:$0323-$0361>>>
-[FF060B]「閣下に申し上げます。[FF060E]　過日マテドラル城下にて[FF0611]　巨大な洞穴が発見されました」
+[FF060B]"We report to Your Majesty.[FF060E] A massive cavern has been[FF0611] discovered beneath Matedral."
 <<<window[12]:$0375-$03B2>>>
-[FF020C]「早速　調査隊を派遣しましたところ、[FF020F]　魔物が暴れていて　とても奥に進めないとのこと」
+[FF020C]"We dispatched a survey team,[FF020F] but monsters are rampaging and they cannot advance."
 <<<window[13]:$03C6-$03DC>>>
-[FF070E]「どうか　お力をお貸しください」
+[FF070E]"Please, lend us your strength!"
 <<<window[14]:$041C-$0432>>>
-[msg]われらが　勇者軍のおでましだ!
+[msg]The Hero Army has arrived!
 <<<window[15]:$0479-$047F>>>
 
 <<<window[16]:$04D7-$04E8>>>
-[msg][special]「いくぞ　みんな!」
+[msg][special]"Let's go, everyone!"
 <<<window[17]:$04EA-$0512>>>
 
 <<<window[18]:$0514-$0519>>>
@@ -1508,25 +1508,25 @@
 <<<window[2]:$0061-$0062>>>
 
 <<<window[3]:$0066-$009E>>>
-[msg][special]「ようこそ　幻影の村へ。[nl][wait30]　ここには、[wait20]ミラージュと呼ばれる4本の塔がある」
+[msg][special]"Welcome to Mirage Village.[nl][wait30] Here stand 4 towers called the Mirages."
 <<<window[4]:$00A2-$00D1>>>
-[msg][special]「この塔は不思議なもので、[nl][wait20]　訪れる者の心を　映すのじゃ」
+[msg][special]"These towers are wondrous things.[nl][wait20] They reflect the hearts of those who enter."
 <<<window[5]:$00D5-$0107>>>
-[msg][special]「魔物を恐れれば　魔物が現れ、[nl][wait20]　水を恐れれば　水が現れる」
+[msg][special]"Fear monsters, and monsters appear.[nl][wait20] Fear water, and water appears."
 <<<window[6]:$010B-$012D>>>
-[msg][special]「それは[wait20]　マボロシのようなものなのかもしれない」
+[msg][special]"Perhaps[wait20] they are nothing more than illusions."
 <<<window[7]:$0131-$0169>>>
-[msg][special]「しかし、[wait20]そのマボロシを克服すれば、[nl][wait20]　いくばくかの経験を得ることができる」
+[msg][special]"However,[wait20] if you overcome the illusions,[nl][wait20] you can gain some experience from them."
 <<<window[8]:$016D-$01BF>>>
-[msg][special]「そんな噂が広まって、[wait20]いつの頃からか[nl][wait20]　己の限界を　克服したいと望む[nl]　冒険者たちが　集まるようになったのじゃ」
+[msg][special]"Word of this spread,[wait20] and before long[nl][wait20] adventurers seeking to surpass[nl] their own limits began to gather here."
 <<<window[9]:$01C3-$01F5>>>
-[msg][special]「さてさて、[wait20]おまえさんたちは[nl][wait20]　ミラージュの塔に　何を見るかのお？」
+[msg][special]"Now then,[wait20] I wonder what you lot[nl][wait20] will see in the Mirage Towers, hmm?"
 <<<window[10]:$027F-$028E>>>
-[msg][special]「ここは‥‥？」
+[msg][special]"Where are we...?"
 <<<window[11]:$0298-$02AE>>>
-[msg][special]「これが　マボロシなの‥‥？」
+[msg][special]"So this is... an illusion?"
 <<<window[12]:$02B8-$02D5>>>
-[msg][special]「とりあえずは、[wait20]やるしかなさそうだな」
+[msg][special]"For now,[wait20] looks like we have no choice but to fight."
 
 <<$327696:116[$358629]>>
 <<<window[0]:$0019-$001A>>>

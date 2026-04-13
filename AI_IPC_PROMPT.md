@@ -45,13 +45,16 @@ All response addresses: uppercase no prefix (`"008000"`).
 ### Labels
 | Command | Params | Notes |
 |---------|--------|-------|
-| `setLabel` | address, memoryType, label?, comment?, category?, length?(1) | Create/update |
+| `setLabel` | address, memoryType, label?, comment?, category?, length?(1) | Create/update. Returns warning if no category set |
+| `setLabels` | labels:[{address, memoryType, label?, comment?, category?, length?},...] | Batch create/update. Returns count + results array |
 | `deleteLabel` | address, memoryType | |
 | `getLabel` | address, memoryType | Returns null data if not found |
 | `getLabelByName` | name | |
 | `getAllLabels` | cpuType? | Filter by CPU or get all |
 
 Label names: `^[@_a-zA-Z]+[@_a-zA-Z0-9]*$`. Comments support `\n`.
+All labels set via IPC are marked with an IPC flag (visible in label/function list as green dot, sortable).
+**Always set a category** — omitting it triggers a warning in the response.
 
 ### Memory
 | Command | Params | Notes |
