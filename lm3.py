@@ -1681,7 +1681,10 @@ def encode_script_file(script_file: str, table_filename: str,
         if '>>' not in entry:
             continue
         header = entry.split('>>')[0]
-        content = entry.split('>>')[1]
+        # Skip <<<window>>> markers caught by the << split.
+        if not header.startswith('$'):
+            continue
+        content = '>>'.join(entry.split('>>')[1:])
         if content.startswith('\n'):
             content = content[1:]
         content = content.rstrip('\n\r\t ')
@@ -1715,6 +1718,11 @@ def encode_script_file(script_file: str, table_filename: str,
                 continue
             content, orig_addr = parsed[entry_idx]
             if not content or content == '[end]':
+                encoded_entries.append((b'\x00', orig_addr, [], {}))
+                continue
+            # Windowed entries are handled by insert_event_script_windowed();
+            # emit empty here so insert_dte_table() preserves original ROM.
+            if '<<<window' in content:
                 encoded_entries.append((b'\x00', orig_addr, [], {}))
                 continue
             if word_wrap is not None and _entry_in_range(entry_idx, word_wrap.get('entries')):
@@ -3280,6 +3288,22 @@ def insert_all_scripts(rom_path: str,
                 print(f'  {name}: {total} entries, {oc} overflow (preserved JP){lang_tag}')
             else:
                 print(f'  {name}: {total} entries, all inline{lang_tag}')
+
+            # If the script file has <<<window>>> entries, run a windowed pass
+            # for those entries (insert_dte_table skipped them as empty).
+            script_text = _read_script_text(script_file)
+            if '<<<window' in script_text:
+                windowed_result = insert_event_script_windowed(
+                    rom, script_file, tbl_file,
+                    tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
+                    source_rom=orig_rom,
+                    fallback_table=fb_tbl,
+                    force=force,
+                )
+                all_results.append(windowed_result)
+                wc = len(windowed_result.get('ffc0_overflow', []))
+                if wc:
+                    print(f'  {name}: {wc} windowed entries → FFC0{lang_tag}')
 
     # Write FFC0 overflow data to bank $C6.
     if all_results:

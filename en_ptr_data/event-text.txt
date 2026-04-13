@@ -544,7 +544,7 @@ Knock knock....[wait0A]Knock knock....
 「Liam![wait20] Are you okay?」
 <<<window[8]:$0191-$01A6>>>
 「Yeah,[wait20] but more importantly, the professor」
-<<<window[9]:$01B6-$01BB>>>
+<<<window[9]:$01B7-$01BB>>>
 「Right」
 <<<window[10]:$01CB-$01D0>>>
 

@@ -4,13 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="formatting fixes">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="More changes and fixes.">
+      <change afterPath="$PROJECT_DIR$/03_master_kb.snesdb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/debug_mode_patch.asm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-msg.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/battle-text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/event-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/event-text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesen_ipc.py" beforeDir="false" afterPath="$PROJECT_DIR$/mesen_ipc.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -368,7 +368,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775983087696</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="More changes and fixes.">
+      <option name="closed" value="true" />
+      <created>1776027514709</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1776027514709</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -389,7 +397,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies." />
     <MESSAGE value="Big changes for script dumping and insertion. Still some bugs, but we'll figure it out." />
     <MESSAGE value="Round-trip verification now passing for original data." />
     <MESSAGE value="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional." />
@@ -414,6 +421,7 @@
     <MESSAGE value="committing a ton of event script changes, etc" />
     <MESSAGE value="fast" />
     <MESSAGE value="formatting fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="formatting fixes" />
+    <MESSAGE value="More changes and fixes." />
+    <option name="LAST_COMMIT_MESSAGE" value="More changes and fixes." />
   </component>
 </project>
