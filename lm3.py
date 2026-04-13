@@ -1796,10 +1796,16 @@ def encode_script_file(script_file: str, table_filename: str,
 
 def encode_event_script_windowed(script_file: str, table_filename: str,
                                  fallback_table: str = None,
-                                 force: bool = False) -> list:
+                                 force: bool = False,
+                                 cache_dir: str = None) -> list:
     """
     Encode a windowed event-script file.  Each entry may have zero or more
     <<<window[N]:$START-$END>>> blocks containing translatable text.
+
+    Uses a bin cache in cache_dir to skip re-encoding when neither the script
+    file nor the table file have changed.  Cache files:
+      {cache_dir}/{name}-windowed.bin       — serialized window data
+      {cache_dir}/{name}-windowed.checksum  — hex digest
 
     Returns list of entries indexed by header :N.  Each entry is either:
       - None (pure bytecode, no windows — skip during insertion)
@@ -1807,7 +1813,49 @@ def encode_event_script_windowed(script_file: str, table_filename: str,
         start/end are original ROM offsets (relative to entry data start)
         encoded_bytes is the text content encoded (WITHOUT [P] or [end])
     """
-    import re
+    import re, hashlib, os, struct
+
+    name = os.path.splitext(os.path.basename(script_file))[0]
+
+    # Compute checksum over script + table file(s).
+    h = hashlib.sha256()
+    for path in [script_file, table_filename]:
+        with open(path, 'rb') as f:
+            h.update(f.read())
+    if fallback_table:
+        with open(fallback_table, 'rb') as f:
+            h.update(f.read())
+    current_checksum = h.hexdigest()
+
+    # Check cache.
+    bin_path = cksum_path = None
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+        bin_path = os.path.join(cache_dir, f'{name}-windowed.bin')
+        cksum_path = os.path.join(cache_dir, f'{name}-windowed.checksum')
+
+        if not force and os.path.exists(cksum_path) and os.path.exists(bin_path):
+            with open(cksum_path, 'r') as f:
+                cached_checksum = f.read().strip()
+            if cached_checksum == current_checksum:
+                # Deserialize cached windowed entries.
+                result = []
+                with open(bin_path, 'rb') as f:
+                    data = f.read()
+                pos = 0
+                while pos < len(data):
+                    entry_marker = data[pos]; pos += 1
+                    if entry_marker == 0:
+                        result.append(None)
+                    else:
+                        win_count = struct.unpack_from('<H', data, pos)[0]; pos += 2
+                        windows = []
+                        for _ in range(win_count):
+                            s, e, blen = struct.unpack_from('<HHI', data, pos); pos += 8
+                            encoded = data[pos:pos+blen]; pos += blen
+                            windows.append((s, e, encoded))
+                        result.append(windows)
+                return result
 
     tbl = Table(table_filename)
     fb_tbl = Table(fallback_table) if fallback_table else None
@@ -1881,6 +1929,21 @@ def encode_event_script_windowed(script_file: str, table_filename: str,
                     encoded_bytes = encoded_bytes[:-1]
                 encoded_windows.append((start, end, encoded_bytes))
             result.append(encoded_windows)
+
+    # Write cache.
+    if bin_path:
+        with open(bin_path, 'wb') as f:
+            for entry in result:
+                if entry is None:
+                    f.write(b'\x00')  # marker: no windows
+                else:
+                    f.write(b'\x01')  # marker: has windows
+                    f.write(struct.pack('<H', len(entry)))
+                    for s, e, enc in entry:
+                        f.write(struct.pack('<HHI', s, e, len(enc)))
+                        f.write(enc)
+        with open(cksum_path, 'w') as f:
+            f.write(current_checksum)
 
     return result
 
@@ -2546,7 +2609,8 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
                                  table_filename: str, ptr_tbl_pos: int,
                                  tbl_len: int, source_rom: bytes,
                                  fallback_table: str = None,
-                                 force: bool = False) -> dict:
+                                 force: bool = False,
+                                 cache_dir: str = None) -> dict:
     """
     Insert event-script text using the windowed format.  For each text window
     in each entry, writes [P] + FFC0 redirect at the window's original ROM
@@ -2575,7 +2639,8 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
     # Encode windowed script file.
     windowed_entries = encode_event_script_windowed(
         script_file, table_filename,
-        fallback_table=fallback_table, force=force)
+        fallback_table=fallback_table, force=force,
+        cache_dir=cache_dir)
 
     ffc0_overflow = []
     window_count = 0
@@ -3261,6 +3326,7 @@ def insert_all_scripts(rom_path: str,
                 source_rom=orig_rom,
                 fallback_table=fb_tbl,
                 force=force,
+                cache_dir=cache_dir,
             )
             all_results.append(result)
             ffc0_count = len(result.get('ffc0_overflow', []))
@@ -3299,6 +3365,7 @@ def insert_all_scripts(rom_path: str,
                     source_rom=orig_rom,
                     fallback_table=fb_tbl,
                     force=force,
+                    cache_dir=cache_dir,
                 )
                 all_results.append(windowed_result)
                 wc = len(windowed_result.get('ffc0_overflow', []))
