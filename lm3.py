@@ -2636,6 +2636,10 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
         pc = SFCAddress(snes, SFCAddressType.LOROM1).get_address(SFCAddressType.PC)
         orig_pcs.append(pc)
 
+    # Load table for ctrl_lengths (needed for auto-expanding small windows).
+    tbl = Table(table_filename)
+    ctrl_lengths = tbl.ctrl_lengths
+
     # Encode windowed script file.
     windowed_entries = encode_event_script_windowed(
         script_file, table_filename,
@@ -2655,27 +2659,49 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
             if not encoded_text:
                 continue  # empty window, skip
 
-            # Need 6 bytes minimum: [P](1) + FF C0(2) + addr(3).
-            # If window is too small, the FFC0 overwrites [end] and bytecodes.
+            # Need 6 bytes minimum: $START(1) + FF C0(2) + addr(3).
+            # Byte at $START stays in ROM; FFC0 written at start+1.
             window_size = end - start
+            absorbed_suffix = b''
+
+            # When window too small, absorb the byte at $END (typically
+            # [end]=0x00) into the overflow.  This extends the overwrite
+            # region by 1 byte, giving FFC0 room to fit.  The absorbed
+            # byte is appended to the overflow text so the text engine
+            # still processes it.  Return FFC0 jumps past absorbed byte.
             if window_size < 6:
-                continue  # too small, likely false 0x10 positive
+                end_byte = source_rom[pc + end]
+                if end_byte == 0x00:  # [end]
+                    absorbed_suffix = b'\x00'
+                    end += 1
+                    window_size = end - start
+                elif end_byte == 0xFF:
+                    # Absorb a safe FF control code (not FFC0/FFF0).
+                    code = source_rom[pc + end + 1]
+                    if code not in (0xC0, 0xF0):
+                        cmd_len = ctrl_lengths.get(code, 2)
+                        absorbed_suffix = bytes(
+                            source_rom[pc + end : pc + end + cmd_len])
+                        end += cmd_len
+                        window_size = end - start
+                if window_size < 6:
+                    continue  # still too small
 
             # Compare encoded text to original ROM bytes.  If identical,
             # skip the redirect — no point rewriting unchanged text, and
             # false-positive 0x10 windows would corrupt bytecodes.
-            orig_text = bytes(source_rom[pc + start + 1 : pc + end])
+            orig_end = end - len(absorbed_suffix)
+            orig_text = bytes(source_rom[pc + start + 1 : pc + orig_end])
             if encoded_text == orig_text:
                 continue  # unchanged, skip redirect
 
-            # Write [P] + FF C0 + placeholder at the window start in ROM.
-            # [P] (0x10) is already at pc + start in original ROM — keep it.
-            # Write FFC0 right after it: pc + start + 1.
+            # Write FFC0 placeholder at start+1 in ROM.
+            # Byte at $START stays in place.
             ffc0_pc = pc + start + 1
             rom[ffc0_pc:ffc0_pc + 5] = b'\xFF\xC0\xFF\xFF\xFF'
 
-            # Build overflow tail: encoded text + FF C0 + return addr.
-            # Return FFC0 points back to the [end] (0x00) at pc + end.
+            # Build overflow: encoded text + absorbed suffix + FFC0 return.
+            # Return FFC0 points to the byte after the absorbed region.
             return_pc = pc + end
             return_snes = SFCAddress(return_pc).get_address(SFCAddressType.LOROM1)
             return_addr = bytes([
@@ -2683,7 +2709,7 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
                 (return_snes >> 8) & 0xFF,
                 (return_snes >> 16) & 0xFF
             ])
-            overflow_tail = encoded_text + b'\xFF\xC0' + return_addr
+            overflow_tail = encoded_text + absorbed_suffix + b'\xFF\xC0' + return_addr
 
             # Record: (entry_idx, fixup_pc, overflow_tail, tail_fixups)
             # fixup_pc = location of the 3-byte addr placeholder in the forward FFC0

@@ -4,10 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Aded new master rom hacking database for ai to reference. Added recent changes.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Added windowed script file caching. some script fixes.">
+      <change afterPath="$PROJECT_DIR$/en_ptr_data/script_ext.old" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/text_finder.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI_IPC_PROMPT.md" beforeDir="false" afterPath="$PROJECT_DIR$/AI_IPC_PROMPT.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/bin/event-text-windowed.checksum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/event-text.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/event-text.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_ptr_data/script.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_ptr_data/script_ext.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" beforeDir="false" afterPath="$PROJECT_DIR$/jp_ptr_data/script_ext.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,30 +37,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/mnt/crucial/projects/sfc-lm3-eng&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/en_ptr_data",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/en_ptr_data" />
+      <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
@@ -381,7 +389,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776043409524</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="Added windowed script file caching. some script fixes.">
+      <option name="closed" value="true" />
+      <created>1776047746573</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1776047746573</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -402,7 +418,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Round-trip verification now passing for original data." />
     <MESSAGE value="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional." />
     <MESSAGE value="New text blocks have been identified for translation." />
     <MESSAGE value="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL" />
@@ -427,6 +442,7 @@
     <MESSAGE value="formatting fixes" />
     <MESSAGE value="More changes and fixes." />
     <MESSAGE value="Aded new master rom hacking database for ai to reference. Added recent changes." />
-    <option name="LAST_COMMIT_MESSAGE" value="Aded new master rom hacking database for ai to reference. Added recent changes." />
+    <MESSAGE value="Added windowed script file caching. some script fixes." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added windowed script file caching. some script fixes." />
   </component>
 </project>
