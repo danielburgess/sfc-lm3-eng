@@ -97,9 +97,15 @@ CODE_8180E6: ; $0180E6
         STZ.W $0942
         LDA.W #$0000
         STA.L $7EEA9C
+; [Memory] CMP $00 — does entry match search target?
+findDataEntry_CheckVal: ; $0180F2
         JSR.W clearTextBuffer
         JSR.W drawFormationScreen
+; [Memory] INY — skip entry byte 1
+findDataEntry_Skip1: ; $0180F8
         LDA.W #$0002
+; [Memory] INY — skip entry byte 4
+findDataEntry_Skip4: ; $0180FB
         JSL.L dispatchGameMode
         LDA.W $0902
         STA.B $00
@@ -284,7 +290,7 @@ CODE_818310: ; $018310
         JSR.W $D231
         PHA
         JSR.W clearTextBuffer
-        JSR.W initGraphics
+        JSR.W reloadMapScene
         JSR.W checkScrollBoundaryY
         PLA
         CMP.W #$FFFF
@@ -404,11 +410,11 @@ CODE_81841A: ; $01841A
         STA.B $04
         JSR.W playEventCutscene
 CODE_81844C: ; $01844C
-        JSR.W initGraphics
+        JSR.W reloadMapScene
         JSR.W initScenarioDisplay
         JMP.W CODE_81814F
-; [Init] Initializes graphics system - sets up PPU registers, clears VRAM, loads font.
-initGraphics: ; $018455
+; [LevelLoad] Scene reload: handleMapScreen, dispatchGameMode, copy text params, centerCamera, printText
+reloadMapScene: ; $018455
         JSR.W handleMapScreen
         LDA.W #$0006
         JSL.L dispatchGameMode
@@ -469,8 +475,8 @@ CODE_8184E3: ; $0184E3
         LDA.W #$0001
         JSR.W handleInn
         JMP.W CODE_818113
-; [Init] Initializes game state variables - party, inventory, story flags to default.
-initGameState: ; $0184F3
+; [Text] Sets $09FC/$09FE=$0019, reads $0E37 scroll flags, calls textMetaLookup, checks entity thresholds
+setupTextScrollState: ; $0184F3
         LDA.W #$0019
         STA.W $09FC
         LDA.W #$0019
@@ -486,8 +492,8 @@ initGameState: ; $0184F3
         JSR.W textMetaLookup
         LDY.W #$0E00
         BRA CODE_81851D
-; [Init] Initializes controller input system - clears input buffers, enables auto-read.
-initControllers: ; $018515
+; [Entity] Updates entity at Y=$0F00, checks $0038/$0028 fields vs thresholds, sets $0E74/$0E75 flags
+updateScrollBoundaryEntity: ; $018515
         LDY.W #$0F00
         PHY
         JSR.W updateEntity
@@ -509,12 +515,12 @@ CODE_818531: ; $018531
         INC.W $0E75
 CODE_81853C: ; $01853C
         RTS
-; [Init] Enables screen display after init. Entry: sets $2100 to $0F (full brightness).
-enableDisplay: ; $01853D
+; [StateMachine] Alternate entry: loads $0E90 instead of $0E10, shares fieldStateDispatch logic
+fieldStateDispatch_Alt: ; $01853D
         LDA.W $0E90
         BRA CODE_818545
-; [GameState] Title screen main loop - handles menu, demo playback, start game transition.
-titleScreenLoop: ; $018542
+; [StateMachine] Main overworld state loop: dispatches on $0E10 ($02/$03/$04); handles shop, pause, equip, inn, entity updates
+fieldStateDispatch: ; $018542
         LDA.W $0E10
 CODE_818545: ; $018545
         AND.W #$00FF
@@ -550,7 +556,7 @@ CODE_818582: ; $018582
         JSR.W updateEntity
         LDY.W #$0E00
         JSR.W handleEquipment
-        JSR.W initGameState
+        JSR.W setupTextScrollState
         LDA.W #$0011
         JSR.W textMetaLookup
         LDA.W $0E28
@@ -567,15 +573,15 @@ CODE_8185B8: ; $0185B8
 CODE_8185C1: ; $0185C1
         LDA.W #$3932
         STA.B $7D
-        JSR.W handleTitleInput
+        JSR.W resetScrollAreaPriority
         LDA.W #$0002
         JSR.W handleInn
-        JSR.W playTitleMusic
+        JSR.W clearTilePriorityAndScroll
         JMP.W CODE_818113
 CODE_8185D5: ; $0185D5
         LDA.W #$3132
         STA.B $7D
-        JSR.W handleTitleInput
+        JSR.W resetScrollAreaPriority
 CODE_8185DD: ; $0185DD
         LDA.W #$0002
         JSR.W handleInn
@@ -587,7 +593,7 @@ CODE_8185DD: ; $0185DD
         BNE CODE_8185F3
         BRA CODE_8185DD
 CODE_8185F3: ; $0185F3
-        JSR.W playTitleMusic
+        JSR.W clearTilePriorityAndScroll
         JMP.W CODE_818113
 CODE_8185F9: ; $0185F9
         LDA.W $090A
@@ -598,7 +604,7 @@ CODE_8185F9: ; $0185F9
         LDA.L $7FA000,X
         AND.W #$00FF
         BEQ CODE_8185DD
-        JSR.W playTitleMusic
+        JSR.W clearTilePriorityAndScroll
         LDA.W $090A
         STA.B $00
         LDA.W $090C
@@ -680,12 +686,12 @@ CODE_8186BA: ; $0186BA
         LDA.W $0E56
         INC A
         STA.B $0A
-        JSR.W animateTitle
+        JSR.W markMapCellRange
         LDA.W #$0010
         JSR.W textMetaLookup
-        JSR.W gameMainLoop
+        JSR.W fieldFrameUpdate
         PHA
-        JSR.W playTitleMusic
+        JSR.W clearTilePriorityAndScroll
         PLA
         BEQ CODE_8186E1
         JMP.W $8669
@@ -779,22 +785,22 @@ CODE_818848: ; $018848
         ORA.W #$1000
         STA.L $7F9000,X
         JMP.W $8BDD
-; [GameState] Initializes title screen - sets up animation, music, and input handlers. Entry: called when entering title screen.
-initTitleScreen: ; $018859
+; [StateMachine] Sets ZP $08=1/$0A=3, runs markMapCellRange, textMetaLookup, fieldFrameUpdate
+initFieldSubState: ; $018859
         LDA.W #$0001
         STA.B $08
         LDA.W #$0003
         STA.B $0A
-        JSR.W animateTitle
+        JSR.W markMapCellRange
         LDA.W #$0010
         JSR.W textMetaLookup
-        JSR.W gameMainLoop
+        JSR.W fieldFrameUpdate
         PHA
-        JSR.W playTitleMusic
+        JSR.W clearTilePriorityAndScroll
         PLA
         RTS
-; [Animation] Animates title screen elements (sparkles, pulsing). Entry: called each frame.
-animateTitle: ; $018875
+; [Tilemap] Stores $3157 to $7D, copies $090A/$090C, calls markCellsInRange + evtScrollInitPartial
+markMapCellRange: ; $018875
         LDA.W #$3157
         STA.B $7D
         LDA.W $090A
@@ -805,8 +811,8 @@ animateTitle: ; $018875
         JSR.W evtScrollInitPartial
         JSR.W confirmAction
         RTS
-; [Input] Handles input on title screen - start button, demo mode.
-handleTitleInput: ; $01888F
+; [Scrolling] Copies $090A/$090C, zeros $0A, reads $0E48/$0E37, calls clearObjectBuffer + evtTileSetPriority
+resetScrollAreaPriority: ; $01888F
         LDA.W $090A
         STA.B $00
         LDA.W $090C
@@ -818,18 +824,18 @@ handleTitleInput: ; $01888F
         LDA.W $0E37
         AND.W #$00FF
         STA.B $0C
-        JSL.L clearObjectBuffer
+        JSL.L buildMovementCostMap
         JSR.W evtTileSetPriority
         JSR.W evtScrollInitPartial
         RTS
-; [Music] Plays title screen music. Entry: starts BGM track 0.
-playTitleMusic: ; $0188B6
+; [Scrolling] Calls evtTileClearPriority + evtScrollInitPartial + confirmAction; no audio
+clearTilePriorityAndScroll: ; $0188B6
         JSR.W evtTileClearPriority
         JSR.W evtScrollInitPartial
         JSR.W confirmAction
         RTS
-; [MainLoop] Main gameplay loop - updates all systems, renders frame. Entry: called each frame during gameplay.
-gameMainLoop: ; $0188C0
+; [StateMachine] Per-frame field dispatch: checks $0928, save points, controller, entity table reads, battle load
+fieldFrameUpdate: ; $0188C0
         STZ.W $0928
         LDA.W $0926
         STA.W $092C
@@ -840,7 +846,7 @@ gameMainLoop: ; $0188C0
         STA.W $0928
 CODE_8188D5: ; $0188D5
         LDA.W #$0000
-        JSR.W handleSavePoint
+        JSR.W tmapLookup_CheckSign
         LDA.B $50
         AND.W #$4080
         BNE CODE_8188EC
@@ -901,7 +907,7 @@ CODE_818956: ; $018956
         BNE CODE_818966
         JMP.W CODE_818676
 CODE_818966: ; $018966
-        JSR.W initTitleScreen
+        JSR.W initFieldSubState
         BEQ CODE_81896E
         JMP.W $8669
 CODE_81896E: ; $01896E
@@ -919,7 +925,7 @@ CODE_818988: ; $018988
         BNE CODE_818990
         db $4C,$69,$86
 CODE_818990: ; $018990
-        JSR.W updateGameLogic
+        JSR.W updateEntityInputFlags
         DEC.W $0E0A
         JSR.W updateDamageSpark
         JMP.W $8C65
@@ -968,9 +974,14 @@ CODE_8189E7: ; $0189E7
         AND.W #$00FF
         CMP.W #$0080
         BNE CODE_818A2C
-        db $A5,$00,$8D,$84,$0E,$A2,$08,$00,$20,$EA,$A3,$64,$08,$A9,$03,$00
-        db $85,$0A,$20,$75,$88,$A9,$91,$00,$20,$4A,$EE,$20,$B6,$88,$AD,$08
-        db $0A,$C9,$01,$00,$F0,$14,$4C,$69,$86
+        db $A5,$00,$8D,$84,$0E,$A2,$08
+; [LevelLoad] STA $2130=02 color math, $74=$14/$75=$00 coords, LDX #$2000 VRAM offset
+initMapSceneMode_SetVideoRegs: ; $018A0A
+        db $00,$20,$EA,$A3,$64,$08,$A9,$03,$00,$85,$0A,$20,$75,$88,$A9,$91
+        db $00,$20
+; [LevelLoad] Calls executeMapScript 4x with VRAM offsets $2000/$7800/$7000/$0000, then enableScreen
+initMapSceneMode_LoadGraphics: ; $018A1C
+        db $4A,$EE,$20,$B6,$88,$AD,$08,$0A,$C9,$01,$00,$F0,$14,$4C,$69,$86
 CODE_818A2C: ; $018A2C
         JSR.W drawShopStock
         CMP.W #$FFFF
@@ -992,11 +1003,11 @@ CODE_818A2C: ; $018A2C
         LDY.W #$0E00
         JSR.W saveEntityToBuffer
         JMP.W $8BDD
-        JSR.W initTitleScreen
+        JSR.W initFieldSubState
         BEQ CODE_818A6B
         JMP.W $8669
 CODE_818A6B: ; $018A6B
-        JSR.W updateGameLogic
+        JSR.W updateEntityInputFlags
         LDA.W $0E54
         LDY.W #$0E80
         JSR.W updateEntity
@@ -1051,28 +1062,28 @@ CODE_818A94: ; $018A94
         STA.B $04
         JSR.W checkEntityScreenBounds
         JMP.W CODE_818113
-; [MainLoop] Updates game logic subsystems - entities, AI, physics, triggers.
-updateGameLogic: ; $018B85
-        JSR.W handleGameInput
+; [Entity] Calls setEntityActiveFlags + updateEntity with $0A55/Y=$0E00
+updateEntityInputFlags: ; $018B85
+        JSR.W setEntityActiveFlags
         LDA.W $0A55
         LDY.W #$0E00
         JSR.W updateEntity
         RTS
-; [MainLoop] Updates graphics - OAM, tilemap changes, effects. Prepares for V-blank DMA.
-updateGraphics: ; $018B92
+; [Entity] Resolves $091C battle entity slots to $0916/$0918, dispatches field events
+resolveBattleSlots: ; $018B92
         LDA.W $091C
         JSR.W cleanupBattle
         STX.W $0916
         LDA.W $091C
         JSR.W initBattleState
         STX.W $0918
-        JSR.W handleGameInput
+        JSR.W setEntityActiveFlags
         JSR.W handleShopMenu
         JSR.W evtCallRenderSprites
         JSR.W confirmAction
         RTS
-; [Input] Handles gameplay input - movement, menu, actions. Updates player controller state.
-handleGameInput: ; $018BB1
+; [Entity] Sets $180E,X low nibble to $02 and $140F,X to $01 for active entity slots
+setEntityActiveFlags: ; $018BB1
         LDX.W $0916
         LDA.W $180E,X
         AND.W #$FFF0
@@ -1084,13 +1095,13 @@ handleGameInput: ; $018BB1
         STA.W $140F,X
         REP #$20
         RTS
-        JSR.W updateGameLogic
+        JSR.W updateEntityInputFlags
         LDX.W $0918
         LDA.W $1404,X
         STA.B $00
         JSR.W drawBattleAnimation
         BRA CODE_818BE0
-        JSR.W updateGameLogic
+        JSR.W updateEntityInputFlags
 CODE_818BE0: ; $018BE0
         LDA.W $091C
         BEQ CODE_818C04
@@ -1107,7 +1118,7 @@ CODE_818C04: ; $018C04
         JSR.W handleShopMenu
         JSR.W checkScenarioTransition
         JMP.W CODE_818113
-        JSR.W updateGameLogic
+        JSR.W updateEntityInputFlags
         LDA.W $0E54
         LDY.W #$0E80
         JSR.W updateEntity
@@ -1623,11 +1634,11 @@ updateWeaponSwing: ; $01918B
         PHA
         JSR.W drawHealEffect
         JSR.W drawDamageSpark
-        JSR.W titleScreenLoop
+        JSR.W fieldStateDispatch
         BEQ CODE_81919C
         db $9C,$56,$0E
 CODE_81919C: ; $01919C
-        JSR.W enableDisplay
+        JSR.W fieldStateDispatch_Alt
         BEQ CODE_8191A4
         db $9C,$D6,$0E
 CODE_8191A4: ; $0191A4
@@ -1776,7 +1787,7 @@ CODE_8192CE: ; $0192CE
         STA.B $0C
         LDA.W $0E56
         STA.B $06
-        JSL.L clearObjectBuffer
+        JSL.L buildMovementCostMap
         JSL.L unequipItem
         LDA.W $0E0C
         AND.W #$00E0
@@ -1797,7 +1808,7 @@ CODE_81931D: ; $01931D
         BNE CODE_81933A
         JMP.W $9641
 CODE_81933A: ; $01933A
-        JSR.W titleScreenLoop
+        JSR.W fieldStateDispatch
         BEQ CODE_819345
         db $EE,$54,$09,$4C,$41,$96
 CODE_819345: ; $019345
@@ -1821,7 +1832,7 @@ CODE_819351: ; $019351
         LDA.W $0E05
         AND.W #$00FF
         STA.B $02
-        JSL.L processBattleTurn
+        JSL.L findNearestEntity
         LDA.W $096E
         BNE CODE_81937B
         db $4C,$28,$94
@@ -2058,7 +2069,10 @@ CODE_8195A2: ; $0195A2
         LDA.B $0E
         STA.B $22
         RTS
-        db $60,$3A,$00,$FF,$FF
+        db $60,$3A,$00,$FF
+; [Animation] 20-frame render loop (renderSprites+waitForModeSync), then calls processEnemyAI + continues entity table processing
+animateAndProcessAI: ; $0195AF
+        db $FF
         db $08,$00,$FF,$FF,$08,$80,$FF,$FF,$80,$00,$FF,$00,$80,$80,$FF,$00
         db $48,$00,$FF,$00,$07,$00,$FF,$00,$07,$80,$FF,$00
         db $81,$00,$FF,$FF
@@ -2139,8 +2153,10 @@ CODE_81963D: ; $01963D
         JSR.W getScenarioFlags
         BEQ CODE_81968D
         db $AD,$1A,$09,$CD,$04,$0E,$D0,$1C,$AD,$22,$09,$C9,$FF,$FF,$D0,$14
-        db $20,$92,$8B,$AD,$1C,$09,$20,$D8,$9C,$BD,$04,$14,$85,$00,$20,$12
-        db $8F,$4C,$38,$97
+        db $20,$92,$8B,$AD,$1C,$09
+; [Entity] Smooth entity movement: gridToPixelCoords -> $1806/$1808 target, moves $1802/$1804 by +-2/frame, scrolls camera, sets direction anim in $180A
+moveEntityToTarget: ; $01967F
+        db $20,$D8,$9C,$BD,$04,$14,$85,$00,$20,$12,$8F,$4C,$38,$97
 CODE_81968D: ; $01968D
         LDA.W $0E04
         STA.B $00
@@ -2203,7 +2219,7 @@ CODE_81971A: ; $01971A
         PLA
         STA.B $00
         JSR.W drawBattleAnimation
-        JSR.W updateGraphics
+        JSR.W resolveBattleSlots
         LDA.W #$0014
         JSR.W setTextColor
         INC.W $091C
@@ -2249,8 +2265,11 @@ CODE_81978F: ; $01978F
         LDA.W $140C,X
         BEQ CODE_8197CD
         db $3A,$9D,$0C,$14,$D0,$22,$BD,$00,$14,$09,$FF,$00,$9D,$00,$14,$DA
-        db $20,$D7,$A6,$FA,$A5,$00,$9D,$04,$14,$A9,$AA,$00,$A0,$07,$00,$AE
-        db $34,$09,$20,$A0,$98
+        db $20,$D7,$A6
+; [Entity] Searches $0BE579 4-byte entry table: loops entries comparing $00 vs $04, returns match byte in Y or $FFFF if not found
+searchEntityDataTable: ; $0197B8
+        db $FA,$A5,$00,$9D,$04,$14,$A9,$AA,$00,$A0,$07,$00,$AE,$34,$09,$20
+        db $A0,$98
 CODE_8197CA: ; $0197CA
         JMP.W CODE_819880
 CODE_8197CD: ; $0197CD
@@ -2329,7 +2348,7 @@ drawBattleHUD: ; $0198C9
         SEP #$20
         STA.L $7EEA84
         REP #$20
-        JSL.L clearOAMBuffer
+        JSL.L calcEntityDataPtr
         LDA.W #$0082
         STA.B $00
         LDA.W #$0005
@@ -2889,7 +2908,7 @@ CODE_819D7D: ; $019D7D
         STZ.B $00
         LDA.W $1410,X
         STA.W $0E10
-        JSR.W titleScreenLoop
+        JSR.W fieldStateDispatch
         BEQ CODE_819D92
         db $E6,$00
 CODE_819D92: ; $019D92
@@ -3099,7 +3118,7 @@ handleInn: ; $019F5D
         LDA.B $50
         AND.W #$FFFF
         BNE CODE_819F7A
-        JMP.W $A12B
+        JMP.W tmapLookup_UseCurrent
 CODE_819F7A: ; $019F7A
         LDA.B $64
         BEQ CODE_819F84
@@ -3115,7 +3134,7 @@ CODE_819F8B: ; $019F8B
         LDA.B $4F
         AND.W #$000F
         BNE CODE_819F9C
-        JMP.W $A12B
+        JMP.W tmapLookup_UseCurrent
 CODE_819F9C: ; $019F9C
         LDA.W #$0003
         STA.W $0900
@@ -3250,12 +3269,12 @@ CODE_81A0C7: ; $01A0C7
         STY.W $0F5A
         LDY.W $0914
         CPY.W #$0003
-        BCS CODE_81A108
+        BCS tmapLookup_ReadTile
         CMP.W #$FFFF
         BEQ CODE_81A0EA
         CMP.W $0E28
         BEQ CODE_81A0EA
-        JSR.W initControllers
+        JSR.W updateScrollBoundaryEntity
         INC.W $0952
         LDA.W #$006A
         JSR.W textMetaLookup
@@ -3264,7 +3283,7 @@ CODE_81A0EA: ; $01A0EA
         LDA.W $0952
         BEQ CODE_81A0FD
         STZ.W $0952
-        JSR.W initGameState
+        JSR.W setupTextScrollState
         LDA.W #$003B
         JSR.W textMetaLookup
         BRA CODE_81A103
@@ -3275,31 +3294,46 @@ CODE_81A103: ; $01A103
         INC.B $57
 CODE_81A105: ; $01A105
         JMP.W $9F65
-CODE_81A108: ; $01A108
+; [Tilemap] LDA $7F:9000,X — read tile value from tilemap buffer
+tmapLookup_ReadTile: ; $01A108
         CMP.W #$FFFF
-        BEQ CODE_81A11B
-        JSR.W initControllers
+        BEQ tmapLookup_PushAttr
+        JSR.W updateScrollBoundaryEntity
         INC.W $0952
         LDA.W #$007E
+; [Tilemap] TAX — attribute table index in X
+tmapLookup_ToAttrIdx: ; $01A116
         JSR.W textMetaLookup
         BRA CODE_81A103
-CODE_81A11B: ; $01A11B
+; [Tilemap] PHA — save full attribute word
+tmapLookup_PushAttr: ; $01A11B
         LDA.W $0952
         BEQ CODE_81A105
         STZ.W $0952
         LDA.W $0914
         JSR.W textMetaLookup
+; [Tilemap] BCS early exit if greater
+tmapLookup_GtPath: ; $01A129
         BRA CODE_81A105
+; [Tilemap] LDA $0C — use current parameter value
+tmapLookup_UseCurrent: ; $01A12B
         JSR.W evtCallRenderSprites
         JSR.W updateConfigSettings
         JSR.W confirmAction
+; [Tilemap] SEC — prepare for subtraction
+tmapLookup_Sub: ; $01A134
         JMP.W $9F65
-; [Save] Handles save point interaction - save game, restore HP/MP. Entry: displays save menu.
-handleSavePoint: ; $01A137
+; [Tilemap] BCS to StoreResult if no borrow
+tmapLookup_CheckSign: ; $01A137
         REP #$20
+; [Tilemap] LDA #$0000 — clamp negative result to zero
+tmapLookup_ClampZero: ; $01A139
         STA.W $092A
-CODE_81A13C: ; $01A13C
+; [Tilemap] STA $06 — store computed property result
+tmapLookup_StoreResult: ; $01A13C
         LDA.W $0928
+; [Tilemap] LDA $7F:A000,X — read property table value
+tmapLookup_ReadProp: ; $01A13F
         JSR.W handleWorldMap
         LDA.B [$12]
         PHA
@@ -3315,7 +3349,7 @@ CODE_81A13C: ; $01A13C
         BNE CODE_81A178
         TYA
         DEC A
-        JSR.W initControllers
+        JSR.W updateScrollBoundaryEntity
         LDY.W #$0000
         CMP.W #$0010
         BCS CODE_81A16A
@@ -3330,6 +3364,8 @@ CODE_81A178: ; $01A178
         JSR.W drawNumber
         JSR.W evtCallRenderSprites
         JSR.W updateConfigSettings
+; [Tilemap] Continuation of raw data
+tmapLookup_DataBlock2: ; $01A181
         JSR.W confirmAction
         LDA.B $50
         AND.W #$C080
@@ -3338,7 +3374,7 @@ CODE_81A178: ; $01A178
         AND.W #$000F
         BEQ CODE_81A197
         JSR.W drawWorldMap
-        BRA CODE_81A13C
+        BRA tmapLookup_StoreResult
 CODE_81A197: ; $01A197
         BRA CODE_81A178
 CODE_81A199: ; $01A199
@@ -3429,6 +3465,8 @@ handleWorldMap: ; $01A233
         PHA
         LDA.W #$007F
         STA.B $14
+; [Entity] Calls buildPathfindGrid, clears $099E counters, iterates $1400 entity table (16 entries, $20 stride), counts per-group in $099E, marks $7F:B000. NOT unequipItem.
+buildEntityGroupCounts: ; $01A239
         LDA.W #$F000
         STA.B $12
         STZ.B $02
@@ -3495,6 +3533,8 @@ CODE_81A2A4: ; $01A2A4
         BEQ CODE_81A2CE
         LDA.B $22
         STA.B $00
+; [Tilemap] Copies $7F:A000->$7F:B000 ($1000 words), iterates grid $1E rows x $28 cols, calls propagateAdjacency for nonzero cells. NOT buyItemShop.
+buildPathfindGrid: ; $01A2AE
         LDA.B $60
         JSR.W subtractClamped
         CMP.W #$0028
@@ -4573,7 +4613,7 @@ checkGameProgress: ; $01AB8F
         LDA.W $0ECE
         AND.W #$00FF
         BEQ CODE_81ABC5
-        JSL.L calculateGameProgress
+        JSL.L calcCharStatIndex
         BRA CODE_81ABCF
 CODE_81ABC5: ; $01ABC5
         db $A9,$4D,$00,$20,$4A,$EE
@@ -4598,7 +4638,7 @@ CODE_81ABEA: ; $01ABEA
 ; [Text] Draws text string instantly (static renderer). Entry: $12/$14=text pointer, $00/$02=position. Renders entire text block at once without timing delays. Used for menus, HUD, between-level text, item/spell names. Part of dual-renderer system's static renderer.
 drawTextString: ; $01ABF4
         LDY.W #$1000
-        JSL.L maskAndProcessValue
+        JSL.L loadCharDataRecord
         LDA.W #$004C
         JSR.W textMetaLookup
         LDA.W $1037
@@ -4736,7 +4776,7 @@ CODE_81ACEF: ; $01ACEF
         JSR.W spawnEntityWithFlag
         LDY.W $0E81
         LDA.W $0E01
-        JSL.L updateFlagTable
+        JSL.L setFlagInTable
         LDA.W $0E28
         JSR.W removeUnitFromList
         JSR.W handleMapScreen
@@ -5060,21 +5100,24 @@ dispatchBattleAction: ; $01B04F
         db $EA,$4C,$5A,$B3,$EA,$4C,$98,$B3,$EA,$4C,$B1,$B3,$EA,$4C,$A7,$B5
         db $EA,$4C,$08,$B6,$EA,$4C,$6D,$B6,$EA,$4C,$15,$B7,$EA,$4C,$61,$B7
         db $EA,$C2,$20,$A9,$01,$00,$20,$F8,$DA,$A9,$20,$00,$20,$33,$DB,$A9
-        db $2E,$00,$85,$14,$A9,$00,$B0,$85,$12,$A2,$00,$50,$A0,$00,$10,$22
-        db $30,$C5,$00,$A9,$03,$00,$85,$14,$A9,$C0,$A1,$85,$12,$A9,$07,$00
-        db $85,$00,$A9,$01,$00,$85,$02,$20,$7C,$EB,$20,$11,$B2,$A9,$2D,$00
-        db $20,$4A,$EE,$A9,$00,$00,$22,$27,$A4,$00,$A9,$01,$00,$85,$7F,$9C
-        db $34,$09,$A9,$E0,$01,$8D,$36,$09,$A9,$FE,$FF,$8D,$38,$09,$E2,$20
-        db $A0,$15,$00,$A5,$54,$29,$01,$F0,$03,$A0,$55,$00,$98,$85,$5F,$A9
-        db $FF,$85,$5E,$C2,$20,$AD,$36,$09,$18,$6D,$38,$09,$8D,$36,$09,$D0
-        db $06,$A9,$02,$00,$8D,$38,$09,$C9,$E0,$01,$D0,$03,$4C,$89,$B1,$4A
-        db $4A,$E2,$20,$85,$6D,$C2,$20,$A9,$06,$00,$18,$6D,$34,$09,$8D,$34
-        db $09,$AD,$34,$09,$20,$8F,$DB,$4A,$18,$69,$60,$00,$E2,$20,$85,$6B
-        db $C2,$20,$A5,$54,$29,$08,$00,$A8,$A9,$01,$00,$22,$27,$A4,$00,$E2
-        db $20,$A9,$00,$38,$E5,$6B,$85,$00,$64,$01,$A9,$00,$38,$E5,$6D,$85
-        db $02,$64,$03,$C2,$20,$A5,$60,$18,$65,$00,$18,$69,$10,$00,$85,$00
-        db $A5,$62,$18,$65,$02,$38,$E9,$80,$00,$85,$02,$20,$37,$B2,$20,$E7
-        db $F6,$20,$EE,$B7,$4C,$F0,$B0,$A9,$00,$00,$22,$27,$A4,$00
+        db $2E,$00,$85,$14,$A9,$00
+; [Text] Initializes text tilemap buffer at $7E:9000, sets up text rendering state
+initTextTilemapBuffer: ; $01B0A8
+        db $B0,$85,$12,$A2,$00,$50,$A0,$00,$10,$22,$30,$C5,$00,$A9,$03,$00
+        db $85,$14,$A9,$C0,$A1,$85,$12,$A9,$07,$00,$85,$00,$A9,$01,$00,$85
+        db $02,$20,$7C,$EB,$20,$11,$B2,$A9,$2D,$00,$20,$4A,$EE,$A9,$00,$00
+        db $22,$27,$A4,$00,$A9,$01,$00,$85,$7F,$9C,$34,$09,$A9,$E0,$01,$8D
+        db $36,$09,$A9,$FE,$FF,$8D,$38,$09,$E2,$20,$A0,$15,$00,$A5,$54,$29
+        db $01,$F0,$03,$A0,$55,$00,$98,$85,$5F,$A9,$FF,$85,$5E,$C2,$20,$AD
+        db $36,$09,$18,$6D,$38,$09,$8D,$36,$09,$D0,$06,$A9,$02,$00,$8D,$38
+        db $09,$C9,$E0,$01,$D0,$03,$4C,$89,$B1,$4A,$4A,$E2,$20,$85,$6D,$C2
+        db $20,$A9,$06,$00,$18,$6D,$34,$09,$8D,$34,$09,$AD,$34,$09,$20,$8F
+        db $DB,$4A,$18,$69,$60,$00,$E2,$20,$85,$6B,$C2,$20,$A5,$54,$29,$08
+        db $00,$A8,$A9,$01,$00,$22,$27,$A4,$00,$E2,$20,$A9,$00,$38,$E5,$6B
+        db $85,$00,$64,$01,$A9,$00,$38,$E5,$6D,$85,$02,$64,$03,$C2,$20,$A5
+        db $60,$18,$65,$00,$18,$69,$10,$00,$85,$00,$A5,$62,$18,$65,$02,$38
+        db $E9,$80,$00,$85,$02,$20,$37,$B2,$20,$E7,$F6,$20,$EE,$B7,$4C,$F0
+        db $B0,$A9,$00,$00,$22,$27,$A4,$00
         LDA.W #$0078
         JSR.W drawSaveScreen
         LDA.W #$0000
@@ -5156,6 +5199,8 @@ findAvailableEntity: ; $01B237
         JSR.W cleanupBattle
         LDA.W $1800,X
         AND.W #$0800
+; [Text] Calls initTextWindowRegion with fullscreen params (32x30)
+initFullscreenTextWindow: ; $01B248
         BNE CODE_81B265
         LDA.W $1804,X
         SEC
@@ -5328,11 +5373,13 @@ setupEntityData: ; $01B456
         db $20,$0D,$A7,$A9,$0D,$00,$9F,$00,$90,$7F,$68,$85,$00,$64,$02,$A2
         db $00,$00,$BF,$0F,$F2,$0B,$F0,$0E,$C5,$00,$F0,$0A,$8A,$18,$69,$04
         db $00,$AA,$E6,$02,$80,$EC,$A5,$02,$49,$01,$00,$0A,$0A,$AA,$BF,$11
-        db $F2,$0B,$85,$24,$BF,$0F,$F2,$0B,$85,$00,$48,$20,$0D,$A7,$A9,$0E
-        db $00,$20,$99,$9A,$68,$85,$00,$20,$D1,$9E,$8D,$28,$0E,$C9,$FF,$FF
-        db $D0,$01,$60,$48,$A5,$24,$85,$00,$20,$D1,$9E,$A4,$24,$C9,$FF,$FF
-        db $F0,$03,$AC,$1A,$09,$5A,$AD,$28,$0E,$A0,$0B,$00,$20,$1E,$C9,$7A
-        db $84,$00,$68,$20,$65,$B5,$60
+        db $F2,$0B,$85,$24,$BF,$0F,$F2
+; [Text] STZ $6F, checks $0E25, sets window 1,3,$1E,$0F, draws dialog box
+setupDialogWindow: ; $01B525
+        db $0B,$85,$00,$48,$20,$0D,$A7,$A9,$0E,$00,$20,$99,$9A,$68,$85,$00
+        db $20,$D1,$9E,$8D,$28,$0E,$C9,$FF,$FF,$D0,$01,$60,$48,$A5,$24,$85
+        db $00,$20,$D1,$9E,$A4,$24,$C9,$FF,$FF,$F0,$03,$AC,$1A,$09,$5A,$AD
+        db $28,$0E,$A0,$0B,$00,$20,$1E,$C9,$7A,$84,$00,$68,$20,$65,$B5,$60
 ; [Save] Handles save screen - select slot, confirm save. Entry: writes game state to SRAM.
 handleSaveScreen: ; $01B565
         PHA
@@ -5350,42 +5397,45 @@ handleSaveScreen: ; $01B565
         db $AD,$08,$0A,$85,$04,$20,$B8,$A6,$20,$19,$A7,$85,$00,$29,$00,$04
         db $F0,$F3,$A5,$00,$29,$00,$08,$D0,$EC,$A5,$00,$09,$00,$08,$9F,$00
         db $90,$7F,$C6,$04,$D0,$DF,$60,$22,$72,$DF,$00,$29,$1F,$00,$85,$22
-        db $C9,$1F,$00,$D0,$03,$A9,$00,$00,$20,$D8,$9C,$BD,$00,$14,$29,$FF
-        db $00,$F0,$E4,$AD,$04,$0E,$48,$BD,$04,$14,$8D,$04,$0E,$68,$9D,$04
-        db $14,$A5,$22,$20,$E6,$9C,$DA,$AD,$55,$0A,$C9,$1F,$00,$D0,$03,$7A
-        db $80,$25,$20,$E6,$9C,$7A,$BD,$02,$18,$99,$06,$18,$BD,$04,$18,$99
-        db $08,$18,$B9,$02,$18,$9D,$06,$18,$B9,$04,$18,$9D,$08,$18,$A9,$F2
-        db $88,$9D,$00,$18,$99,$00,$18,$60,$64,$22,$A9,$FF,$FF,$85,$24,$A5
-        db $22,$20,$D8,$9C,$BD,$00,$14,$29,$FF,$00,$F0,$47,$AD,$04,$0E,$29
-        db $FF,$00,$85,$00,$BD,$04,$14,$29,$FF,$00,$20,$31,$96,$85,$04,$AD
-        db $05,$0E,$29,$FF,$00,$85,$00,$BD,$05,$14,$29,$FF,$00,$20,$31,$96
-        db $18,$65,$04,$C5,$24,$B0,$1C,$85,$24,$8D,$08,$0A,$A5,$22,$8D,$55
-        db $0A,$BD,$04,$14,$85,$00,$20,$21,$CA,$A5,$02,$8D,$00,$10,$A5,$04
-        db $8D,$02,$10,$E6,$22,$A5,$22,$C9,$10,$00,$90,$A3,$60,$9C,$00,$10
-        db $A2,$00,$00,$BF,$E5,$F2,$0B,$CD,$04,$0E,$F0,$0C,$8A,$18,$69,$04
-        db $00,$AA,$E0,$A0,$00,$90,$EC,$60,$BF,$E7,$F2,$0B,$8D,$04,$10,$85
-        db $00,$8A,$4A,$4A,$48,$29,$03,$00,$8D,$02,$10,$68,$4A,$4A,$85,$22
-        db $C9,$02,$00,$B0,$0A,$C9,$01,$00,$D0,$03,$A9,$10,$00,$80,$0A,$3A
-        db $3A,$AA,$BF,$94,$EA,$7E,$29,$FF,$00,$85,$24,$4A,$4A,$4A,$4A,$1A
-        db $85,$26,$AD,$02,$10,$F0,$42,$AD,$02,$10,$C5,$26,$D0,$25,$20,$0D
-        db $A7,$C9,$CD,$00,$B0,$1C,$A9,$D2,$00,$38,$ED,$02,$10,$20,$99,$9A
-        db $A9,$13,$00,$20,$E5,$EB,$A5,$24,$18,$69,$30,$0F,$20,$F7,$EB,$20
-        db $4F,$ED,$60,$AD,$04,$0E,$85,$00,$20,$0D,$A7,$A9,$DC,$00,$38,$ED
-        db $02,$10,$20,$99,$9A,$EE,$00,$10,$60,$A5,$24,$09,$00,$0F,$20,$F7
-        db $EB,$20,$4F,$ED,$60,$A9,$7E,$00,$85,$14,$A9,$94,$EA,$85,$12,$A0
-        db $08,$00,$A2,$00,$00,$8A,$9F,$94,$EA,$7E,$E8,$E8,$E0,$08,$00,$D0
-        db $F5,$A9,$30,$00,$22,$47,$DF,$00,$C9,$10,$00,$F0,$F4,$85,$00,$A2
-        db $00,$00,$BF,$94,$EA,$7E,$29,$FF,$00,$C5,$00,$F0,$E4,$E8,$E0,$08
-        db $00,$D0,$EF,$E2,$20,$A5,$00,$87,$12,$C2,$20,$E6,$12,$88,$D0,$D1
-        db $60,$20,$7C,$A3,$A9,$AB,$00,$20,$4A,$EE,$64,$24,$A9,$01,$00,$20
-        db $C0,$B7,$A9,$AC,$00,$20,$4A,$EE,$20,$84,$B8,$20,$E7,$F6,$A5,$50
-        db $29,$80,$80,$D0,$1D,$A5,$50,$29,$00,$02,$F0,$05,$A9,$01,$00,$80
-        db $DE,$A5,$50,$29,$00,$01,$F0,$05,$A9,$FF,$FF,$80,$D2,$20,$EE,$B7
-        db $80,$D6,$8D,$00,$10,$48,$A5,$24,$8D,$02,$10,$A5,$26,$8D,$04,$10
-        db $68,$29,$80,$00,$F0,$09,$A5,$24,$18,$69,$0A,$00,$20,$73,$9B,$60
-        db $85,$00,$A9,$80,$00,$85,$26,$A5,$24,$18,$65,$00,$10,$03,$A9,$06
-        db $00,$C9,$07,$00,$90,$03,$A9,$00,$00,$85,$24,$C9,$00,$00,$F0,$05
-        db $46,$26,$3A,$D0,$FB,$AF,$96,$EA,$7E,$25,$26,$D0,$D5,$60
+        db $C9,$1F,$00,$D0,$03,$A9,$00,$00
+; [Text] Zeros $09FC/$09FE cursor, fills $7E:9000 with 0 (2048 bytes), clears $0A1C
+clearTextTilemapBuffer: ; $01B5B8
+        db $20,$D8,$9C,$BD,$00,$14,$29,$FF,$00,$F0,$E4,$AD,$04,$0E,$48,$BD
+        db $04,$14,$8D,$04,$0E,$68,$9D,$04,$14,$A5,$22,$20,$E6,$9C,$DA,$AD
+        db $55,$0A,$C9,$1F,$00,$D0,$03,$7A,$80,$25,$20,$E6,$9C,$7A,$BD,$02
+        db $18,$99,$06,$18,$BD,$04,$18,$99,$08,$18,$B9,$02,$18,$9D,$06,$18
+        db $B9,$04,$18,$9D,$08,$18,$A9,$F2,$88,$9D,$00,$18,$99,$00,$18,$60
+        db $64,$22,$A9,$FF,$FF,$85,$24,$A5,$22,$20,$D8,$9C,$BD,$00,$14,$29
+        db $FF,$00,$F0,$47,$AD,$04,$0E,$29,$FF,$00,$85,$00,$BD,$04,$14,$29
+        db $FF,$00,$20,$31,$96,$85,$04,$AD,$05,$0E,$29,$FF,$00,$85,$00,$BD
+        db $05,$14,$29,$FF,$00,$20,$31,$96,$18,$65,$04,$C5,$24,$B0,$1C,$85
+        db $24,$8D,$08,$0A,$A5,$22,$8D,$55,$0A,$BD,$04,$14,$85,$00,$20,$21
+        db $CA,$A5,$02,$8D,$00,$10,$A5,$04,$8D,$02,$10,$E6,$22,$A5,$22,$C9
+        db $10,$00,$90,$A3,$60,$9C,$00,$10,$A2,$00,$00,$BF,$E5,$F2,$0B,$CD
+        db $04,$0E,$F0,$0C,$8A,$18,$69,$04,$00,$AA,$E0,$A0,$00,$90,$EC,$60
+        db $BF,$E7,$F2,$0B,$8D,$04,$10,$85,$00,$8A,$4A,$4A,$48,$29,$03,$00
+        db $8D,$02,$10,$68,$4A,$4A,$85,$22,$C9,$02,$00,$B0,$0A,$C9,$01,$00
+        db $D0,$03,$A9,$10,$00,$80,$0A,$3A,$3A,$AA,$BF,$94,$EA,$7E,$29,$FF
+        db $00,$85,$24,$4A,$4A,$4A,$4A,$1A,$85,$26,$AD,$02,$10,$F0,$42,$AD
+        db $02,$10,$C5,$26,$D0,$25,$20,$0D,$A7,$C9,$CD,$00,$B0,$1C,$A9,$D2
+        db $00,$38,$ED,$02,$10,$20,$99,$9A,$A9,$13,$00,$20,$E5,$EB,$A5,$24
+        db $18,$69,$30,$0F,$20,$F7,$EB,$20,$4F,$ED,$60,$AD,$04,$0E,$85,$00
+        db $20,$0D,$A7,$A9,$DC,$00,$38,$ED,$02,$10,$20,$99,$9A,$EE,$00,$10
+        db $60,$A5,$24,$09,$00,$0F,$20,$F7,$EB,$20,$4F,$ED,$60,$A9,$7E,$00
+        db $85,$14,$A9,$94,$EA,$85,$12,$A0,$08,$00,$A2,$00,$00,$8A,$9F,$94
+        db $EA,$7E,$E8,$E8,$E0,$08,$00,$D0,$F5,$A9,$30,$00,$22,$47,$DF,$00
+        db $C9,$10,$00,$F0,$F4,$85,$00,$A2,$00,$00,$BF,$94,$EA,$7E,$29,$FF
+        db $00,$C5,$00,$F0,$E4,$E8,$E0,$08,$00,$D0,$EF,$E2,$20,$A5,$00,$87
+        db $12,$C2,$20,$E6,$12,$88,$D0,$D1,$60,$20,$7C,$A3,$A9,$AB,$00,$20
+        db $4A,$EE,$64,$24,$A9,$01,$00,$20,$C0,$B7,$A9,$AC,$00,$20,$4A,$EE
+        db $20,$84,$B8,$20,$E7,$F6,$A5,$50,$29,$80,$80,$D0,$1D,$A5,$50,$29
+        db $00,$02,$F0,$05,$A9,$01,$00,$80,$DE,$A5,$50,$29,$00,$01,$F0,$05
+        db $A9,$FF,$FF,$80,$D2,$20,$EE,$B7,$80,$D6,$8D,$00,$10,$48,$A5,$24
+        db $8D,$02,$10,$A5,$26,$8D,$04,$10,$68,$29,$80,$00,$F0,$09,$A5,$24
+        db $18,$69,$0A,$00,$20,$73,$9B,$60,$85,$00,$A9,$80,$00,$85,$26,$A5
+        db $24,$18,$65,$00,$10,$03,$A9,$06,$00,$C9,$07,$00,$90,$03,$A9,$00
+        db $00,$85,$24,$C9,$00,$00,$F0,$05,$46,$26,$3A,$D0,$FB,$AF,$96,$EA
+        db $7E,$25,$26,$D0,$D5,$60
 ; [Menu] Displays confirmation dialog (Yes/No). Entry: A=prompt text ID. Returns carry if Yes selected.
 confirmAction: ; $01B7EE
         PHP
@@ -5405,7 +5455,7 @@ CODE_81B805: ; $01B805
         PLP
         RTS
 CODE_81B807: ; $01B807
-        JSL.L setupVramDMATransfer
+        JSL.L vblankDMADispatch
         BRA CODE_81B805
 ; [Dialogue] Draws message box for text display. Entry: $00/$02=position, $04/$06=size.
 drawMessageBox: ; $01B80D
@@ -5607,7 +5657,7 @@ CODE_81B9A6: ; $01B9A6
         JSL.L setObjectOffsets
         PLA
         JSL.L initEntityObject
-        JSL.L clearVRAM
+        JSL.L initBattleDataRegion
         LDA.W #$0001
         JSL.L loadDspEffectParams
         LDA.W #$00C8
@@ -6277,7 +6327,7 @@ CODE_81BF77: ; $01BF77
         LDA.W $0E38
         STA.W $0E08
         STZ.W $1060
-        JSL.L clearVRAM
+        JSL.L initBattleDataRegion
         JSR.W confirmAction
         LDA.W #$000E
         JSR.W setTimerValue
@@ -6544,24 +6594,37 @@ CODE_81C1EC: ; $01C1EC
         RTS
 CODE_81C1FF: ; $01C1FF
         PLA
+; [Text] LDA $0A28 - loads text source pointer high word
+textRender_LoadSrcPtr: ; $01C200
         RTS
 ; [HUD] Draws game time clock display. Entry: reads playtime counter, formats as HH:MM.
 drawClock: ; $01C201
         LDA.W $0038,Y
         LSR A
+; [Text] LDA $0A2A - loads text dest pointer
+textRender_LoadDest: ; $01C205
         LSR A
         STA.B $04
+; [Text] STA $16 - store dest pointer
+textRender_StoreDest: ; $01C208
         LDA.W $003E,Y
         STA.B $02
+; [Text] RTS - return from text render setup
+textRender_Return: ; $01C20D
         LDA.W $003A,Y
         STA.B $00
         LDA.W $003C,Y
         CMP.B $00
-        BCC CODE_81C21B
+; [Text] PLP - restore processor status
+waitForFrame_Restore: ; $01C217
+        BCC readTextCursor_LoadX
         STA.B $00
-CODE_81C21B: ; $01C21B
+; [Text] LDX $09FC - load cursor column
+readTextCursor_LoadX: ; $01C21B
         LDA.B $00
         CLC
+; [Text] LDA $09FE - load cursor row
+readTextCursor_LoadRow: ; $01C21E
         ADC.B $02
         CLC
         ADC.B $04
@@ -6649,19 +6712,40 @@ CODE_81C2F8: ; $01C2F8
         STY.B $14
         LDA.W $0E6E
         BEQ CODE_81C31D
+; [Text] PLA - restore tile count from stack
+textGfx_PopCount: ; $01C301
         STA.B $00
+; [Text] SBC $00 - subtract base offset
+textGfx_SubOffset: ; $01C303
         LDA.W $0E6C
+; [Text] STA $16 - store remaining length
+textGfx_StoreLen: ; $01C306
         CMP.W #$0004
-        BEQ CODE_81C31A
+        BEQ textGfx_WrapBank
         LDA.W $0EE5
         AND.W #$00FF
-        BEQ CODE_81C31A
-        db $3A,$F0,$02,$46,$00,$46,$00
-CODE_81C31A: ; $01C31A
+        BEQ textGfx_WrapBank
+        db $3A
+; [Text] LDA $12 - load source pointer low
+textGfx_AdvSrc1: ; $01C314
+        db $F0,$02
+; [Text] INC A - advance source pointer
+textGfx_AdvSrc2: ; $01C316
+        db $46
+; [Text] INC A - advance source pointer again
+textGfx_AdvSrc3: ; $01C317
+        db $00
+; [Text] BNE textGfx_StorePtr - skip bank wrap if nonzero
+textGfx_CheckWrap: ; $01C318
+        db $46,$00
+; [Text] INC $14 - increment bank on page boundary
+textGfx_WrapBank: ; $01C31A
         JMP.W CODE_81C4D8
 CODE_81C31D: ; $01C31D
         LDA.W $0016,X
         AND.W #$00FF
+; [Text] CPX $16 - compare with length
+textGfx_CheckLen: ; $01C323
         CMP.W #$004C
         BEQ CODE_81C349
         CMP.W #$004D
@@ -6670,10 +6754,14 @@ CODE_81C31D: ; $01C31D
         AND.W #$00FF
         CLC
         ADC.W #$0012
+; [Text] CMP #$0020 - check against limit
+textGfx_CmpLimit: ; $01C337
         STA.B $00
         LDA.W #$0014
         JSL.L hardwareMultiplyRng
         CMP.B $00
+; [Text] CMP #$2000 - check VRAM offset boundary
+textGfx_CmpVRAM: ; $01C342
         BCC CODE_81C349
         STZ.B $00
         JMP.W CODE_81C4D8
@@ -6683,21 +6771,34 @@ CODE_81C349: ; $01C349
         STA.B $04
         LDA.W #$0064
         JSL.L hardwareMultiplyRng
+; [Text] AND #$0040 - test mode bit 6
+textGfx_TestBit6: ; $01C358
         CMP.B $04
         BCS CODE_81C3B3
         SEP #$20
         LDA.B #$02
+; [Text] LDY #$2000 - alternate transfer size
+textGfx_AltSize: ; $01C360
         STA.W $0023,X
+; [Text] JSR waitForVBlank2 - sync VRAM transfer
+textGfx_DoVBlank: ; $01C363
         REP #$20
         LDA.W #$0001
         STA.W $005E,X
         LDA.W $0046,Y
         AND.W #$00FF
+; [Text] LDA #$0007 - DMA channel count
+textGfx_SetDMACount: ; $01C371
         LSR A
         SEC
         SBC.W #$000C
+; [Text] LDA #$0001 - DMA mode word
+textGfx_SetDMAMode: ; $01C376
         BPL CODE_81C37B
-        db $A9,$00,$00
+        db $A9
+; [Text] STA $02 - store DMA mode
+textGfx_StoreDMAMode: ; $01C379
+        db $00,$00
 CODE_81C37B: ; $01C37B
         STA.W $1C06
         STA.B $04
@@ -8537,7 +8638,7 @@ CODE_81D64F: ; $01D64F
         LDA.W $0E03
         AND.W #$00FF
         JSL.L initEntityObject
-        JSL.L clearVRAM
+        JSL.L initBattleDataRegion
         JSR.W confirmAction
         LDA.W #$0007
         JSR.W callCutsceneHandler
@@ -9551,7 +9652,7 @@ CODE_81DEE2: ; $01DEE2
         STA.B $16
         LDA.W #$0800
         JSL.L memcpyWords
-        JSL.L updateScrollRegisters
+        JSL.L initPPUAndInterrupts
         JSR.W drawMessageBox
         LDA.W $09C2
         BNE CODE_81DF54
@@ -11318,7 +11419,7 @@ evtTilemap_SetPtrDefault: ; $01F01C
 ; [Script] PLA, JSL calculateSpellCost, DEC. Process tilemap entry count.
 evtTilemap_ProcessEntry: ; $01F030
         PLA
-        JSL.L calculateSpellCost
+        JSL.L renderTextFromTable
         DEC A
         BEQ evtTilemap_Done
         LDA.W #$007E
@@ -11361,7 +11462,7 @@ buildSpellMenuTilemap: ; $01F060
         STA.B $00
         LDA.W #$0010
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.B $28
         ASL A
         ASL A
@@ -11383,7 +11484,7 @@ evtTilemap_Init: ; $01F08F
         LDA.W #$9000
         STA.B $16
         LDA.B $28
-        JSL.L calculateSpellCost
+        JSL.L renderTextFromTable
         LDA.W #$007E
         STA.B $14
         LDA.W #$2000
@@ -11420,7 +11521,7 @@ evtTilemap_Init: ; $01F08F
 copyTilemapFromWram: ; $01F0E4
         PHP
         REP #$20
-        JSL.L lookupTableEntry
+        JSL.L textTbl_FindEntry
 ; [Script] CPX #0, BEQ self (wait loop). Waits for X to become nonzero.
 evtTilemap_WaitNonZero: ; $01F0EB
         CPX.W #$0000
@@ -11458,7 +11559,7 @@ evtTilemap_CopyFromWRAM2: ; $01F116
         RTS
 ; [Helper] JSL lookupTableEntry + RTS wrapper
 lookupTableEntryWrapper: ; $01F125
-        JSL.L lookupTableEntry
+        JSL.L textTbl_FindEntry
         RTS
 ; [Scrolling] Reads $7F:C000 map dims; computes scroll bounds $0A46-$0A4E; sets camera
 initScrollLimits: ; $01F12A
@@ -13238,7 +13339,7 @@ evtCmd3E_Effect: ; $01FEF0
         JSR.W evtReadWord
         AND.W #$00FF
         JSR.W searchDataTable
-        JSL.L handleEntityDamage
+        JSL.L buildEntitySpriteAttribs
         JMP.W evtDispatch
 ; [Script] Reads one byte from [$85], advances by 1, masks $00FF
 evtReadByte: ; $01FF06

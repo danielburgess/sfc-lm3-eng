@@ -2,8 +2,28 @@
 
 ROM: lm3.sfc (SNES LoROM)
 Addresses: SNES mapped (bank:offset) and PRG absolute offset
-Total named labels: 921
+Total named labels: 1034 (921 original + 113 fixed/added 2026-04-13, 61 more renamed session 3)
 Categories: 49
+
+## Audit Log (2026-04-13 session 2)
+
+Fixed 113 labels via IPC setLabels:
+
+### Register misnames (96 total)
+- 10 SPC700/DSP register names at $80F0-$80FE → findDataEntry_* (inside findDataEntry function)
+- 36 PPU/APU/WRAM register names at $A102-$A183 → tmapLookup_* (inside readTilemapValue tilemap property lookup)
+- 50 DMA/IO register names at $C200-$C379 → textRender_*/waitForFrame_*/readTextCursor_*/textGfx_* (inside text rendering)
+- Root cause: disassembler mapped ROM PC addresses to SNES HW register names (e.g., PC $002102 → "OAMADDL")
+
+### Wrong function names (17 total)
+Bank80:
+- textLineWidth→initMapSceneMode, textExtendedVariable→initMapSceneMode_SetVideoRegs, debugModeFlag→initMapSceneMode_LoadFont
+- calculateBattleDamage→animateAndProcessAI, handleItemUse→moveEntityToTarget, playBGM→handleGridCursorInput, fadeScreen→searchEntityDataTable
+- equipItem→buildTilemapFromEntities, unequipItem→buildEntityGroupCounts, buyItemShop→buildPathfindGrid, sellItemShop→propagateAdjacency
+- updateMinimap→clearEntitySlotBuffer, scenarioDispatch→processAbilityAndAI
+Bank81:
+- textTileBufferTop→battleAnimDataTable, setupShopEntity→handleShopMenuSequence, drawItemScreen→manageUnitList
+- Root cause: prior hallucinated annotations from AI sessions 1-3
 
 ## Key Data Structures
 
@@ -20,13 +40,13 @@ Categories: 49
 
 ## OAM (70 labels)
 
-$0089C8 (PRG $0009C8)  clearOAMBuffer  — Clears OAM buffer by setting all entries to off-screen. Entry: none. Sets Y=$F0 for all OAM entries.
-$0089E0 (PRG $0009E0)  updateOAMEntries  — Updates OAM entries with sprite data. Entry: expects sprite data pointers set. Writes to OAM via $2104.
+$0089C8 (PRG $0009C8)  calcEntityDataPtr  — Reads $7EEA84 low nibble as index, computes pointer into data block via calcD800DataPtr. [RENAMED: was "clearOAMBuffer"]
+$0089E0 (PRG $0009E0)  calcD800DataPtr  — Reads $7FC003, multiplies by 8, computes pointer into $2F:D800 ROM data block. [RENAMED: was "updateOAMEntries"]
 $0091CA (PRG $0011CA)  updateBattleGraphics  — Updates battle scene graphics including backgrounds and sprites. Entry: called during battle. Sets up multiple OAM entries.
 $0092F3 (PRG $0012F3)  drawBattleSprite  — Draws a single battle sprite with position and tile data. Entry: A=sprite data index, X=OAM slot, $28=base address.
 $00931C (PRG $00131C)  drawCharacterSprite  — Draws character sprite with animation frames. Entry: A=character ID, X=OAM slot, $28=base address.
 $009BE0 (PRG $001BE0)  setupSpriteOAM  — Sets up OAM entries for a sprite with 4 tiles (2x2). Entry: A=tile number, $00=X pos, Y=OAM slot. Creates 4 OAM entries.
-$009E4C (PRG $001E4C)  drawEffectTile  — Draws a single effect animation tile. Entry: A=tile data, X=OAM slot, Y=animation frame. Updates OAM entry.
+$009E4C (PRG $001E4C)  renderConditionalSprite  — Conditionally writes OAM entry based on $54 flags; renders sprite from $096C/$3BC0. [RENAMED: was "drawEffectTile"]
 $00A64E (PRG $00264E)  setupLargeSprite  — Sets up OAM for large sprite (4x4 tiles). Entry: A=base tile, $00=X pos, Y=OAM slot. Creates 16 OAM entries.
 $00A788 (PRG $002788)  setupBattleSprite  — Sets up battle sprite with special attributes. Entry: A=tile data, $00=X pos, Y=OAM slot. Sets up 4 OAM entries with battle flags.
 $00C8BB (PRG $0048BB)  renderSprites  — Main sprite render pipeline. Calls: clearOamBuffer, clearOamExtTable, buildEntityOam, finalizeOam, setupLargeSprite.
@@ -119,7 +139,7 @@ $00B961 (PRG $003961)  ffCode87_CopyStringDirect  — FF 87 handler: reads ptr, 
 $00BB65 (PRG $003B65)  ffReadInlineByte  — Helper: advances text stream Y, reads 1 byte, stores to $00
 $00BB71 (PRG $003B71)  ffReadInlinePtr  — Helper: advances text stream Y by 3, reads 3-byte SNES pointer, stores to $00/$02
 $00B985 (PRG $003985)  textRawCopyHandler  — Copies raw bytes from embedded 3-byte SNES ptrs in text
-$00BB91 (PRG $003B91)  compareStrings  — Compares two strings. Entry: $12/$14=string1, $16/$18=string2. Returns Z flag set if equal.
+$00BB91 (PRG $003B91)  ffReadInline3Bytes  — Reads 3 inline bytes after FF control code into $00-$02. [RENAMED: was "compareStrings"]
 $00BBA7 (PRG $003BA7)  ffReadInlineWord  — Reads 2 bytes from text stream [$14]+Y into $00/$01
 $00BBB8 (PRG $003BB8)  endOfTextHandler  — Null byte handler: kanji tile copy + render trigger
 $00BC75 (PRG $003C75)  renderTextWrapper  — Text render wrapper - sets up parameters and calls main text processor. Entry: expects text pointer at $14/$16. Sets $14=#$0400, $16=0, calls processText. Returns via RTL.
@@ -184,7 +204,7 @@ $2EAA54 (PRG $172A54)  TextPtrDispatch  — Custom ptr dispatch: 2-byte vs 3-byt
 
 ## Music (86 labels)
 
-$00975E (PRG $00175E)  playBGM  — Plays background music. Entry: A=music track ID. Sends command to SPC700 via APU ports.
+$00975E (PRG $00175E)  handleGridCursorInput  — D-pad navigation loop: reads joypad, inc/dec $04/$05 for grid X/Y. A/B buttons exit. Calls searchEntityDataTable. [RENAMED: was "playBGM" — no music code here]
 $00C70E (PRG $00470E)  uploadSPCProgram  — Uploads SPC700 sound program to APU. Entry: $12/$14=SPC program data. Follows SPC boot protocol.
 $00C82B (PRG $00482B)  sendSPCCommand  — Sends command to SPC700. Entry: A=command, X=data1, Y=data2. Writes to $2140-$2143.
 $00EB00 (PRG $006B00)  musicCmd_DispatchHigh  — Dispatch $F4-$FB music commands to handlers
@@ -266,32 +286,32 @@ $00F340 (PRG $007340)  musicHelper_GetVoicePtr_Select  — Select voice table of
 $00F374 (PRG $007374)  musicHelper_GetVoiceSlot  — Get voice slot pointer in Y from $000D,X channel field. Computes Y = (field & 0xF) * 32 + $1000.
 $00F397 (PRG $007397)  musicHelper_WriteSPCRegister  — Write value ($40) to SPC voice register. Handles timing sync with A6/A7 flags.
 $00F45C (PRG $00745C)  musicVoice_SetTarget  — Set voice target position/pitch. Stores A to +$02, Y to +$16, compares target to +$18 for interpolation.
-$0188B6 (PRG $0088B6)  playTitleMusic  — Plays title screen music. Entry: starts BGM track 0.
+$0188B6 (PRG $0088B6)  clearTilePriorityAndScroll  — Calls evtTileClearPriority + evtScrollInitPartial + confirmAction; no audio. [RENAMED: was "playTitleMusic"]
 $019CA2 (PRG $009CA2)  playBattleBGM  — Plays battle music based on enemy type. Entry: A=music track ID (0=normal, 1=boss).
 $2BDE0C (PRG $15DE0C)  externalSoundFunc1  — External sound function 1. Entry: advanced audio processing.
 $2BDEC3 (PRG $15DEC3)  externalSoundFunc2  — External sound function 2. Entry: additional audio operations.
 
 ## Effects (57 labels)
 
-$008D56 (PRG $000D56)  enableScreen  — Enables screen display by setting brightness. Entry: A=brightness value (0-15). Writes to $2100.
-$0097B8 (PRG $0017B8)  fadeScreen  — Screen fade effect (in/out). Entry: A=0 for fade in, 1 for fade out. Updates $2100 brightness gradually.
+$008D56 (PRG $000D56)  initOAMBuffer_Battle  — Fills $0100-$01FF OAM shadow with $E000 (offscreen), $0200+ with $FFFF. [RENAMED: was "enableScreen"]
+$0097B8 (PRG $0017B8)  searchEntityDataTable  — Searches $0BE579 4-byte entry table: loops entries comparing $00 vs $04, returns match byte in Y or $FFFF if not found. [RENAMED: was "fadeScreen" — no fade code]
 $009D8D (PRG $001D8D)  animateBattleEffect  — Animates battle visual effect (spell, attack). Entry: A=effect type. Updates OAM for effect animation over multiple frames.
 $00ABD5 (PRG $002BD5)  initWeatherSlots  — Initialize weather/particle slots at $1200. A=count, X=base offset, Y=stride. Fills with $FFFF.
 $00ABE4 (PRG $002BE4)  initWeatherSlots_Loop  — Fill loop: STA $0000,X / ADC #8 / DEY / BNE
 $00ABF4 (PRG $002BF4)  updateWeatherEffect  — Updates weather/lightning visual effects. Entry: sets up effect parameters, calls getRandomValue.
-$00B525 (PRG $003525)  fadeToBlack  — Fades screen to black for transitions. Entry: called before scene changes. Gradual fade via $2100.
+$00B525 (PRG $003525)  setupDialogWindow  — STZ $6F, checks $0E25, sets window params (1,3,$1E,$0F), draws dialog box. [RENAMED: was "fadeToBlack"]
 $00D8F9 (PRG $0058F9)  dmaTextTileToVRAM  — DMA ch1: $7E:9000 → VRAM $7C00. Uploads text tilemap. SEP mode, $2115=$80 (word inc).
 $00D927 (PRG $005927)  dmaTilemapToVRAM  — DMA ch1: $7F:B000 → VRAM at [$78]. Uploads tilemap buffer. SEP mode.
 $00D954 (PRG $005954)  dmaOverlayToVRAM  — DMA ch1: $7F:D000 → VRAM $5C00. Uploads overlay tilemap. SEP mode.
-$00DE68 (PRG $005E68)  setupOAMTransfer  — PHY/PHX/PHA, STA $2101 (OBSEL=#$00), JSR writeOAMBuffer. Sets up OAM sprite config.
-$00DEA0 (PRG $005EA0)  writeOAMBuffer  — STA $2102/$2103 (OAMADD=#$0000), DMA or loop-write OAM low table ($200 bytes) + high table.
+$00DE68 (PRG $005E68)  clearOAMBuffers  — Calls clearHardwareOAM, fills $0100-$01FF with $E000 (offscreen), $0300 with $AA (size table). [RENAMED: was "setupOAMTransfer"]
+$00DEA0 (PRG $005EA0)  clearHardwareOAM  — Zeros OAMADD, writes $200 zeros + $20 $FFs to OAMDATA port directly. [RENAMED: was "writeOAMBuffer"]
 $00DF47 (PRG $005F47)  hardwareMultiplyRng  — STA $4202 (WRMPYA=A), INC $52 RNG counter, indexes table, reads $4216 result. Returns product. RTL.
 $00DF72 (PRG $005F72)  getRandomValue  — INC $52, indexes lookup table at $DFB7,X. Returns pseudo-random value. Used widely for RNG.
 $00DF8C (PRG $005F8C)  dmaToVRAMGeneric  — DMA ch1: $2115=$80, X→$2116 (VMADD), Y→$4315 (size), $14→$4314 (bank), configures src. Generic VRAM DMA.
 $00E102 (PRG $006102)  irqBgSwapHandler  — H-IRQ handler: SEI, acks $4211, conditionally sets BG tilemap/CHR bases ($2107/$2109), resets BG3/4 scroll regs, sets screen designation ($212C/$212D), reprograms H-IRQ ($4209) from $66. Ends RTI.
 $00E144 (PRG $006144)  memcpyWords  — Generic word-copy. Entry: A=byte count, [$12]=src, [$16]=dst. Copies A/2 words. RTL.
 $00E157 (PRG $006157)  memfillWords  — Generic word-fill. Entry: A=byte count, X=fill value, [$12]=dst. Fills A/2 words. RTL.
-$00E22D (PRG $00622D)  initMapScene  — Full scene init: JSL loadMapData, force blank ($2100=#$8F), disable IRQ/DMA/HDMA ($4200/$420B/$420C=0), clear $0A87 debug flag, reset DP=$0000, clear scroll/state vars, call setupMapObjects + updateWaterEffect.
+$00E22D (PRG $00622D)  initMapScene  — Full scene init: force blank ($2100=#$8F), disable IRQ/DMA/HDMA, falls into initMapState which zeros state vars, calls initHardwareRegisters + clearOAMBuffers, configures HDMA.
 $00E383 (PRG $006383)  uploadPaletteCGRAM  — Uploads palette data to CGRAM. Entry: stack args = CGRAM addr, src ptr, count. Writes $2121 (CGADD), loops $2122 (CGDATA) for N color entries. RTS.
 $00E3BE (PRG $0063BE)  waitForModeSync  — Checks $10 game mode (2/3 = special), zeros $10/$4A, waits for $4A flag to change. RTL.
 $00E3DD (PRG $0063DD)  repeatModeSync  — Calls waitForModeSync A times in a loop. Entry: A=repeat count. RTL.
@@ -303,7 +323,7 @@ $00E5D6 (PRG $0065D6)  setObjectOffsets  — Stores X→$0A9F, Y→$0AA1, Y+$7C�
 $00E5E5 (PRG $0065E5)  lookupDataTable  — Entry: A=index (0-$3F). Looks up ROM table at bank $0D or $0C depending on index range. Returns value from table. Used for tile/sprite data lookup.
 $00E611 (PRG $006611)  loadDspEffectParams  — Loads DSP effect parameters. Entry: A=effect index (masked $7F). JSR $F104 (table lookup). RTL.
 $00E61C (PRG $00661C)  buildObjectEntry  — Builds one 32-byte object entry at X: zeros 16 words, reads 5 params from data stream [$40], applies $0A9F/$0AA1 position offsets, sets control word $80FF + state flags. RTS.
-$00E688 (PRG $006688)  initObjectStreamReader  — Sets up data stream pointers: $3A=$0100, $3C=$0300, $3E=$0280, $9F=$8000. Configures object reader for subsequent buildObjectEntry calls.
+$00E688 (PRG $006688)  updateAndRenderEntities  — Per-frame loop: updates entity physics + renders sprites for $1000/$1200 slots, flushes OAM. [RENAMED: was "initObjectStreamReader"]
 $00E7B7 (PRG $0067B7)  updateObjectPhysics  — Per-object movement update: reads 2-bit state from $0001,X; dispatches 4 cases (0=inactive, 1=accumulate, 2=velocity, 3=transition). Applies velocity ($000E/$0010) to position ($0003/$0017) with 8-bit fractional. RTS.
 $00E8A7 (PRG $0068A7)  renderObjectList  — Iterates object table, dispatches by $0001,X state bits. Copies position fields ($0004/$0018) to $99/$9B for OAM rendering. Calls updateObjectPhysics per entry.
 $019114 (PRG $009114)  drawSpellEffect  — Draws spell visual effect graphics. Entry: A=spell ID, renders particles, glows.
@@ -335,11 +355,11 @@ $01D638 (PRG $00D638)  callEffectFunction  — Calls effect function with parame
 
 $009377 (PRG $001377)  getTileDataPointer  — Calculates pointer to tile data table. Entry: A=index. Returns $12/$14=pointer (bank $21, base $C000 + A*$28 stride).
 $009397 (PRG $001397)  checkTileFlag  — Checks flag bit in tile data structure. Entry: A=bit mask position, $12/$14=data pointer. Returns A=adjusted value (adds $0400 if flag set).
-$009F76 (PRG $001F76)  clearObjectBuffer  — Clears $7F:A000 buffer ($1000 bytes) via memfillWords, then calls lookupTilemapEntry. Entry: none.
+$009F76 (PRG $001F76)  buildMovementCostMap  — Clears $7FA000, marks entity positions from $1400/$1800 tables as blocked ($0100). [RENAMED: was "clearObjectBuffer"]
 $00A0A4 (PRG $0020A4)  searchTilemapTable  — Iterates $7FA000 table comparing to $22. For each match, toggles bit 15 of $7F9000,X entry. Entry: searches tilemap data.
 $00A103 (PRG $002103)  readTilemapValue  — Adds $28 offset to A, reads $7F9000,X, checks bit 15 ($8000). Called from searchTilemapTable and others.
 $00A157 (PRG $002157)  skipIfZero  — TAY, BNE skip, RTL. Null-check wrapper — returns immediately if A=0.
-$00A9A4 (PRG $0029A4)  scenarioDispatch  — Reads $7EEA82 (scenario#), compares #$1F, calls processAIscript with A=#$0002. Scenario-specific handler.
+$00A9A4 (PRG $0029A4)  processAbilityAndAI  — [RENAMED: was "scenarioDispatch"] Reads $7EEA82 scenario#, checks != $001F, calls checkAbilityLearned + processAIscript. Ability learning + AI dispatch per scenario.
 $00A9DF (PRG $0029DF)  checkAbilityLearned  — Checks if character has learned an ability. Entry: A=character ID, X=ability ID. Returns carry set if learned.
 $00B00F (PRG $00300F)  textBuf_CalcTileIndex  — Tile index calculator for text buffer: CMP #$1000, ASL×4, checks $8000 bound. Part of text tile rendering pipeline.
 $0195DC (PRG $0095DC)  awardBattleRewards  — Awards XP, gold, items after battle victory. Entry: calculates based on enemy levels.
@@ -357,7 +377,7 @@ $01D533 (PRG $00D533)  calculateEntityValue  — Calculates entity value with of
 
 ## Helper (203 labels)
 
-$008CFD (PRG $000CFD)  waitForVBlank  — Waits for V-Blank by polling $4212. Entry: none. Loops until V-blank flag is set.
+$008CFD (PRG $000CFD)  initSceneAndClearOAM  — Scene init: waitForModeSync, initMapScene, fillVRAMRegion, enable NMI, zero $7EA000, fill OAM $F0FF. [RENAMED: was "waitForVBlank"]
 $00A100 (PRG $002100)  INIDISP  — Screen Display Register
 $00A101 (PRG $002101)  OBSEL  — Object Size and Character Size Register
 $00A102 (PRG $002102)  OAMADDL  — OAM Address Registers (Low)
@@ -431,8 +451,8 @@ $00A181 (PRG $002181)  WMADDL  — WRAM Address Registers
 $00A182 (PRG $002182)  WMADDM  — WRAM Address Registers
 $00A183 (PRG $002183)  WMADDH  — WRAM Address Registers
 $00AEAE (PRG $002EAE)  compareAndSwapValues  — Compares and swaps values in $1200/$1201 table. Entry: X=index1, Y=index2, compares values, swaps if needed.
-$00AEDD (PRG $002EDD)  maskAndProcessValue  — Masks and processes 8-bit value. Entry: A=value, masks with $00FF, processes further.
-$00B0F1 (PRG $0030F1)  lookupTableEntry  — Look up entry in BE-header table. A=ID to find. [$12]=table ptr. Returns match index in $00.
+$00AEDD (PRG $002EDD)  loadCharDataRecord  — Copies 40-byte ($28 stride) record from ROM $0BBF64 into WRAM at [$002A],Y; A=index. [RENAMED: was "maskAndProcessValue"]
+$00B0F1 (PRG $0030F1)  textTbl_FindEntry  — Validates BE block header at [$12], searches 4-byte stride entries by 1-byte ID. [RENAMED: was "lookupTableEntry"]
 $00C016 (PRG $004016)  JOYSER0  — Old Style Joypad Registers
 $00C017 (PRG $004017)  JOYSER1  — Old Style Joypad Registers
 $00C152 (PRG $004152)  checkZeroWrapper  — Wrapper for checkZero function. Entry: A=value. Returns via RTL.
@@ -563,13 +583,13 @@ $2BE24B (PRG $15E24B)  externalFinalFunc  — External final library function. E
 
 ## Menu (49 labels)
 
-$00967F (PRG $00167F)  handleItemUse  — Handles item usage in menu or battle. Entry: A=item ID, X=target. Processes item effects, updates inventory.
+$00967F (PRG $00167F)  moveEntityToTarget  — Smooth entity movement: gridToPixelCoords -> $1806/$1808 target, moves $1802/$1804 by +-2/frame, scrolls camera, sets direction anim in $180A. [RENAMED: was "handleItemUse" — entity movement, not items]
 $0097E9 (PRG $0017E9)  updateMenuCursor  — Updates menu cursor position and animation. Entry: reads controller input, updates cursor sprite OAM.
-$00A1A9 (PRG $0021A9)  equipItem  — Equips item to character. Entry: A=character ID, X=item ID. Updates equipment slots, applies stat bonuses.
-$00A239 (PRG $002239)  unequipItem  — Unequips item from character. Entry: A=character ID, X=equipment slot. Removes item, recalculates stats.
-$00A2AE (PRG $0022AE)  buyItemShop  — Handles item purchase in shop. Entry: A=item ID, X=quantity. Deducts gold, adds to inventory.
-$00A2FF (PRG $0022FF)  sellItemShop  — Handles item sale in shop. Entry: A=item ID, X=quantity. Adds gold, removes from inventory.
-$00AC99 (PRG $002C99)  handleMenuNavigation  — Handles menu navigation logic. Entry: reads controller, updates cursor, processes selections. Called for all menus.
+$00A1A9 (PRG $0021A9)  buildTilemapFromEntities  — [RENAMED: was "equipItem"] Fills $7F:F000, loops 16 entities via updateEntityWrapper, writes tile props to $7F:A000. Pathfinding grid init.
+$00A239 (PRG $002239)  buildEntityGroupCounts  — [RENAMED: was "unequipItem"] Calls buildPathfindGrid, counts entities per group in $099E, marks $7F:B000. Entity grid analysis.
+$00A2AE (PRG $0022AE)  buildPathfindGrid  — [RENAMED: was "buyItemShop"] Copies $7F:A000->B000 ($1000 words), iterates $1E x $28 grid, propagates adjacency.
+$00A2FF (PRG $0022FF)  propagateAdjacency  — [RENAMED: was "sellItemShop"] Writes $04 to 4-8 neighbor cells: +-2 (L/R), +-$80 (U/D) in $7F:A/B000. Grid pathfinding propagation.
+$00AC99 (PRG $002C99)  animateSpriteFrames  — Walks animation table at $1200 ($08 stride), advances frame counters, wraps at $09EA. [RENAMED: was "handleMenuNavigation"]
 $00B5D7 (PRG $0035D7)  drawWindow  — Draws window frame for menus/dialogue. Entry: $00/$02=position, $04/$06=size. Renders border tiles.
 $018D8C (PRG $008D8C)  drawPauseMenu  — Draws pause menu overlay with options. Entry: called when game paused.
 $018E3F (PRG $008E3F)  handlePauseMenu  — Handles pause menu navigation and selections. Entry: processes input in pause menu.
@@ -589,7 +609,7 @@ $01A7E2 (PRG $00A7E2)  drawMagicScreen  — Draws magic/skills screen. Entry: A=
 $01A836 (PRG $00A836)  handleMagicScreen  — Handles magic screen navigation - select ability, view description.
 $01A83B (PRG $00A83B)  drawFormationScreen  — Draws party formation screen. Entry: shows character positions, allows rearrangement.
 $01A94D (PRG $00A94D)  handleFormation  — Handles formation editing - move characters, save layout.
-$01A9A3 (PRG $00A9A3)  drawItemScreen  — Draws item inventory screen. Entry: shows all items with quantities.
+$01A9A3 (PRG $00A9A3)  manageUnitList  — [RENAMED: was "drawItemScreen"] Entity list management: $1400/$1420, $20-byte stride, shifts entries, validates types against $0080.
 $01AA22 (PRG $00AA22)  handleItemScreen  — Handles item screen - use, arrange, discard items.
 $01AA3C (PRG $00AA3C)  checkEntityFlag  — Entry: $00=1→INC $02; else calls hardwareMultiplyRng(#$3F), INC→$02. Entity flag check/update.
 $01AA82 (PRG $00AA82)  initEntityBatch  — Zeros $0E/$0C. Loops 16×: calls updateEntity($0E, Y=$0E00), reads $0E00 mask $FF, checks $FF sentinel, loads $0E38→$0E08. Calls setupEntityParameter per entry.
@@ -618,12 +638,12 @@ $01DA2F (PRG $00DA2F)  clearBuffer7FB000  — Zero-fills $7F:B000, 2KB. Entry: n
 $00885C (PRG $00085C)  dispatchGameMode  — Game mode dispatcher - jumps to different game mode handlers based on A value (0-5). Entry: A=game mode index. Uses jump table at $8869.
 $00A04B (PRG $00204B)  checkPartyAlive  — Checks if any party members are still alive. Entry: scans party data at $1400. Returns carry clear if all dead.
 $00A3BE (PRG $0023BE)  initNewGame  — Initializes new game state. Entry: sets up party, inventory, story flags to starting values.
-$00AD3B (PRG $002D3B)  calculateGameProgress  — Calculates game progress percentage. Entry: reads $7EEA82, $0E06, $0E86, calculates percentage (0-99).
-$00AF01 (PRG $002F01)  updateFlagTable  — Updates flag table at $7EEA00. Entry: A=flag ID, Y=value, sets flag with high bit ($80).
-$00B201 (PRG $003201)  checkEventFlag  — Checks if story event flag is set. Entry: A=flag ID. Returns carry set if flag is true.
-$00B248 (PRG $003248)  setEventFlag  — Sets story event flag. Entry: A=flag ID. Marks flag as completed in save data.
-$018542 (PRG $008542)  titleScreenLoop  — Title screen main loop - handles menu, demo playback, start game transition.
-$018859 (PRG $008859)  initTitleScreen  — Initializes title screen - sets up animation, music, and input handlers. Entry: called when entering title screen.
+$00AD3B (PRG $002D3B)  calcCharStatIndex  — Sums entity stats from $0Exx, caps at 100, indexes ROM table $0BBF64 to load 40-byte records. [RENAMED: was "calculateGameProgress"]
+$00AF01 (PRG $002F01)  setFlagInTable  — Scans $7EEA00[0..127] for entry matching A, ORs with $80 to mark active. [RENAMED: was "updateFlagTable"]
+$00B201 (PRG $003201)  initTextWindowRegion  — Sets $09xx window params: pos, size, VRAM base $2000, tile counter. [RENAMED: was "checkEventFlag"]
+$00B248 (PRG $003248)  initFullscreenTextWindow  — Calls initTextWindowRegion with fullscreen params (32x30). [RENAMED: was "setEventFlag"]
+$018542 (PRG $008542)  fieldStateDispatch  — Main overworld state loop: dispatches on $0E10 ($02/$03/$04); handles shop, pause, equip, inn, entity updates. [RENAMED: was "titleScreenLoop"]
+$018859 (PRG $008859)  initFieldSubState  — Sets ZP $08=1/$0A=3, runs markMapCellRange, textMetaLookup, fieldFrameUpdate. [RENAMED: was "initTitleScreen"]
 $018D3F (PRG $008D3F)  readUnitBattleStats  — Reads unit data at $0E08+Y, $0E12+Y, $0E72+Y. Extracts unit stats for battle calc. NOT pauseGame.
 $018E84 (PRG $008E84)  copyBufferToWram  — Copies data from $7F:6000 to $7E:9076 via [$12]. Falls through to next function. NOT resumeGame.
 $018E91 (PRG $008E91)  copyBufferLoop  — Data copy loop: reads $7F:6000+X, stores via [$12]+Y. NOT gameOverScreen.
@@ -679,7 +699,7 @@ $00BE22 (PRG $003E22)  clearTextTileLine  — Clears a text rendering line in $7
 $00C620 (PRG $004620)  setupHdmaScroll  — HDMA scroll setup: stores params to $04/$06, checks sign of $00. NOT setupWRAM (no $2180 access).
 $00C64D (PRG $00464D)  setupHdmaParams  — Sets up HDMA/DMA parameters. Stores to $04/$05, loads constants. NOT copyToWRAM.
 $00C6A7 (PRG $0046A7)  lookupMapTileType  — Reads map tile from $7F:E800+X, extracts type (AND #$001F), shifts left 5. NOT readFromWRAM.
-$00D7BE (PRG $0057BE)  buildDataStructure  — Builds data structure from indirect pointer. Entry: $54/$6D base, reads from [$3A], writes to $7EA001.
+$00D7BE (PRG $0057BE)  buildHdmaScrollTable  — Builds 84-entry HDMA BG scroll table in $7EA000 from base step table at $D83D. [RENAMED: was "buildDataStructure"]
 $01D0B3 (PRG $00D0B3)  copyDataTable  — Copies data table from ROM to RAM. Entry: uses $0E06 count, copies from $01D113 to $1000, processes $0BE4CF table.
 (Moved to SPC700 section — all bank $2B "external*" functions are SPC700 audio transfer routines)
 
@@ -696,7 +716,7 @@ $01BD98 (PRG $00BD98)  calcBattleEffectDamage  — Calculates (random(5)+24) * $
 
 $009CAE (PRG $001CAE)  handleBattleAnimation  — Handles battle animation selection. Entry: A=animation type, Y=animation data. Selects between different animation sets.
 $00A6DC (PRG $0026DC)  animateCharacter  — Handles character walking/running animation. Entry: A=character ID. Updates sprite frames based on movement speed.
-$018875 (PRG $008875)  animateTitle  — Animates title screen elements (sparkles, pulsing). Entry: called each frame.
+$018875 (PRG $008875)  markMapCellRange  — Stores $3157 to $7D, copies $090A/$090C, calls markCellsInRange + evtScrollInitPartial. [RENAMED: was "animateTitle"]
 $018F12 (PRG $008F12)  drawBattleAnimation  — Draws special battle animation frames. Entry: A=animation ID, renders to OAM.
 $019031 (PRG $009031)  updateBattleAnimation  — Updates battle animation progress. Entry: advances animation frames, timing.
 $01916B (PRG $00916B)  updateSpellEffect  — Updates spell effect animation. Entry: moves particles, updates graphics.
@@ -712,18 +732,18 @@ $01C4E5 (PRG $00C4E5)  animateMenuSprite  — Animates menu sprite (idle animati
 
 $008D78 (PRG $000D78)  fillTileBuffer9000  — Fills $7E:9000 tile buffer (STA $7E9000,X / INX*2 / DEY / BNE loop). NOT setupPPURegisters.
 $00A5B4 (PRG $0025B4)  setupGraphicsMode  — Sets up graphics mode. JSL setTextScrollParams, sets BG4 tilemap addr $2108=#$70, $0E20=$01, $0EA0=$01.
-$00E24A (PRG $00624A)  debugFlagInit  — STZ/INC $0A87 - debug mode patch site
+$00E24A (PRG $00624A)  initMapState  — Full map mode init: zeros state vars, calls initHardwareRegisters+clearOAMBuffers, configures 7 HDMA channels, sets $10=3. [RENAMED: was "debugFlagInit"]
 $018000 (PRG $008000)  systemInit  — System initialization - clears WRAM, sets up hardware, calls external init routines. Entry: called at reset.
-$018455 (PRG $008455)  initGraphics  — Initializes graphics system - sets up PPU registers, clears VRAM, loads font.
+$018455 (PRG $008455)  reloadMapScene  — Scene reload: handleMapScreen, dispatchGameMode, copy text params, centerCamera, printText. [RENAMED: was "initGraphics"]
 $018479 (PRG $008479)  initSceneAfterLoad  — Calls sceneEntityInit, evtScrollInitFull, scene setup. NOT initSound (no SPC interaction).
-$0184F3 (PRG $0084F3)  initGameState  — Initializes game state variables - party, inventory, story flags to default.
-$018515 (PRG $008515)  initControllers  — Initializes controller input system - clears input buffers, enables auto-read.
-$01853D (PRG $00853D)  enableDisplay  — Enables screen display after init. Entry: sets $2100 to $0F (full brightness).
+$0184F3 (PRG $0084F3)  setupTextScrollState  — Sets $09FC/$09FE=$0019, reads $0E37 scroll flags, calls textMetaLookup, checks entity thresholds. [RENAMED: was "initGameState"]
+$018515 (PRG $008515)  updateScrollBoundaryEntity  — Updates entity at Y=$0F00, checks $0038/$0028 fields vs thresholds, sets $0E74/$0E75 flags. [RENAMED: was "initControllers"]
+$01853D (PRG $00853D)  fieldStateDispatch_Alt  — Alternate entry: loads $0E90 instead of $0E10, shares fieldStateDispatch logic. [RENAMED: was "enableDisplay"]
 
 ## HUD (8 labels)
 
-$009BC1 (PRG $001BC1)  updateHPBar  — Updates HP bar display for character. Entry: A=character ID, X=current HP, Y=max HP. Draws bar in HUD.
-$00A5CD (PRG $0025CD)  updateMinimap  — Updates minimap display in corner. Entry: reads player position, draws current area on minimap.
+$009BC1 (PRG $001BC1)  renderSpriteFrames  — Renders sprite A at OAM slot for Y frames with waitForModeSync each. [RENAMED: was "updateHPBar"]
+$00A5CD (PRG $0025CD)  clearEntitySlotBuffer  — [RENAMED: was "updateMinimap"] Sets $09E2=8, zeros $1200-$1340. Entity slot buffer init.
 $00D7FB (PRG $0057FB)  initHdmaFromParam  — AND #$00FF, falls into buildHdmaScrollTable. HDMA setup wrapper. NOT drawHealthBars.
 $0198C9 (PRG $0098C9)  drawBattleHUD  — Draws battle HUD - HP/MP bars, command list, turn order. Entry: updates each turn.
 $01C11D (PRG $00C11D)  drawProgressBar  — Draws progress bar (HP, MP, XP). Entry: A=current, X=max, $00/$02=position, Y=color.
@@ -743,8 +763,8 @@ $01B835 (PRG $00B835)  waitTextAdvance  — Waits for button press to advance te
 
 ## Script (7 labels)
 
-$00B26B (PRG $00326B)  handleCutscene  — Handles cutscene playback. Entry: A=cutscene ID. Plays script, moves characters, displays dialogue.
-$00DDE8 (PRG $005DE8)  executeMapScript  — Executes map script when trigger activated. Entry: A=script ID. Runs script commands.
+$00B26B (PRG $00326B)  dispatchDialogLayout  — A & $3F -> 4-byte jump table; each entry draws 1-2 text windows at fixed coords. [RENAMED: was "handleCutscene"]
+$00DDE8 (PRG $005DE8)  fillVRAMRegion  — Generic VRAM fill: X=dest addr, A=value, Y=word count. [RENAMED: was "executeMapScript"]
 $01A354 (PRG $00A354)  playEventCutscene  — Plays story event cutscene. Entry: A=cutscene ID. Runs script with dialogue, character movement.
 $01D3F9 (PRG $00D3F9)  parseScriptData  — Parses script/data from ROM table. Entry: $0992=type, reads from $AF29/$AF4B table, processes with $7EEA8E.
 $01F759 (PRG $00F759)  eventScriptDispatcher  — Reads bytecodes from [$85], dispatches via jump table
@@ -754,35 +774,35 @@ $0A8000 (PRG $050000)  scriptMetaTable  — 4 entries linking script engine to t
 ## VRAM (6 labels)
 
 $008919 (PRG $000919)  calculateTileOffset  — Calculates tile offset for graphics data. Entry: X=index. Reads from $7FCE00 table, multiplies by $A0, adds base offset $8000. Returns Y=calculated offset.
-$008FFE (PRG $000FFE)  clearVRAM  — Clears VRAM by filling with zeros. Uses DMA channel 0. Entry: none. Clears entire VRAM space.
-$00904E (PRG $00104E)  loadTileData  — Loads tile graphics data to VRAM. Entry: $12/$14=source pointer, $2116=VRAM destination, $4305=length. Uses DMA.
-$00945B (PRG $00145B)  decompressGraphics  — Decompresses graphics data from ROM to RAM. Entry: $12/$14=source pointer, $16/$18=dest pointer, $02=compression type. Uses RLE-like decompression.
-$00DDB2 (PRG $005DB2)  setupVramBG3Write  — Write $2116=#$7800 (VRAM addr), $2115=#$80 (incr by 1 on high-byte write). BG3 tilemap access. (was "checkMapTrigger")
+$008FFE (PRG $000FFE)  initBattleDataRegion  — Sets up memory from $0E03 index: copies $1F:A800 data, configures $7F:CF00, calls tilemap setup. [RENAMED: was "clearVRAM"]
+$00904E (PRG $00104E)  setupBattleScene  — Places all battle sprites via drawBattleSprite/drawCharacterSprite, loads 5 palettes, mirrors $7FB000. [RENAMED: was "loadTileData"]
+$00945B (PRG $00145B)  swapBytePairsAndUploadPalette  — Byte-pair swap to $0C00, then calls uploadPaletteCGRAM. [RENAMED: was "decompressGraphics"]
+$00DDB2 (PRG $005DB2)  clearBGTilemapVRAM  — Zeros BG3 ($7800, $1000 words) and BG1 ($2000, $0800 words) tilemaps in VRAM. [RENAMED: was "setupVramBG3Write"]
 $019C5A (PRG $009C5A)  loadBattleBackground  — Loads battle background graphics. Entry: A=background ID. Loads tiles and palette to VRAM.
 (REMOVED: $00C6D6 "setupVRAM" was WRONG — see TileData section as processScrollEntries)
 
 ## DMA (5 labels)
 
-$00916C (PRG $00116C)  setupDMAChannel  — Configures DMA channel for transfer. Entry: A=channel (0-7), X=DMAP/BBAD value, Y=A1T value. Sets up $43x0-$43x3.
-$009183 (PRG $001183)  startDMA  — Starts DMA transfer on specified channels. Entry: A=channel mask (bits 0-7). Writes to $420B.
-$0091AA (PRG $0011AA)  setupHDMA  — Sets up HDMA channel for raster effects. Entry: A=channel, X=table pointer, Y=indirect pointer. Configures $43x0-$43x7.
+$00916C (PRG $00116C)  adjustDataPointer  — Extracts upper 2 bits of A into $00, lower 6 into $01, adds $00 to $12. [RENAMED: was "setupDMAChannel"]
+$009183 (PRG $001183)  lookupCharacterROMData  — A*4 index into ROM table $2296E5; returns 7-bit value in Y and shifted word in $00. [RENAMED: was "startDMA"]
+$0091AA (PRG $0011AA)  swapDataPairs  — Byte-swaps pairs in [$12] for $02*16 iterations: swaps bytes at Y and Y+1. [RENAMED: was "setupHDMA"]
 $00D4A3 (PRG $0054A3)  vblankDMAHandler  — V-Blank DMA handler for tilemap upload. Checks $05F5 flag, if set DMAs from $0600/$0680 buffers to VRAM using addresses at $05F6/$05F8. Also handles palette DMA ($5E flag) and other graphics updates.
-$00DB69 (PRG $005B69)  setupVramDMATransfer  — Check $05F5 flag, configure $2115/$4310/$4320 for DMA channels 1+2. VRAM upload setup. (was "handleMapTransition" in Transition section)
+$00DB69 (PRG $005B69)  vblankDMADispatch  — Multi-purpose VBlank DMA flush: VRAM upload, palette CGRAM, text/tilemap/overlay dispatch. [RENAMED: was "setupVramDMATransfer"]
 (REMOVED: $00C454 "setupHDMATable" was WRONG — see TileData section as setupTileDataPointer)
 (REMOVED: $00C469 "updateHDMA" was WRONG — see TileData section as setupTileDataFromROM)
 
 ## Input (4 labels)
 
-$00B5B8 (PRG $0035B8)  waitForButton  — Waits for button press before continuing. Entry: displays 'press button' prompt, loops until input.
-$01888F (PRG $00888F)  handleTitleInput  — Handles input on title screen - start button, demo mode.
-$018BB1 (PRG $008BB1)  handleGameInput  — Handles gameplay input - movement, menu, actions. Updates player controller state.
+$00B5B8 (PRG $0035B8)  clearTextTilemapBuffer  — Zeros $09FC/$09FE cursor, fills $7E:9000 with 0 (2048 bytes), clears $0A1C. [RENAMED: was "waitForButton"]
+$01888F (PRG $00888F)  resetScrollAreaPriority  — Copies $090A/$090C, zeros $0A, reads $0E48/$0E37, calls clearObjectBuffer + evtTileSetPriority. [RENAMED: was "handleTitleInput"]
+$018BB1 (PRG $008BB1)  setEntityActiveFlags  — Sets $180E,X low nibble to $02 and $140F,X to $01 for active entity slots. [RENAMED: was "handleGameInput"]
 $01A37C (PRG $00A37C)  skipCutscene  — Allows skipping cutscene with button press. Entry: checks for start button during cutscene.
 (REMOVED: $00C490 "readJoypad" was WRONG — see TileData section as readTileDataWord)
 (REMOVED: $00C4B1 "readJoypadEdge" was WRONG — see TileData section as readTileDataByte)
 
 ## Interrupt (1 label)
 
-$008B17 (PRG $000B17)  handleVBlank  — V-Blank interrupt handler. Updates scroll registers, transfers OAM, handles DMA transfers. Entry: called from NMI.
+$008B17 (PRG $000B17)  initBattleBGTilemap  — Fills $7FB000 with 32x32 tilemap (col&7 + row_base + $1F00), sets $78=$7000, syncs. [RENAMED: was "handleVBlank"]
 (REMOVED: $00C530 "setupIRQ" was WRONG — see TileData section as copyToTileBuffer)
 (REMOVED: $00C570 "acknowledgeIRQ" was WRONG — see TileData section as clearTileBuffer)
 (REMOVED: $00C585 "setupNMI" was WRONG — see TileData section as readIndexedTableEntry)
@@ -806,7 +826,7 @@ $00C70E (PRG $00470E)  interpolateScrollValue  — Step $7F:E800,X toward $7F:E8
 ## Timer (6 labels)
 
 $00954E (PRG $00154E)  incrementCounter  — Increments a counter in RAM. Entry: A=counter value. Stores incremented value at $81.
-$009E3A (PRG $001E3A)  updateBattleTimer  — Updates battle turn timer. Entry: reads timer value, decrements, checks for turn end. Returns carry set if turn ended.
+$009E3A (PRG $001E3A)  tickRenderAndNav  — Single frame: renderSprites + animateSpriteFrames + waitForModeSync. [RENAMED: was "updateBattleTimer"]
 $00C147 (PRG $004147)  incrementCounter3  — Increments counter at $81. Entry: A=value. Similar to incrementCounter but with different entry.
 $00C14A (PRG $00414A)  incrementCounter8  — Increments 8-bit counter at $81. Entry: A=value (8-bit).
 $01D745 (PRG $00D745)  calculatePlayTime  — Calculates play time from frame counter. Entry: converts frames to hours:minutes.
@@ -814,10 +834,10 @@ $01D77D (PRG $00D77D)  updatePlayTime  — Updates play time counter. Entry: inc
 
 ## Physics (5 labels)
 
-(REMOVED: $0095AF "calculateBattleDamage" — no function at this address; falls in data region before awardBattleRewards at $8195DC)
+$0095AF (PRG $0015AF)  animateAndProcessAI  — 20-frame render loop (renderSprites+waitForModeSync), then calls processEnemyAI + continues entity table processing at $0BE579. [RENAMED: was "calculateBattleDamage" — no damage calc]
 $009F0B (PRG $001F0B)  markCellsInRange  — Marks cells within Manhattan distance range on battle grid. Iterates $7F:0000 table (stride 6), computes |$02-$06|+|$00-$04|, sets bit #$20 in $7F:0001+X if within [$08,$0A] range. Grid size from $7FC000/$7FC001. Entry: $00/$02=center, $08/$0A=min/max range.
-$00AF6A (PRG $002F6A)  calculateSpellCost  — Calculates MP cost for spell. Entry: A=spell ID. Returns A=MP cost based on spell level and character stats.
-$00D0FC (PRG $0050FC)  handleEntityDamage  — Handles damage between entities. Entry: A=attacker ID, X=defender ID. Applies damage, knockback.
+$00AF6A (PRG $002F6A)  renderTextFromTable  — Searches font/text table by ID, dispatches tile placement to $7E:2000 via textBuf helpers. [RENAMED: was "calculateSpellCost"]
+$00D0FC (PRG $0050FC)  buildEntitySpriteAttribs  — Builds OAM attribute words from tile descriptor in $02; palette from $D138,X table. [RENAMED: was "handleEntityDamage"]
 $01B313 (PRG $00B313)  calculatePositionOffset  — Calculates position offset for entity. Entry: A=type, X=base, Y=offset. Uses $0936, $0958 for calculations.
 
 ## Transition (4 labels)
@@ -826,21 +846,21 @@ $019CF3 (PRG $009CF3)  transitionToBattle  — UNVERIFIED. PHP, A*16→X index, 
 $019D33 (PRG $009D33)  transitionFromBattle  — UNVERIFIED. Transitions from battle back to overworld.
 $01A258 (PRG $00A258)  transitionToWorldMap  — UNVERIFIED. REP #$20, LDX #$0008, falls into transitionFromWorldMap. Parameter setup entry point.
 $01A25D (PRG $00A25D)  transitionFromWorldMap  — UNVERIFIED. STA $04, STX $0924. Shared entry with transitionToWorldMap.
-(REMOVED: $00DB69 "handleMapTransition" was WRONG → setupVramDMATransfer: checks $05F5, configures $2115/$4310/$4320 for DMA ch1+2. Moved to DMA section.)
+(REMOVED: $00DB69 "handleMapTransition" → "setupVramDMATransfer" → now vblankDMADispatch: multi-purpose VBlank DMA flush)
 
 ## MainLoop (4 labels)
 
 $0093B9 (PRG $0013B9)  mainGameLoop  — Main game loop - handles frame updates, input, game logic. Entry: called each frame. Calls input, sound, and game state updates.
-$0188C0 (PRG $0088C0)  gameMainLoop  — Main gameplay loop - updates all systems, renders frame. Entry: called each frame during gameplay.
-$018B85 (PRG $008B85)  updateGameLogic  — Updates game logic subsystems - entities, AI, physics, triggers.
-$018B92 (PRG $008B92)  updateGraphics  — Updates graphics - OAM, tilemap changes, effects. Prepares for V-blank DMA.
+$0188C0 (PRG $0088C0)  fieldFrameUpdate  — Per-frame field dispatch: checks $0928, save points, controller, entity table reads, battle load. [RENAMED: was "gameMainLoop"]
+$018B85 (PRG $008B85)  updateEntityInputFlags  — Calls setEntityActiveFlags + updateEntity with $0A55/Y=$0E00. [RENAMED: was "updateGameLogic"]
+$018B92 (PRG $008B92)  resolveBattleSlots  — Resolves $091C battle entity slots to $0916/$0918, dispatches field events. [RENAMED: was "updateGraphics"]
 
 ## Collision (2 labels)
 
 $0098D7 (PRG $0018D7)  checkMovementCollision  — UNVERIFIED. Reads $09B4, adds offset, calls gridToPixelCoords ($983F), reads $60.
 $00CFC9 (PRG $004FC9)  checkEntityCollision  — UNVERIFIED. Reads $0A5D/$0A5B, uses table at $F4CB, reads $0A66.
 (REMOVED: $00983F "checkCollision" was WRONG → gridToPixelCoords: convert bytes at $00/$01 to pixel coords val*8-4, store in $00/$02)
-(REMOVED: $00DDB2 "checkMapTrigger" was WRONG → setupVramBG3Write: writes $2116=#$7800, $2115=#$80 for VRAM BG3 tilemap access)
+(REMOVED: $00DDB2 "checkMapTrigger" → "setupVramBG3Write" → now clearBGTilemapVRAM: zeros BG3+BG1 tilemaps)
 
 ## Utility (7 labels — NEW: relocated from wrong sections)
 
@@ -856,17 +876,17 @@ $00E53D (PRG $00653D)  initEntityObject  — Zero $1000 buffer (1024 bytes), set
 
 $008060 (PRG $000060)  loadGameData  — Loads game data from ROM. Entry: A=data ID to load. Sets up data pointers at $22/$24, stores data at $0958-$095A, handles special cases for values $FFFF. Returns A=0 on success.
 $00DC08 (PRG $005C08)  waitForVblank  — PHA/PHP, if $10==0 poll $4210 bit 7 until VBlank fires, PLP/PLA. Frame sync. (was "loadMapData" — WRONG)
-$00DC18 (PRG $005C18)  setupMapObjects  — Sets up objects/NPCs for current map. Entry: reads object data from map, spawns entities.
+$00DC18 (PRG $005C18)  initHardwareRegisters  — Full PPU ($2101-$212F) + DMA ($4200-$420D) controller hard reset. [RENAMED: was "setupMapObjects"]
 
 ## Palette (2 labels)
 
-$009136 (PRG $001136)  loadPaletteData  — Loads palette data to CGRAM. Entry: $12/$14=source pointer, $2121=CGRAM address, $4305=length. Uses DMA.
+$009136 (PRG $001136)  uploadCharacterPalette  — Computes CGRAM offset from $7EEA84 + A, calls uploadPaletteCGRAM. [RENAMED: was "loadPaletteData"]
 $00C6F9 (PRG $0046F9)  setupCGRAM  — Sets up CGRAM address for access. Entry: A=CGRAM address. Writes to $2121.
 (REMOVED: $00E143 "updatePaletteCycle" was WRONG → emptyIRQHandler: single RTI instruction, empty interrupt stub)
 
 ## Tilemap (3 labels)
 
-$0094AB (PRG $0014AB)  setupTilemap  — Sets up background tilemap in VRAM. Entry: $12/$14=tilemap data pointer, $2116=VRAM destination. Writes 32x32 tilemap.
+$0094AB (PRG $0014AB)  uploadPaletteWrapper  — Pushes 4 params from $14/$12/$02/$00, calls uploadPaletteCGRAM. [RENAMED: was "setupTilemap"]
 $00A515 (PRG $002515)  drawMap  — Draws world map or dungeon map. Entry: A=map ID. Loads tilemap, objects, NPCs to VRAM.
 $01A19A (PRG $00A19A)  drawWorldMap  — Draws world map screen with locations. Entry: loads world map tiles, marks current position.
 
@@ -878,7 +898,7 @@ $0198F3 (PRG $0098F3)  lookupBattleEntityTile  — Calls lookupTilemapTile ($A70
 
 ## Scrolling (2 labels)
 
-$0094D3 (PRG $0014D3)  updateScrollRegisters  — Updates BG scroll registers based on camera position. Entry: $00=BG1HOFS, $02=BG1VOFS, etc. Writes to $210D-$2114.
+$0094D3 (PRG $0014D3)  initPPUAndInterrupts  — Full PPU init: CGWSEL, CGADSUB, windows, color math, updateDepthEffect, H/V timer, NMI+IRQ enable. [RENAMED: was "updateScrollRegisters"]
 $00E31C (PRG $00631C)  updateDepthEffect  — Updates depth/parallax effect. Entry: adjusts layer scrolling based on Z-depth.
 
 ## RNG (2 labels)
@@ -1028,7 +1048,7 @@ $01DA2F (PRG $00DA2F)  clearBuffer7FB000  — Zero-fills $7F:B000, 2KB via STZ l
 
 ## Debug (4 labels)
 
-$008A87 (PRG $000A87)  debugModeFlag  — Non-zero enables debug mode features.
+$008A87 (PRG $000A87)  initMapSceneMode_LoadFont  — Loads font tiles to VRAM $3000 during map scene init. STA $12, LDX #$3000, JSL loadFontTile. [RENAMED: was "debugModeFlag" — not a flag, part of map init; moved to LevelLoad]
 $01FE8B (PRG $00FE8B)  eventCmd3B_debugEnable  — Event command 0x3B handler - INC $0A87.
 
 ## GameState — bank81 additional (3 labels)
@@ -1063,7 +1083,7 @@ $01DE49 (PRG $00DE49)  loadTileTemplate  — 7-bit tile idx * 24; copies from $0
 
 ## Entity — bank81 additional (7 labels)
 
-$0198A0 (PRG $0098A0)  setupShopEntity  — Stores X→$0936; entity update+text meta+draw; waits 50 frames.
+$0198A0 (PRG $0098A0)  handleShopMenuSequence  — Full shop interaction loop: handleShopMenu, updateEntity, processEntityAction, textMetaLookup, flashScreen, drawSaveScreen. [RENAMED: was "setupShopEntity" — does full shop sequence, not just setup]
 $019EFD (PRG $009EFD)  searchEntityByPosition  — Iterates $1800; finds nearest to ($00,$02) by abs distance.
 $01A97C (PRG $00A97C)  removeUnitFromList  — Shifts unit list $1400 down by $20-byte slot; clears last.
 $01AE1F (PRG $00AE1F)  applyDamageToUnit  — Subtracts damage ($26 masked 12-bit) from HP $1408+X.
@@ -1088,7 +1108,7 @@ $01C62D (PRG $00C62D)  setupHdmaScroll  — Sets up HDMA scroll table at $7F:B00
 $01DBC7 (PRG $00DBC7)  requestVblankUpdate  — INC $57 + vblank wait ($B7EE); triggers display refresh.
 $01EBE5 (PRG $00EBE5)  setTimerValue  — INC A, store to $81; sets frame/delay timer.
 $01EBED (PRG $00EBED)  busyWaitDelay  — 300-iteration busy-wait loop; short CPU delay.
-$01F125 (PRG $00F125)  lookupTableEntryWrapper  — JSL lookupTableEntry + RTS wrapper.
+$01F125 (PRG $00F125)  lookupTableEntryWrapper  — JSL textTbl_FindEntry + RTS wrapper. [NOTE: target renamed from lookupTableEntry]
 $01ED4F (PRG $00ED4F)  waitForDpadInput  — Loops processFrame until joypad $50 has D-pad/button ($F0F0 mask).
 
 ## Text — bank81 additional (1 labels)
@@ -1099,9 +1119,9 @@ $01EBF7 (PRG $00EBF7)  dispatchSceneText  — Stores index $0A22; high nybble→
 
 $009556 (PRG $001556)  processEnemyAI  — Processes enemy AI logic for battle. Entry: reads enemy data from $7EEA8C, processes AI scripts from ROM table $0BE579.
 $009634 (PRG $001634)  processEnemyAIData  — Processes enemy AI script data from ROM table $0BE579. Entry: X=AI data index, Y=direction (2=forward, else backward).
-$009E81 (PRG $001E81)  processBattleTurn  — Processes one battle turn for a unit. Entry: A=unit ID. Handles AI for enemies, input for player, executes actions.
+$009E81 (PRG $001E81)  findNearestEntity  — Searches $7FC0C8+$1400 tables for closest entity by Manhattan distance; result in $096E. [RENAMED: was "processBattleTurn"]
 $00AA2F (PRG $002A2F)  processAIscript  — Processes AI script for enemy behavior. Entry: A=enemy ID. Reads script from ROM, executes commands.
-$00B0A8 (PRG $0030A8)  updateTurnOrder  — Updates battle turn order based on agility. Entry: sorts unit list by speed, determines next actor.
+$00B0A8 (PRG $0030A8)  initTextTilemapBuffer  — Initializes text tilemap buffer at $7E:9000, sets up text rendering state. [RENAMED: was "updateTurnOrder"]
 $00CF6B (PRG $004F6B)  updateEntityAI  — Updates AI for all entities. Entry: calls entity-specific AI routines based on type.
 
 ## Unused (1 labels)
@@ -1147,16 +1167,15 @@ $0080FF (PRG $0000FF)  T2OUT  — SPC700 Timer 2 output
 
 $0089FC (PRG $0009FC)  textCurrentColumn  — Current column position (0-15). Updated by processText.
 $0089FE (PRG $0009FE)  textCurrentRow  — Current row position (0-1). Updated by newline ($90).
-$008A00 (PRG $000A00)  textLineWidth  — Line width (typically 16). Used by calculateBufferOffset.
-$008A02 (PRG $000A02)  textPriorityPalette  — Priority+palette bits. Format: VHPPCCCC.
-$008A0A (PRG $000A0A)  textExtendedVariable  — Extended control code variable. Set by $FD.
-$008A16 (PRG $000A16)  textExtendedCounter  — Extended control code counter. Set by $FA.
-$008A1C (PRG $000A1C)  textSpecialMode1  — Special rendering mode flag 1.
-$008A1E (PRG $000A1E)  textSpecialMode2  — Special rendering mode flag 2.
+NOTE: $0A00/$0A02/$0A0A/$0A16/$0A1C/$0A1E are WRAM variables (use SnesWorkRam not SnesPrgRom). The ROM code at bank $00 mirrored addresses was misidentified:
+$008A00 (PRG $000A00)  initMapSceneMode  — [RENAMED: was "textLineWidth"] Map scene init: PHP, STZ $6F, JSR mainGameLoop, sets $2130, calls fillVRAMRegion x4.
+$008A0A (PRG $000A0A)  initMapSceneMode_SetVideoRegs  — [RENAMED: was "textExtendedVariable"] Sets $2130=02, $74/$75 coords, VRAM offset.
+$008A1C (PRG $000A1C)  initMapSceneMode_LoadGraphics  — [RENAMED: was "textSpecialMode1"] Calls fillVRAMRegion 4x + enableScreen.
+WRAM $0A00 = textLineWidth (16), $0A02 = textPriorityPalette (VHPPCCCC), $0A0A = textExtendedVariable, $0A16 = textExtendedCounter, $0A1C/$0A1E = textSpecialMode1/2 — these need SnesWorkRam labels.
 
 ## Text buffers (2 labels)
 
-$019000 (PRG $009000)  textTileBufferTop  — Top tile buffer (64B, 32×2). Tile# + VHPPCCCC. VRAM via V-blank.
+$019000 (PRG $009000)  battleAnimDataTable  — [RENAMED: was "textTileBufferTop"] Raw data table (db bytes), not code. Battle animation frame/tile data.
 $019040 (PRG $009040)  textTileBufferBottom  — Bottom tile buffer (64B). +$0400 palette diff from top.
 
 ## Data tables (2 labels)

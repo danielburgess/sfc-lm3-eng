@@ -264,8 +264,8 @@ CODE_80815F: ; $00815F
         db $26,$38,$E9,$00,$01,$85,$26,$A5,$4E,$29,$80,$00,$F0,$02,$E6,$28
         db $A5,$4E,$29,$00,$80,$F0,$02,$C6,$28,$A5,$4E,$29,$40,$00,$F0,$02
         db $E6,$2A,$A5,$4E,$29,$00,$40,$F0,$02
-; [Init]
-drawTitleLogo: ; $008859
+; [Helper] DEC $2A, RTL — single-instruction stub
+decrementFlag2A: ; $008859
         db $C6,$2A,$6B
 ; [GameState] Game mode dispatcher - jumps to different game mode handlers based on A value (0-5). Entry: A=game mode index. Uses jump table at $8869.
 dispatchGameMode: ; $00885C
@@ -314,8 +314,8 @@ dispatchGameMode: ; $00885C
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
-        JSL.L clearOAMBuffer
+        JSL.L uploadPaletteWrapper
+        JSL.L calcEntityDataPtr
         LDA.W #$0002
         STA.B $00
         LDA.W #$0005
@@ -331,7 +331,7 @@ dispatchGameMode: ; $00885C
         LDX.W #$1800
         LDY.W #$1000
         JSL.L dmaToVRAMGeneric
-        JSR.W updateOAMEntries
+        JSR.W calcD800DataPtr
         LDA.B [$12]
         STA.B $00
         INC.B $12
@@ -411,10 +411,10 @@ CODE_80892F: ; $00892F
         db $A5,$00,$AA,$00,$C0,$00,$C5,$00,$CA,$00,$E0,$00,$E5,$00,$EA,$00
         db $00,$01,$05,$01,$0A,$01,$20,$01,$25,$01,$2A,$01,$40,$01,$45,$01
         db $4A,$01,$60,$01,$65,$01,$6A,$01
-; [OAM] Clears OAM buffer by setting all entries to off-screen. Entry: none. Sets Y=$F0 for all OAM entries.
-clearOAMBuffer: ; $0089C8
+; [Entity] Reads $7EEA84 low nibble as index, computes pointer into data block via calcD800DataPtr
+calcEntityDataPtr: ; $0089C8
         REP #$20
-        JSR.W updateOAMEntries
+        JSR.W calcD800DataPtr
         LDA.L $7EEA84
         AND.W #$000F
         INC A
@@ -425,8 +425,8 @@ clearOAMBuffer: ; $0089C8
         LDA.B [$12]
         STA.B $12
         RTL
-; [OAM] Updates OAM entries with sprite data. Entry: expects sprite data pointers set. Writes to OAM via $2104.
-updateOAMEntries: ; $0089E0
+; [Entity] Reads $7FC003, multiplies by 8, computes pointer into $2F:D800 ROM data block
+calcD800DataPtr: ; $0089E0
         REP #$20
         LDA.L $7FC003
         AND.W #$00FF
@@ -464,20 +464,20 @@ textExtendedVariable: ; $008A0A
 textSpecialMode1: ; $008A1C
         LDY.W #$1000
         LDA.W #$0000
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         LDX.W #$7800
         LDY.W #$1000
         LDA.W #$0000
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         LDX.W #$7000
         LDY.W #$0800
         LDA.W #$0000
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         LDX.W #$0000
         LDY.W #$2000
         LDA.W #$0000
-        JSL.L executeMapScript
-        JSR.W enableScreen
+        JSL.L fillVRAMRegion
+        JSR.W initOAMBuffer_Battle
         PLP
         RTL
         PHP
@@ -485,7 +485,7 @@ textSpecialMode1: ; $008A1C
         STZ.B $6F
         SEP #$20
         JSL.L initMapScene
-        JSL.L setupVramBG3Write
+        JSL.L clearBGTilemapVRAM
         LDA.B #$81
         STA.W $4200
         LDA.B #$00
@@ -515,7 +515,7 @@ debugModeFlag: ; $008A87
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         JSL.L setEventFlag
         LDA.W #$E800
         LDX.W #$0000
@@ -550,17 +550,17 @@ CODE_808AB8: ; $008AB8
         STA.B $00
         LDA.W #$0001
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDX.W #$2000
         LDY.W #$1000
         LDA.W #$0000
-        JSL.L executeMapScript
-        JSR.W handleVBlank
-        JSR.W enableScreen
+        JSL.L fillVRAMRegion
+        JSR.W initBattleBGTilemap
+        JSR.W initOAMBuffer_Battle
         PLP
         RTL
-; [Interrupt] V-Blank interrupt handler. Updates scroll registers, transfers OAM, handles DMA transfers. Entry: called from NMI.
-handleVBlank: ; $008B17
+; [Tilemap] Fills $7FB000 with 32x32 tilemap (col&7 + row_base + $1F00), sets $78=$7000, syncs
+initBattleBGTilemap: ; $008B17
         REP #$20
         LDX.W #$0000
         LDA.W #$0000
@@ -608,7 +608,7 @@ CODE_808B2D: ; $008B2D
         LDA.B #$04
         STA.W $2105
         REP #$20
-        JSR.W enableScreen
+        JSR.W initOAMBuffer_Battle
         SEP #$20
         LDA.B #$01
         STA.W $212C
@@ -619,7 +619,7 @@ CODE_808B2D: ; $008B2D
         PLP
         RTL
         PHP
-        JSR.W waitForVBlank
+        JSR.W initSceneAndClearOAM
         REP #$20
         JSR.W calculateTileOffset
         LDA.W #$002E
@@ -637,7 +637,7 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0000
         STA.B $14
         LDA.W #$0D80
@@ -646,13 +646,13 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         PLP
         RTL
         PHP
         LDA.W #$FFFF
         STA.B $6F
-        JSR.W waitForVBlank
+        JSR.W initSceneAndClearOAM
         REP #$20
         JSR.W calculateTileOffset
         LDA.W #$002E
@@ -670,7 +670,7 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0000
         STA.B $14
         LDA.W #$0D80
@@ -679,12 +679,12 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         PLP
         RTL
         PHP
         REP #$20
-        JSR.W waitForVBlank
+        JSR.W initSceneAndClearOAM
         SEP #$20
         LDA.B #$01
         STA.W $2105
@@ -705,11 +705,11 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0001
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         PLP
         RTL
         PHP
-        JSR.W waitForVBlank
+        JSR.W initSceneAndClearOAM
         LDA.W #$0001
         STA.W $2105
         REP #$20
@@ -728,7 +728,7 @@ CODE_808B2D: ; $008B2D
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0009
         LDX.W #$0300
         LDY.W #$0000
@@ -759,8 +759,8 @@ CODE_808B2D: ; $008B2D
         JSR.W fillTileBuffer9000
         PLP
         RTL
-; [Helper] Waits for V-Blank by polling $4212. Entry: none. Loops until V-blank flag is set.
-waitForVBlank: ; $008CFD
+; [Init] Scene init: waitForModeSync, initMapScene, fillVRAMRegion, enable NMI, zero $7EA000, fill OAM $F0FF
+initSceneAndClearOAM: ; $008CFD
         SEP #$20
         JSL.L waitForModeSync
         LDA.B $72
@@ -770,7 +770,7 @@ waitForVBlank: ; $008CFD
         LDX.W #$7C00
         LDY.W #$0800
         LDA.B #$00
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         PLA
         STA.B $72
         REP #$20
@@ -799,8 +799,8 @@ CODE_808D4B: ; $008D4B
         DEY
         BNE CODE_808D4B
         RTS
-; [Effects] Enables screen display by setting brightness. Entry: A=brightness value (0-15). Writes to $2100.
-enableScreen: ; $008D56
+; [OAM] Fills $0100-$01FF OAM shadow with $E000 (offscreen), $0200+ with $FFFF
+initOAMBuffer_Battle: ; $008D56
         LDA.W #$E000
         LDX.W #$0000
         LDY.W #$0080
@@ -844,7 +844,7 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0001
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0003
         STA.B $14
         LDA.W #$A532
@@ -877,7 +877,7 @@ CODE_808D7A: ; $008D7A
         STZ.B $60
         STZ.B $62
         STZ.B $6B
-        JSR.W loadTileData
+        JSR.W setupBattleScene
         LDA.W $096E
         INC A
         LDX.W #$0000
@@ -895,7 +895,7 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         JMP.W $8F8D
         PHP
         REP #$20
@@ -917,7 +917,7 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0008
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0000
         STA.B $14
         LDA.W #$0D80
@@ -926,8 +926,8 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
-        JSR.W enableScreen
+        JSL.L uploadPaletteWrapper
+        JSR.W initOAMBuffer_Battle
         PLP
         RTL
         PHP
@@ -945,7 +945,7 @@ CODE_808D7A: ; $008D7A
         LDA.W #$A800
         STA.B $12
         LDA.W $0E03
-        JSR.W setupDMAChannel
+        JSR.W adjustDataPointer
         LDA.W #$007F
         STA.B $18
         LDA.W #$CF00
@@ -956,13 +956,13 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L decompressGraphics
+        JSL.L swapBytePairsAndUploadPalette
         LDA.W #$001F
         STA.B $14
         LDA.W #$A800
         STA.B $12
         LDA.W $0E83
-        JSR.W setupDMAChannel
+        JSR.W adjustDataPointer
         LDA.W #$007F
         STA.B $18
         LDA.W #$CF40
@@ -973,7 +973,7 @@ CODE_808D7A: ; $008D7A
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L decompressGraphics
+        JSL.L swapBytePairsAndUploadPalette
         REP #$20
         LDA.W $0E03
         AND.W #$003F
@@ -991,7 +991,7 @@ CODE_808D7A: ; $008D7A
         JSL.L setupTilemapSource_Long
 CODE_808F1E: ; $008F1E
         JSL.L fadeToBlack
-        JSR.W loadTileData
+        JSR.W setupBattleScene
         LDA.W #$0003
         STA.B $14
         LDA.W #$B212
@@ -1028,7 +1028,7 @@ CODE_808F1E: ; $008F1E
         STA.B $00
         LDA.W #$0001
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         LDA.W #$0002
         JSL.L updateDepthEffect
         SEP #$20
@@ -1072,18 +1072,18 @@ CODE_808FBE: ; $008FBE
         LDX.W #$2000
         LDY.W #$0010
         LDA.B #$00
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         PLP
         RTL
-; [VRAM] Clears VRAM by filling with zeros. Uses DMA channel 0. Entry: none. Clears entire VRAM space.
-clearVRAM: ; $008FFE
+; [Init] Sets up memory from $0E03 index: copies $1F:A800 data, configures $7F:CF00, calls tilemap setup
+initBattleDataRegion: ; $008FFE
         REP #$20
         LDA.W #$001F
         STA.B $14
         LDA.W #$A800
         STA.B $12
         LDA.W $0E03
-        JSR.W setupDMAChannel
+        JSR.W adjustDataPointer
         LDA.W #$007F
         STA.B $18
         LDA.W #$CF00
@@ -1098,7 +1098,7 @@ clearVRAM: ; $008FFE
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSR.W setupHDMA
+        JSR.W swapDataPairs
         JSL.L unpackTileProperties
         LDA.W $0E03
         AND.W #$003F
@@ -1107,8 +1107,8 @@ clearVRAM: ; $008FFE
         LDY.W #$0002
         JSL.L setupTilemapSource_Long
         RTL
-; [VRAM] Loads tile graphics data to VRAM. Entry: $12/$14=source pointer, $2116=VRAM destination, $4305=length. Uses DMA.
-loadTileData: ; $00904E
+; [Init] Places all battle sprites via drawBattleSprite/drawCharacterSprite, loads 5 palettes, mirrors $7FB000
+setupBattleScene: ; $00904E
         REP #$20
         LDA.W $0958
         CMP.W #$FFFF
@@ -1129,11 +1129,11 @@ CODE_809079: ; $009079
         JMP.W $9135
 CODE_80907C: ; $00907C
         LDA.W $0958
-        JSR.W startDMA
+        JSR.W lookupCharacterROMData
         STA.W $095C
         STY.W $095E
         LDA.W $095A
-        JSR.W startDMA
+        JSR.W lookupCharacterROMData
         STA.W $0960
         STY.W $0962
         LDA.W $0962
@@ -1186,25 +1186,25 @@ CODE_809103: ; $009103
         LDA.W #$0002
         STA.B $00
         LDA.W $095C
-        JSR.W loadPaletteData
+        JSR.W uploadCharacterPalette
         LDA.W $095E
         CLC
         ADC.W #$0040
-        JSR.W loadPaletteData
+        JSR.W uploadCharacterPalette
         LDA.W $0960
-        JSR.W loadPaletteData
+        JSR.W uploadCharacterPalette
         LDA.W $0962
         CLC
         ADC.W #$0040
-        JSR.W loadPaletteData
+        JSR.W uploadCharacterPalette
         LDA.W $09D8
         AND.W #$003F
         CLC
         ADC.W #$00B8
-        JSR.W loadPaletteData
+        JSR.W uploadCharacterPalette
         RTS
-; [Palette] Loads palette data to CGRAM. Entry: $12/$14=source pointer, $2121=CGRAM address, $4305=length. Uses DMA.
-loadPaletteData: ; $009136
+; [Palette] Computes CGRAM offset from $7EEA84 + A, calls uploadPaletteCGRAM
+uploadCharacterPalette: ; $009136
         REP #$20
         PHA
         LDA.W #$002F
@@ -1231,11 +1231,11 @@ loadPaletteData: ; $009136
         STA.B $12
         LDA.W #$0001
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         INC.B $00
         RTS
-; [DMA] Configures DMA channel for transfer. Entry: A=channel (0-7), X=DMAP/BBAD value, Y=A1T value. Sets up $43x0-$43x3.
-setupDMAChannel: ; $00916C
+; [Helper] Extracts upper 2 bits of A into $00, lower 6 into $01, adds $00 to $12
+adjustDataPointer: ; $00916C
         PHA
         AND.W #$00C0
         STA.B $00
@@ -1249,8 +1249,8 @@ setupDMAChannel: ; $00916C
         ADC.B $00
         STA.B $12
         RTS
-; [DMA] Starts DMA transfer on specified channels. Entry: A=channel mask (bits 0-7). Writes to $420B.
-startDMA: ; $009183
+; [Entity] A*4 index into ROM table $2296E5; returns 7-bit value in Y and shifted word in $00
+lookupCharacterROMData: ; $009183
         ASL A
         ASL A
         TAX
@@ -1272,8 +1272,8 @@ CODE_809195: ; $009195
         LDA.B $01
         AND.W #$003F
         RTS
-; [DMA] Sets up HDMA channel for raster effects. Entry: A=channel, X=table pointer, Y=indirect pointer. Configures $43x0-$43x7.
-setupHDMA: ; $0091AA
+; [Helper] Byte-swaps pairs in [$12] for $02*16 iterations: swaps bytes at Y and Y+1
+swapDataPairs: ; $0091AA
         LDA.B $02
         ASL A
         ASL A
@@ -1532,7 +1532,7 @@ mainGameLoop: ; $0093B9
         SEP #$20
         JSL.L initMapScene
         SEP #$20
-        JSL.L setupVramBG3Write
+        JSL.L clearBGTilemapVRAM
         JSL.L waitForButton
         LDA.B #$81
         STA.W $4200
@@ -1571,7 +1571,7 @@ CODE_8093F5: ; $0093F5
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         REP #$20
         LDA.B $6F
         PHA
@@ -1593,11 +1593,11 @@ CODE_809442: ; $009442
         LDX.W #$7000
         LDY.W #$1000
         LDA.W #$0000
-        JSL.L executeMapScript
+        JSL.L fillVRAMRegion
         PLP
         RTS
-; [VRAM] Decompresses graphics data from ROM to RAM. Entry: $12/$14=source pointer, $16/$18=dest pointer, $02=compression type. Uses RLE-like decompression.
-decompressGraphics: ; $00945B
+; [Palette] Byte-pair swap to $0C00, then calls uploadPaletteCGRAM
+swapBytePairsAndUploadPalette: ; $00945B
         PHP
         REP #$20
         LDA.W #$0000
@@ -1650,8 +1650,8 @@ CODE_809474: ; $009474
         TCS
         PLP
         RTL
-; [Tilemap] Sets up background tilemap in VRAM. Entry: $12/$14=tilemap data pointer, $2116=VRAM destination. Writes 32x32 tilemap.
-setupTilemap: ; $0094AB
+; [Palette] Pushes 4 params from $14/$12/$02/$00, calls uploadPaletteCGRAM
+uploadPaletteWrapper: ; $0094AB
         PHP
         SEP #$20
         LDA.B $14
@@ -1680,8 +1680,8 @@ setupTilemap: ; $0094AB
         TCS
         PLP
         RTL
-; [Scrolling] Updates BG scroll registers based on camera position. Entry: $00=BG1HOFS, $02=BG1VOFS, etc. Writes to $210D-$2114.
-updateScrollRegisters: ; $0094D3
+; [Init] Full PPU init: CGWSEL, CGADSUB, windows, color math, updateDepthEffect, H/V timer, NMI+IRQ enable
+initPPUAndInterrupts: ; $0094D3
         SEI
         PHP
         REP #$20
@@ -2411,21 +2411,21 @@ CODE_809B5E: ; $009B5E
         STA.W $09CA
         LDA.W #$39CA
         LDY.W #$0004
-        JSR.W updateHPBar
+        JSR.W renderSpriteFrames
         LDA.W #$39E0
         LDY.W #$0004
-        JSR.W updateHPBar
+        JSR.W renderSpriteFrames
         LDA.W #$39E5
         LDY.W #$0004
-        JSR.W updateHPBar
+        JSR.W renderSpriteFrames
         LDA.W #$39EA
         LDY.W #$0004
-        JSR.W updateHPBar
+        JSR.W renderSpriteFrames
         JSL.L renderSprites
         JSL.L waitForModeSync
         RTL
-; [HUD] Updates HP bar display for character. Entry: A=character ID, X=current HP, Y=max HP. Draws bar in HUD.
-updateHPBar: ; $009BC1
+; [Animation] Renders sprite A at OAM slot for Y frames with waitForModeSync each
+renderSpriteFrames: ; $009BC1
         STA.W $09C8
 CODE_809BC4: ; $009BC4
         PHY
@@ -2648,7 +2648,7 @@ animateBattleEffect: ; $009D8D
         BEQ CODE_809DC7
 CODE_809D97: ; $009D97
         LDX.W #$0000
-        JSR.W drawEffectTile
+        JSR.W renderConditionalSprite
         INY
         LDA.W $096C
         CLC
@@ -2661,7 +2661,7 @@ CODE_809D97: ; $009D97
         LDY.W #$0032
 CODE_809DB6: ; $009DB6
         LDX.W #$0000
-        JSR.W drawEffectTile
+        JSR.W renderConditionalSprite
         DEY
         BNE CODE_809DB6
         SEP #$20
@@ -2708,24 +2708,24 @@ CODE_809DE7: ; $009DE7
         STA.W $0006,X
 CODE_809E27: ; $009E27
         LDX.W #$0008
-        JSR.W updateBattleTimer
+        JSR.W tickRenderAndNav
         PLY
         DEY
         BNE CODE_809DE7
         JSL.L renderSprites
         JSL.L waitForModeSync
         RTL
-; [Timer] Updates battle turn timer. Entry: reads timer value, decrements, checks for turn end. Returns carry set if turn ended.
-updateBattleTimer: ; $009E3A
+; [Animation] Single frame: renderSprites + animateSpriteFrames + waitForModeSync
+tickRenderAndNav: ; $009E3A
         PHX
         JSL.L renderSprites
         PLX
         LDY.W #$0000
-        JSL.L handleMenuNavigation
+        JSL.L animateSpriteFrames
         JSL.L waitForModeSync
         RTS
-; [OAM] Draws a single effect animation tile. Entry: A=tile data, X=OAM slot, Y=animation frame. Updates OAM entry.
-drawEffectTile: ; $009E4C
+; [OAM] Conditionally writes OAM entry based on $54 flags; renders sprite from $096C/$3BC0
+renderConditionalSprite: ; $009E4C
         PHY
         PHX
         JSL.L renderSprites
@@ -2754,8 +2754,8 @@ CODE_809E7B: ; $009E7B
         JSL.L waitForModeSync
         PLY
         RTS
-; [AI] Processes one battle turn for a unit. Entry: A=unit ID. Handles AI for enemies, input for player, executes actions.
-processBattleTurn: ; $009E81
+; [Entity] Searches $7FC0C8+$1400 tables for closest entity by Manhattan distance; result in $096E
+findNearestEntity: ; $009E81
         REP #$20
         LDX.W #$0000
         LDA.W #$03E7
@@ -2901,8 +2901,8 @@ CODE_809F52: ; $009F52
 CODE_809F74: ; $009F74
         PLP
         RTL
-; [Memory] Fills $7F:A000 ($1000B) zero, then lookupTilemapEntry.
-clearObjectBuffer: ; $009F76
+; [AI] Clears $7FA000, marks entity positions from $1400/$1800 tables as blocked ($0100)
+buildMovementCostMap: ; $009F76
         REP #$20
         LDA.W #$007F
         STA.B $14
@@ -4069,7 +4069,7 @@ CODE_80AC59: ; $00AC59
         JSL.L renderSprites
         LDX.W #$0010
         LDY.W #$0000
-        JSL.L handleMenuNavigation
+        JSL.L animateSpriteFrames
         JSL.L waitForModeSync
         PLY
         DEY
@@ -4079,8 +4079,8 @@ CODE_80AC59: ; $00AC59
         RTL
         db $00,$FE,$01,$FE,$02,$FE,$02,$FF,$02,$00,$02,$01,$02,$02,$01,$02
         db $00,$02,$FF,$02,$FE,$02,$FE,$01,$FE,$00,$FE,$FF,$FE,$FE,$FF,$FE
-; [Menu] Handles menu navigation logic. Entry: reads controller, updates cursor, processes selections. Called for all menus.
-handleMenuNavigation: ; $00AC99
+; [Animation] Walks animation table at $1200 ($08 stride), advances frame counters, wraps at $09EA
+animateSpriteFrames: ; $00AC99
         REP #$20
         TXA
         ASL A
@@ -4145,8 +4145,8 @@ CODE_80AD0B: ; $00AD0B
         db $A0,$3B,$A0,$3B,$A2,$3B,$A2,$3B,$A4,$3B,$A6,$3B,$A8,$3B,$AA,$3B
         db $A8,$3B,$A6,$3B,$A4,$3B,$A2,$3B,$A2,$3B,$A0,$3B,$A0,$3B,$80,$3B
         db $08,$09,$06,$12,$04,$07,$11,$11,$0F,$0E,$0E,$0D,$0C,$1E,$1C
-; [GameState] Calculates game progress percentage. Entry: reads $7EEA82, $0E06, $0E86, calculates percentage (0-99).
-calculateGameProgress: ; $00AD3B
+; [Entity] Sums entity stats from $0Exx, caps at 100, indexes ROM table $0BBF64 to load 40-byte records
+calcCharStatIndex: ; $00AD3B
         REP #$20
         STZ.B $12
         LDA.W #$0002
@@ -4197,7 +4197,7 @@ CODE_80AD95: ; $00AD95
         AND.W #$00FF
         STA.B $23
         LDY.W #$1000
-        JSL.L maskAndProcessValue
+        JSL.L loadCharDataRecord
         LDA.W $104D
         AND.W #$00FF
         STA.B $26
@@ -4241,7 +4241,7 @@ CODE_80ADF5: ; $00ADF5
         LDA.L $0BE164,X
         STA.B $25
         LDY.W #$1000
-        JSL.L maskAndProcessValue
+        JSL.L loadCharDataRecord
         LDA.W $104D
         AND.W #$00FF
         STA.B $28
@@ -4339,8 +4339,8 @@ compareAndSwapValues: ; $00AEAE
 CODE_80AEDB: ; $00AEDB
         PLP
         RTS
-; [Helper] Masks and processes 8-bit value. Entry: A=value, masks with $00FF, processes further.
-maskAndProcessValue: ; $00AEDD
+; [Entity] Copies 40-byte ($28 stride) record from ROM $0BBF64 into WRAM at [$002A],Y; A=index
+loadCharDataRecord: ; $00AEDD
         REP #$20
         AND.W #$00FF
         ASL A
@@ -4365,8 +4365,8 @@ CODE_80AEF0: ; $00AEF0
         DEC A
         BNE CODE_80AEF0
         RTL
-; [GameState] Updates flag table at $7EEA00. Entry: A=flag ID, Y=value, sets flag with high bit ($80).
-updateFlagTable: ; $00AF01
+; [GameState] Scans $7EEA00[0..127] for entry matching A, ORs with $80 to mark active
+setFlagInTable: ; $00AF01
         PHP
         SEP #$20
         STA.B $22
@@ -4388,8 +4388,8 @@ CODE_80AF21: ; $00AF21
         db $49,$FF,$50,$51,$52,$53,$54,$55,$56,$57,$58,$60,$61,$62,$63,$64
         db $65,$66,$67,$68,$69,$6A,$6B,$6D,$6E,$6F,$9B,$59,$5A,$5B,$5C,$5D
         db $FF
-; [Physics] Calculates MP cost for spell. Entry: A=spell ID. Returns A=MP cost based on spell level and character stats.
-calculateSpellCost: ; $00AF6A
+; [Text] Searches font/text table by ID, dispatches tile placement to $7E:2000 via textBuf helpers
+renderTextFromTable: ; $00AF6A
         PHP
         REP #$20
         STZ.B $1C
@@ -4591,24 +4591,24 @@ updateTurnOrder: ; $00B0A8
         LDX.W #$0000
         LDY.W #$0400
         LDA.W #$03FF
-; [Text] STA $7FB000,X INX INX DEY. Writes to WRAM $7F:B000 tilemap buffer.
-textBuf_WriteWRAM: ; $00B0B3
+; [Tilemap] Inner loop: fills $7F:B000 tilemap region with constant value in A
+fillTilemapConst: ; $00B0B3
         STA.L $7FB000,X
         INX
         INX
         DEY
-        BNE textBuf_WriteWRAM
+        BNE fillTilemapConst
         LDX.W #$0040
         LDY.W #$0380
         LDA.W #$0000
-; [Text] STA $7FB000,X INX INX INC. Writes to WRAM buffer with incrementing value.
-textBuf_WriteWRAMInc: ; $00B0C5
+; [Tilemap] Fills $7F:B000 with sequential 0,1,2... then sets PPU BG regs $210B/$2108
+fillTilemapSeq: ; $00B0C5
         STA.L $7FB000,X
         INX
         INX
         INC A
         DEY
-        BNE textBuf_WriteWRAMInc
+        BNE fillTilemapSeq
         LDA.W #$7800
         STA.B $78
         SEP #$20
@@ -4624,15 +4624,15 @@ textBuf_WriteWRAMInc: ; $00B0C5
         STA.W $2108
         REP #$20
         RTL
-; [Helper] Look up entry in BE-header table. A=ID to find. [$12]=table ptr. Returns match index in $00.
-lookupTableEntry: ; $00B0F1
+; [Text] Validates BE block header at [$12], searches 4-byte stride entries by 1-byte ID
+textTbl_FindEntry: ; $00B0F1
         PHP
         REP #$20
         AND.W #$00FF
         STA.B $02
         LDA.B [$12]
         CMP.W #$4245
-        BNE textTbl_FoundEntry
+        BNE textTbl_NotFound
         LDY.W #$0003
         LDA.B [$12],Y
         STA.B $08
@@ -4652,10 +4652,10 @@ textTbl_SearchEntry: ; $00B10F
         INC.B $00
         LDA.B $00
         CMP.B $08
-        BEQ textTbl_FoundEntry
+        BEQ textTbl_NotFound
         BRA textTbl_SearchEntry
-; [Text] INY — advances past matched entry ID byte.
-textTbl_FoundEntry: ; $00B128
+; [Text] Not-found exit path: returns X=0, RTL
+textTbl_NotFound: ; $00B128
         db $A2,$00,$00,$28,$6B
 ; [Text] INY, LDA [$12],Y PHA INY. Reads entry data word after match.
 textTbl_ReadEntryData: ; $00B12D
@@ -4795,6 +4795,8 @@ setEventFlag: ; $00B248
         JSR.W checkEventFlag
         JSL.L initTilemapAndSync_Long
         JSR.W waitForFrame
+; [Text] A & $3F -> 4-byte jump table; each entry draws 1-2 text windows at fixed coords
+dispatchDialogLayout: ; $00B269
         PLP
         RTL
 ; [Script] Handles cutscene playback. Entry: A=cutscene ID. Plays script, moves characters, displays dialogue.
@@ -5050,7 +5052,7 @@ fadeToBlack: ; $00B525
         STZ.B $6F
         LDA.W $0E25
         AND.W #$00FF
-        BNE textWin_SetParams
+        BNE drawTwoPanelWindow
         LDA.W #$0001
         STA.B $00
         LDA.W #$0003
@@ -5061,9 +5063,9 @@ fadeToBlack: ; $00B525
         STA.B $06
         JSR.W checkEventFlag
         JSR.W drawWindow
-        BRA textWin_InitState
-; [Text] LDA #1 STA $00, LDA #3 STA $02. Sets window parameter defaults.
-textWin_SetParams: ; $00B54D
+        BRA drawDialogFrame
+; [Text] Draws two side-by-side windows: (1,3,$F,$F) and ($10,3,$F,$F)
+drawTwoPanelWindow: ; $00B54D
         LDA.W #$0001
         STA.B $00
         LDA.W #$0003
@@ -5084,8 +5086,8 @@ textWin_SetParams: ; $00B54D
         STA.B $06
         JSR.W checkEventFlag
         JSR.W drawWindow
-; [Text] LDA #$FFFF STA $6F, LDA #1 STA $00. Initializes text window state, $6F=XOR mask.
-textWin_InitState: ; $00B581
+; [Text] Sets $6F=$FFFF (border mode), draws outer (1,$13,$1E,$8) + inner (2,$14,$1C,$6) windows
+drawDialogFrame: ; $00B581
         LDA.W #$FFFF
         STA.B $6F
         LDA.W #$0001
@@ -7150,7 +7152,7 @@ CODE_80C5AF: ; $00C5AF
         AND.W #$00FF
         CMP.W #$0003
         BCC CODE_80C5FC
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         BRA CODE_80C5FF
 CODE_80C5FC: ; $00C5FC
         JSR.W setupCGRAM
@@ -8403,8 +8405,8 @@ CODE_80D0ED: ; $00D0ED
         CPX.W #$0400
         BNE CODE_80D0ED
         RTL
-; [Physics] Handles damage between entities. Entry: A=attacker ID, X=defender ID. Applies damage, knockback.
-handleEntityDamage: ; $00D0FC
+; [OAM] Builds OAM attribute words from tile descriptor in $02; palette from $D138,X table
+buildEntitySpriteAttribs: ; $00D0FC
         PHX
         STA.B $06
         LDA.B $02
@@ -8556,7 +8558,7 @@ CODE_80D1F8: ; $00D1F8
         STA.B $00
         LDA.W #$0002
         STA.B $02
-        JSL.L setupTilemap
+        JSL.L uploadPaletteWrapper
         RTL
         CLC
         XCE
@@ -8777,7 +8779,7 @@ CODE_80D619: ; $00D619
 CODE_80D626: ; $00D626
         CMP.B #$02
         BNE CODE_80D62F
-        JSR.W buildDataStructure
+        JSR.W buildHdmaScrollTable
         BRA CODE_80D663
 CODE_80D62F: ; $00D62F
         CMP.B #$03
@@ -8923,7 +8925,7 @@ CODE_80D762: ; $00D762
         PHA
         LDA.B #$02
         STA.B $10
-        JSR.W initObjectStreamReader
+        JSR.W updateAndRenderEntities
         LDA.B $AA
         BEQ CODE_80D777
         db $20,$88,$E6
@@ -8942,8 +8944,8 @@ CODE_80D77A: ; $00D77A
         db $A9,$80,$85,$3B,$A2,$03,$00,$A0,$54,$00,$C2,$20,$A7,$3A,$18,$65
         db $6B,$9F,$01,$A0,$7E,$E2,$20,$A5,$3A,$18,$69,$10,$85,$3A,$E8,$E8
         db $E8,$88,$D0,$E6,$A9,$00,$9F,$00,$A0,$7E,$60
-; [Memory] Builds data structure from indirect pointer. Entry: $54/$6D base, reads from [$3A], writes to $7EA001.
-buildDataStructure: ; $00D7BE
+; [Scrolling] Builds 84-entry HDMA BG scroll table in $7EA000 from base step table at $D83D
+buildHdmaScrollTable: ; $00D7BE
         SEP #$20
         LDA.B $54
         CLC
@@ -8981,8 +8983,6 @@ CODE_80D7DA: ; $00D7DA
 initHdmaFromParam: ; $00D7FB
         REP #$20
         AND.W #$00FF
-; Builds HDMA scroll table at $7EA000 from params at $D83D,X. 84 entries, stride 3.
-buildHdmaScrollTable: ; $00D800
         SEC
         SBC.W #$0004
         TAX
@@ -9118,8 +9118,8 @@ dmaOverlayToVRAM: ; $00D954
         db $30,$00,$34,$00,$38,$00,$3C,$00,$40,$00,$44,$00,$48,$00,$4C,$00
         db $50,$00,$54,$00,$58,$00,$5C,$00,$60,$00,$64,$00,$68,$00,$6C,$00
         db $70,$00,$74,$00,$78,$00,$7C
-; Check $05F5 flag, configure $2115/$4310/$4320 for DMA channels 1+2. VRAM upload setup.
-setupVramDMATransfer: ; $00DB69
+; [DMA] Multi-purpose VBlank DMA flush: VRAM upload, palette CGRAM, text/tilemap/overlay dispatch
+vblankDMADispatch: ; $00DB69
         PHP
         SEP #$20
         LDA.W $05F5
@@ -9201,8 +9201,8 @@ CODE_80DC15: ; $00DC15
         PLP
         PLA
         RTL
-; [LevelLoad] Sets up objects/NPCs for current map. Entry: reads object data from map, spawns entities.
-setupMapObjects: ; $00DC18
+; [Init] Full PPU ($2101-$212F) + DMA ($4200-$420D) controller hard reset
+initHardwareRegisters: ; $00DC18
         PHP
         REP #$30
         SEP #$20
@@ -9353,8 +9353,8 @@ CODE_80DC63: ; $00DC63
         db $21,$AD,$15,$21,$C2,$30,$A0,$10,$00,$A5,$02,$8D,$18,$21,$1A,$88
         db $D0,$F9,$85,$02,$A5,$12,$18,$69,$20,$00,$85,$12,$C6,$00,$D0,$D3
         db $28,$6B
-; Write $2116=#$7800 (VRAM addr), $2115=#$80 (increment by 1 on high-byte write). BG3 tilemap access.
-setupVramBG3Write: ; $00DDB2
+; [VRAM] Zeros BG3 tilemap ($7800, $1000 words) and BG1 tilemap ($2000, $0800 words) in VRAM
+clearBGTilemapVRAM: ; $00DDB2
         PHP
         CLC
         REP #$20
@@ -9381,8 +9381,8 @@ CODE_80DDE0: ; $00DDE0
         BNE CODE_80DDE0
         PLP
         RTL
-; [Script] Executes map script when trigger activated. Entry: A=script ID. Runs script commands.
-executeMapScript: ; $00DDE8
+; [VRAM] Generic VRAM fill: X=dest addr, A=value, Y=word count
+fillVRAMRegion: ; $00DDE8
         PHP
         CLC
         REP #$20
@@ -9441,8 +9441,8 @@ CODE_80DE30: ; $00DE30
         db $08,$18,$C2,$20,$A9,$00,$40,$8D,$16,$21,$E2,$20,$A9,$80,$8D,$15
         db $21,$AD,$15,$21,$C2,$20,$A0,$00,$40,$A9,$00,$00,$8D,$18,$21,$88
         db $D0,$FA,$28,$6B
-; [OAM] STA $2101 (OBSEL), JSR writeOAMBuffer.
-setupOAMTransfer: ; $00DE68
+; [OAM] Calls clearHardwareOAM, fills $0100-$01FF with $E000 (offscreen), $0300 with $AA (size table)
+clearOAMBuffers: ; $00DE68
         PHY
         PHX
         PHA
@@ -9452,7 +9452,7 @@ setupOAMTransfer: ; $00DE68
         REP #$10
         LDA.B #$00
         STA.W $2101
-        JSR.W writeOAMBuffer
+        JSR.W clearHardwareOAM
         REP #$30
         LDX.W #$0000
         LDY.W #$0100
@@ -9476,8 +9476,8 @@ CODE_80DE94: ; $00DE94
         PLX
         PLY
         RTL
-; [OAM] STA $2102 (OAMADD), writes OAM low+high table.
-writeOAMBuffer: ; $00DEA0
+; [OAM] Zeros OAMADD, writes $200 zeros + $20 $FFs to OAMDATA port directly
+clearHardwareOAM: ; $00DEA0
         PHY
         PHA
         PHP
@@ -9693,8 +9693,8 @@ initMapScene: ; $00E22D
         STZ.B $84
         STZ.W $420C
         REP #$20
-; [Init] STZ/INC $0A87 - debug mode patch site
-debugFlagInit: ; $00E24A
+; [Init] Full map mode init: zeros state vars, calls initHardwareRegisters+clearOAMBuffers, configures 7 HDMA channels, sets $10=3
+initMapState: ; $00E24A
         STZ.W $0A87
         LDA.W #$0000
         TCD
@@ -9726,8 +9726,8 @@ debugFlagInit: ; $00E24A
         INC A
         STA.B $56
         STA.B $59
-        JSL.L setupMapObjects
-        JSL.L setupOAMTransfer
+        JSL.L initHardwareRegisters
+        JSL.L clearOAMBuffers
         LDA.B #$00
         JSL.L updateDepthEffect
         SEP #$20
@@ -9867,7 +9867,7 @@ CODE_80E3D5: ; $00E3D5
         PLP
         RTL
 CODE_80E3D7: ; $00E3D7
-        JSL.L setupVramDMATransfer
+        JSL.L vblankDMADispatch
         BRA CODE_80E3D5
 ; [Helper] Calls waitForModeSync A times.
 repeatModeSync: ; $00E3DD
@@ -10183,8 +10183,8 @@ CODE_80E680: ; $00E680
 CODE_80E686: ; $00E686
         PLP
         RTS
-; [Entity] $3A=$0100, $3C=$0300, $3E=$0280, $9F=$8000.
-initObjectStreamReader: ; $00E688
+; [Entity] Per-frame loop: updates entity physics + renders sprites for $1000/$1200 slots, flushes OAM
+updateAndRenderEntities: ; $00E688
         PHP
         REP #$20
         LDA.W #$0100
