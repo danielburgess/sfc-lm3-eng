@@ -46,6 +46,8 @@ pipe_name = "Mesen2Diz_lm3"
 original = "lm3.sfc"
 name = "lm3-mbuild-test"
 pad = true
+# FFC0 overflow tail region (LM3: DTE_TABLE1_DATA_PC .. DTE_TABLE2_PTR_PC).
+freespace = [[0x230200, 0x234000]]
 
 [[mbuild.sections]]
 kind = "fixed-records"
@@ -60,8 +62,25 @@ grow = "insert"
 # at entry 58. Text fits in-bank — no overflow config needed.
 [[mbuild.sections]]
 kind = "script"
-file = "jp_data/scripts/scene-desc-name.txt"
-table = "jp_data/jap.tbl"
+file = "en_data/scripts/scene-desc-name.txt"
+table = "en_data/eng.tbl"
+fallback-table = "jp_data/jap.tbl"
 pointer-table = 0x111EE3
 pointer-size = 2
 count = 158
+
+[mbuild.sections.word-wrap]
+line-width = 26
+max-lines = 6
+entries = "0-56"
+
+# Overflow: 141/158 entries exceed their inline slot and redirect via
+# [FF C0 + 3-byte LOROM2 SNES addr] into bank $C6 freespace. Ctrl-aware
+# splitter mirrors LM3 `_find_safe_split` (non-event).
+[mbuild.sections.overflow]
+strategy = "inline-redirect"
+marker = "FFC0"
+pointer-size = 3
+pointer-encoder = "snes-lorom1-24le"
+splitter = "ctrl-aware"
+slot-measure = "source-entry"
