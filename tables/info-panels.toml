@@ -1,0 +1,22 @@
+# info-panels
+
+[table]
+name = "info-panels"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x30000
+count = 640
+size = 2
+
+[data]
+start = 0x30A00
+
+[word_wrap]
+line_width = 0x1C
+max_lines = 0x3

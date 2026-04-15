@@ -1,0 +1,22 @@
+# unit-classes — fixed-width in-place records
+
+# LM3 fixed-record layout (top-level extras)
+entries = 36
+block_len = 0x28
+
+[table]
+name = "unit-classes"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+start = 0x5C200
+
+[[fields]]
+label = "class"
+start = 0xC
+len = 0xC
+fill = 0x0

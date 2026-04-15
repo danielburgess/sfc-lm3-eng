@@ -1,0 +1,70 @@
+# Little Master III: The Rainbow Jewels — EN translation project
+# Consumed by retrotool.project.load_project()
+
+data_dirs = ["tables"]
+
+# LM3-specific top-level keys (loader folds into ProjectConfig.extras)
+source_rom = "lm3.sfc"
+scripted_output = "out/lm3_scripted.sfc"
+final_output = "out/lm3_en.sfc"
+font_png = "en_data/fonts/font_accented.png"
+font_rom_offset = 0x170000
+dialog_text_base = 0x1B83D0
+en_data_dir = "en_data/scripts"
+jp_data_dir = "jp_data/scripts"
+primary_table = "en_data/eng.tbl"
+fallback_table = "jp_data/jap.tbl"
+
+[asm_patches]
+scripted = [
+    "asm/debug_mode_patch.asm",
+    "asm/name_expansion_patch.asm",
+]
+vwf = ["asm/vwf_patch.asm"]
+
+[rom]
+name = "Little Master III"
+file = "lm3.sfc"
+mapping = "lorom"
+size = "2M"
+expanded_size = "4M"
+
+[build]
+assembler = "asar"
+output_dir = "out"
+cache_dir = "en_data/bin/scripts"
+
+[debugger]
+type = "mesen-diz"
+pipe_name = "Mesen2Diz_lm3"
+
+# ---- retrotool.mbuild pipeline (Phase 6c acceptance test) ----
+# Step 1: unit-names only. Pre-packed raw blob produced from the lm3.py
+# patch-cache (see en_data/bin/mbuild/unit-names.packed.bin). Later steps
+# replace lm3.py encoding with native mbuild handlers.
+[mbuild]
+original = "lm3.sfc"
+name = "lm3-mbuild-test"
+pad = true
+
+[[mbuild.sections]]
+kind = "fixed-records"
+offset = 0x220000
+stride = 0x10
+count = 146
+file = "en_data/bin/mbuild/unit-names.packed.bin"
+grow = "insert"
+
+# scene-desc-name: 158 entries, 2-byte ptrs at $22:9EE3 (PC 0x111EE3),
+# word-wrap 26×6 on entries 0-56. 59 [FFC0@58:main] pins → shared block
+# at entry 58. Text fits in-bank — no overflow config needed.
+[[mbuild.sections]]
+kind = "script"
+file = "en_data/scripts/scene-desc-name.txt"
+table = "en_data/eng.tbl"
+fallback-table = "jp_data/jap.tbl"
+pointer-table = 0x111EE3
+pointer-size = 2
+count = 158
+word-wrap = { line-width = 26, max-lines = 6, entries = "0-56" }
+textbuf-limit = 0x1F0

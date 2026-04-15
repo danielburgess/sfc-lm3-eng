@@ -1,0 +1,30 @@
+# unit-names — fixed-width in-place records
+
+# LM3 fixed-record layout (top-level extras).
+# Insertion target is bank $C4 (PC 0x220000) w/ 16-byte records.
+# Source ROM stores names at $01:A050 (PC 0x012050) in 8-byte records —
+# extract_* overrides restore the original extraction geometry.
+entries = 146
+block_len = 0x10
+
+source_data_start = 0x012050
+extract_data_len = 0x490
+extract_block_len = 0x8
+extract_fields = [{ label = "name", start = 0x0, len = 0x8, fill = 0x20 }]
+
+[table]
+name = "unit-names"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+start = 0x220000
+
+[[fields]]
+label = "name"
+start = 0x0
+len = 0x10
+fill = 0x20

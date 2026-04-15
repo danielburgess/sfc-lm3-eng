@@ -1,0 +1,31 @@
+# unit-equipment — fixed-width in-place records
+
+# LM3 fixed-record layout (top-level extras)
+entries = 256
+block_len = 0x20
+
+# Original extraction read 0x1FFE bytes (one pair short of 256*32=0x2000).
+extract_data_len = 0x1FFE
+
+[table]
+name = "unit-equipment"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+start = 0x10050
+
+[[fields]]
+label = "weapon"
+start = 0x0
+len = 0x9
+fill = 0x20
+
+[[fields]]
+label = "armor"
+start = 0xC
+len = 0x9
+fill = 0x20

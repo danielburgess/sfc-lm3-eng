@@ -1,0 +1,15 @@
+# dialog-1
+
+[table]
+name = "dialog-1"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x1B0000
+count = 512
+size = 2

@@ -1,0 +1,23 @@
+# scene-desc-name
+
+# LM3-specific scalars (top-level for extras)
+textbuf_limit = 0x1F0
+
+[table]
+name = "scene-desc-name"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x111EE3
+count = 158
+size = 2
+
+[word_wrap]
+line_width = 0x1A
+max_lines = 0x6
+entries = "0-56"

@@ -1,0 +1,18 @@
+# menu-prompts
+
+# LM3-specific scalars (top-level for extras)
+battle_group = 0x1
+
+[table]
+name = "menu-prompts"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x13200
+count = 56
+size = 2

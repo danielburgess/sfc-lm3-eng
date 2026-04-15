@@ -1,0 +1,18 @@
+# cutscene-bytecode
+
+# LM3-specific scalars (top-level for extras)
+event_script = true
+
+[table]
+name = "cutscene-bytecode"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x113A9B
+count = 100
+size = 2

@@ -1,0 +1,23 @@
+# unit-attacks
+
+# Mirror pointer tables: 4 duplicates at $1B0A00/$1B0C00/$1B0E00/$1B1000 share
+# data with the primary at $1B0800. Extraction walks all 5 and only dumps
+# the final merged result (primary extracts with output=false).
+mirror_ptr_tables = [0x1B0A00, 0x1B0C00, 0x1B0E00, 0x1B1000]
+
+[table]
+name = "unit-attacks"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x1B0800
+count = 53
+size = 2
+
+[data]
+start = 0x1B1200

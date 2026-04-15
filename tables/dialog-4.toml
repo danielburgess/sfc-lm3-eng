@@ -1,0 +1,18 @@
+# dialog-4
+
+# LM3-specific scalars (top-level for extras)
+dialog_group = 0x1
+
+[table]
+name = "dialog-4"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x1B8200
+count = 19
+size = 2

@@ -1,0 +1,15 @@
+# quiz-questions
+
+[table]
+name = "quiz-questions"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x30800
+count = 96
+size = 2

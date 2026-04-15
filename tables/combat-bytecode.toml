@@ -1,0 +1,18 @@
+# combat-bytecode
+
+# LM3-specific scalars (top-level for extras)
+battle_group = 0x1
+
+[table]
+name = "combat-bytecode"
+type = "pointer"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+terminator = 0x00
+
+[pointers]
+address = 0x13100
+count = 18
+size = 2

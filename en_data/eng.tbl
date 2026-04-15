@@ -1,0 +1,340 @@
+00=[end]
+01
+02
+03
+04
+05
+06
+07
+08
+09=[u]
+0A=[d]
+0B
+0C
+0D
+0E
+0F
+10=[P]
+11=[R]
+12=[S]
+13=[E]
+14=[K]
+15=[A]
+16=[G]
+17=[Y]
+18
+19
+1A
+1B=!!
+1C=...
+1D
+1E=☆
+1E=[cry]
+1F=★
+1F=[luv]
+20=
+90=[nl]
+21=!
+22="
+23=#
+24=$
+25=%
+26=&
+27='
+28=(
+29=)
+2A=*
+2B=+
+2C=,
+2D=-
+2E=.
+2F=/
+30=0
+31=1
+32=2
+33=3
+34=4
+35=5
+36=6
+37=7
+38=8
+39=9
+3A=:
+3B=;
+3C=<
+3D==
+3E=>
+3F=?
+40=@
+41=A
+42=B
+43=C
+44=D
+45=E
+46=F
+47=G
+48=H
+49=I
+4A=J
+4B=K
+4C=L
+4D=M
+4E=N
+4F=O
+50=P
+51=Q
+52=R
+53=S
+54=T
+55=U
+56=V
+57=W
+58=X
+59=Y
+5A=Z
+5B=[
+5C=\
+5D=]
+5E=^
+5F=_
+60=`
+61=a
+62=b
+63=c
+64=d
+65=e
+66=f
+67=g
+68=h
+69=i
+6A=j
+6B=k
+6C=l
+6D=m
+6E=n
+6F=o
+70=p
+71=q
+72=r
+73=s
+74=t
+75=u
+76=v
+77=w
+78=x
+79=y
+7A=z
+7B={
+7C=|
+7D=}
+7E=~
+7F
+80=à
+81=á
+82=â
+83=ä
+84=è
+85=é
+86=ê
+87=ë
+88=ì
+89=í
+8A=î
+8B=ò
+8C=ó
+8D=ô
+8E=ö
+8F=ù
+90
+91
+92
+93
+94
+95=ú
+96=û
+97=ü
+98=ñ
+99=ç
+9A
+9B
+9C
+9D
+9E
+9F
+A0=À
+A1=Á
+A2=Â
+A3=Ä
+A4=È
+A5=É
+A6=Ê
+A7=Í
+A8=Ó
+A9=Ô
+AA=Ö
+AB=Ú
+AC=Ü
+AD=Ñ
+AE=Ç
+AF
+B0
+B1
+B2
+B3
+B4
+B5
+B6
+B7
+B8
+B9
+BA
+BB
+BC
+BD
+BE
+BF
+C0
+C1
+C2
+C3
+C4
+C5
+C6
+C7
+C8
+C9
+CA
+CB
+CC
+CD
+CE
+CF
+D0
+D1
+D2
+D3
+D4
+D5
+D6
+D7
+D8
+D9
+DA
+DB
+DC
+DD
+DE
+DF
+E0
+E1
+E2
+E3
+E4
+E5
+E6
+E7
+E8
+E9
+EA
+EB
+EC
+ED
+EE
+EF
+F0
+F1
+F2
+F3
+F4
+F5
+F6
+F7
+F8
+F9
+FA
+FB
+FC
+FD
+FE
+; ============================================================================
+; FF control code byte lengths (@ctrl directive).
+; Format: @ctrl XX=N  where XX is the command byte after the FF prefix,
+; and N is the TOTAL byte length including the FF byte itself.
+; Used by find_entry_end() to skip parameter bytes during extraction.
+; ============================================================================
+@ctrl_prefix FF
+@ctrl 00=2
+@ctrl 89=2
+@ctrl 02=3
+@ctrl 03=3
+@ctrl 04=3
+@ctrl 05=3
+@ctrl 06=3
+@ctrl 07=3
+@ctrl 08=3
+@ctrl 09=3
+@ctrl 0A=3
+@ctrl 0B=3
+@ctrl 0C=3
+@ctrl 0D=3
+@ctrl 0E=3
+@ctrl 0F=3
+@ctrl 10=3
+@ctrl 11=3
+@ctrl 12=3
+@ctrl 13=3
+@ctrl 14=3
+@ctrl 15=3
+@ctrl 16=3
+@ctrl 17=3
+@ctrl 18=3
+@ctrl 19=3
+@ctrl 1A=3
+@ctrl 1B=3
+@ctrl 1C=3
+@ctrl 1D=3
+@ctrl 7F=3
+@ctrl 80=3
+@ctrl 82=3
+@ctrl 9B=3
+@ctrl F1=3
+@ctrl FB=3
+@ctrl FD=3
+@ctrl FE=3
+@ctrl FF=3
+@ctrl 01=4
+@ctrl 1E=4
+@ctrl 94=4
+@ctrl F2=3
+@ctrl FA=4
+@ctrl FC=4
+@ctrl 81=5
+@ctrl 83=5
+@ctrl 84=5
+@ctrl 85=5 type=ptr24le
+@ctrl 86=5
+@ctrl 87=5
+@ctrl 91=5
+@ctrl 95=5
+@ctrl 97=5
+@ctrl 9A=5
+@ctrl C0=5 type=ptr24le
+@ctrl C1=5
+@ctrl F0=5 type=ptr24le
+@ctrl 88=6
+@ctrl 8C=6
+@ctrl 8D=6
+@ctrl 8E=6
+@ctrl 9C=6
+@ctrl F6=2
+@ctrl F7=3
+@ctrl F8=3
+FFF278=[pause]
+FFF2**=[wait**]
+FFFD02=[special]
+FF7F02=[msg]
+FFFF00=[cls]
+FFFB00=[white]
+FFFB01=[pink]
+FFFE00=[FFFE00]
+FF**%%=[FF**%%]

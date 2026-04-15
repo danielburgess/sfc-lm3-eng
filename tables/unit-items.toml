@@ -1,0 +1,22 @@
+# unit-items — fixed-width in-place records
+
+# LM3 fixed-record layout (top-level extras)
+entries = 128
+block_len = 0x18
+
+[table]
+name = "unit-items"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+start = 0x124E0
+
+[[fields]]
+label = "item"
+start = 0x0
+len = 0x9
+fill = 0x20

@@ -1,0 +1,720 @@
+<<$1129115:0[$1129332]>>
+<<<window[0]:$002C-$0063>>>
+[FF0A0C]LITTLE　MASTER[pink][FF0C0E]EPISODE 3[white][FF0810]THE　RAINBOW　JEWELS
+<<<window[1]:$0081-$00A3>>>
+[pink][FF090C]PLANNER:[white][FF0B0F]TADATO KAWANO
+<<<window[2]:$00BE-$00F2>>>
+[pink][FF030C]PROGRAM CODING:[white][FF050F]ONITAMA (YASUSHI TAKEDA)
+<<<window[3]:$0110-$014B>>>
+[pink][FF070B]PIXEL ARTS:[white][FF090E]TSUTOMU SEKIMOTO[FF0910]HIROSHI YAMAMOTO
+<<<window[4]:$016C-$0198>>>
+[pink][FF060C]SYSTEM COORDINATOR:[white][FF0C0F]SHIGERU GOTO
+<<<window[5]:$01B5-$01DC>>>
+[pink][FF080C]SOUND DESIGNER:[white][FF0B0F]YUJI YAMADA
+<<<window[6]:$01F6-$0219>>>
+[pink][FF090C]DIRECTOR:[white][FF0B0F]TADATO KAWANO
+<<<window[7]:$0238-$023D>>>
+
+<<<window[8]:$023F-$0263>>>
+[pink][FF080C]PRODUCER:[white][FF0A0F]FUMIO NAKAMURA
+
+<<$1129115:1[$1130778]>>
+
+<<$1129115:2[$1130815]>>
+<<<window[0]:$001B-$0037>>>
+[FF7F0E]主人「Thanks for your business. Come again」
+
+<<$1129115:3[$1130876]>>
+
+<<$1129115:4[$1130913]>>
+<<<window[0]:$0017-$0026>>>
+[FF7F0E]医者「Take care of yourself」
+
+<<$1129115:5[$1130957]>>
+
+<<$1129115:6[$1130994]>>
+<<<window[0]:$001B-$0033>>>
+[FF7F0E]「Thank you very much. Please come again」
+
+<<$1129115:7[$1131610]>>
+<<<window[0]:$0024-$0028>>>
+
+<<<window[1]:$0034-$0062>>>
+「It's come to this, time for my last resort-nya![nl][wait0A]　I'll borrow your strength-nya!」
+<<<window[2]:$0081-$0082>>>
+
+<<<window[3]:$00C3-$00D6>>>
+「Beat them up-nyaaa!」
+<<<window[4]:$00D8-$00F3>>>
+
+
+<<$1129115:8[$1131901]>>
+<<<window[0]:$001F-$002F>>>
+「A star has been summoned!」
+
+<<$1129115:9[$1131976]>>
+<<<window[0]:$0020-$0021>>>
+
+<<<window[1]:$0052-$0060>>>
+「I'll get you-nya!」
+<<<window[2]:$006F-$0095>>>
+示ぁ[P]呼甘‥[R]憂ぁ[R]呼甘‥[E][d][G]ぁ[E]呼[r.]囲ョ猪[r.]紋ぁ[02]
+<<<window[3]:$009F-$00B7>>>
+「Look![wait20] It's the same shape as the manuscript」
+<<<window[4]:$00C1-$00D6>>>
+「Liam,[wait20] the rainbow magic stone!」
+<<<window[5]:$00E6-$00F5>>>
+「Okay,[wait20] I'll try」
+
+<<$1129115:10[$1136733]>>
+
+<<$1129115:11[$1132232]>>
+<<<window[0]:$001A-$0027>>>
+
+<<<window[1]:$0034-$003F>>>
+「Heave-ho, heave-ho」
+<<<window[2]:$0070-$0082>>>
+[FF7F01]The moon has appeared.
+
+<<$1129115:12[$1132419]>>
+<<<window[0]:$0019-$0026>>>
+「Well, this is a problem-nya」
+
+<<$1129115:13[$1132479]>>
+<<<window[0]:$0006-$0008>>>
+
+<<<window[1]:$0010-$003B>>>
+[FF7F01]Made a mistake. You'll be removed.[nl]「Whoa, it's a pitfall~」
+
+<<$1129115:14[$1132479]>>
+
+<<$1129115:15[$1132572]>>
+<<<window[0]:$002A-$003B>>>
+
+<<<window[1]:$003F-$0058>>>
+[FF7F00]From somewhere... a mysterious orb...[FFFE00]
+
+<<$1129115:16[$1132699]>>
+<<<window[0]:$00A8-$00B5>>>
+[FF7F08]CRASH!
+
+<<$1129115:17[$1132893]>>
+
+<<$1129115:18[$1133125]>>
+<<<window[0]:$001D-$0032>>>
+「Here goes, Snow Spark Blizzard!」
+<<<window[1]:$0035-$0037>>>
+[03]
+<<<window[2]:$0040-$0041>>>
+
+<<<window[3]:$0049-$004A>>>
+
+<<<window[4]:$004D-$0050>>>
+
+<<<window[5]:$005E-$0061>>>
+
+<<<window[6]:$0067-$006A>>>
+
+<<<window[7]:$0073-$0076>>>
+
+<<<window[8]:$007C-$007F>>>
+
+<<<window[9]:$0086-$008C>>>
+
+<<<window[10]:$008E-$008F>>>
+
+<<<window[11]:$0092-$0098>>>
+
+<<<window[12]:$009E-$00A1>>>
+
+<<<window[13]:$00A4-$00A7>>>
+
+<<<window[14]:$00AA-$00B0>>>
+
+<<<window[15]:$00B3-$00C4>>>
+
+<<<window[16]:$00D9-$00E4>>>
+
+<<<window[17]:$00F1-$00F4>>>
+
+
+<<$1129115:19[$1133437]>>
+
+<<$1129115:20[$1133526]>>
+<<<window[0]:$000B-$0036>>>
+[FF7F09]Cyclops throws the dice.[nl]What will it land on?[nl]The dice rolls...
+<<<window[1]:$0050-$0051>>>
+
+<<<window[2]:$008C-$008F>>>
+
+<<<window[3]:$00AE-$00DC>>>
+[FF7F00]The die shows 1.[FFFE00][nl]Everyone's HP is restored. L-Lucky?
+<<<window[4]:$00EB-$010D>>>
+[FF7F00]The die shows 2.[FFFE00][nl]Nothing happens.[FFFE00]
+<<<window[5]:$0118-$0140>>>
+[FF7F00]The die shows 3.[FFFE00][nl]Everyone is paralyzed. Yikes!
+<<<window[6]:$014F-$0171>>>
+[FF7F00]The die shows 4.[FFFE00][nl]Nothing happens.[FFFE00]
+<<<window[7]:$0174-$0178>>>
+
+<<<window[8]:$018E-$0191>>>
+
+<<<window[9]:$0192-$01A6>>>
+[FF7F00]The die shows 5.[FFFE00]
+<<<window[10]:$01BB-$01EB>>>
+「Everyone, dance! [wait30]Yeaaah!」[nl][FFFD00]Everyone's positions are swapped.
+<<<window[11]:$020F-$0213>>>
+
+<<<window[12]:$0217-$0239>>>
+[FF7F00]The die shows 6.[FFFE00][nl]Nothing happens.[FFFE00]
+
+<<$1129115:21[$1134110]>>
+<<<window[0]:$0021-$0031>>>
+「Hehehe... prepare yourself」
+<<<window[1]:$0041-$0042>>>
+
+<<<window[2]:$0047-$0048>>>
+
+<<<window[3]:$004B-$004E>>>
+
+<<<window[4]:$0051-$0054>>>
+
+<<<window[5]:$006F-$0086>>>
+「La la la~~~~.[wait20] Lu lu lu~~~~~★」
+<<<window[6]:$00B6-$00C0>>>
+
+<<<window[7]:$00CD-$00E3>>>
+「Hehehe.[wait20] How did you like my song?」
+<<<window[8]:$00EE-$00EF>>>
+
+<<<window[9]:$00F0-$00F1>>>
+
+<<<window[10]:$00F4-$00F7>>>
+
+
+<<$1129115:22[$1134366]>>
+
+<<$1129115:23[$1134436]>>
+<<<window[0]:$0009-$001E>>>
+[FF7F08]The belt moves.[nl]And so do we.
+<<<window[1]:$0056-$0072>>>
+ From somewhere, D[r.]. Skull's voice can be heard.[FFFE00]
+<<<window[2]:$0079-$0094>>>
+「How's the conveyor ride?[wait20] Hmm?」
+<<<window[3]:$009E-$00C7>>>
+「Just standing on it won't get you[nl][wait20] to where I am」
+<<<window[4]:$00D1-$00EB>>>
+「Better use your heads.[wait30] Hyaha!」[FFFE00]
+
+<<$1129115:24[$1134677]>>
+<<<window[0]:$000C-$0016>>>
+「Sliiiiide!」
+<<<window[1]:$003F-$004D>>>
+「Whoa! I'm sliiiding!」
+
+<<$1129115:25[$1134772]>>
+<<<window[0]:$0058-$0068>>>
+「What's this panel?」
+<<<window[1]:$0078-$0089>>>
+「There are two pictures on it」
+<<<window[2]:$0099-$00BC>>>
+「We gotta[wait20] do something about this,[wait20] moo-moo」
+<<<window[3]:$00D7-$00E7>>>
+「I'll guard the panel-chu!」
+
+<<$1129115:26[$1135020]>>
+<<<window[0]:$005E-$005F>>>
+
+<<<window[1]:$0068-$0069>>>
+
+<<<window[2]:$0072-$0073>>>
+
+<<<window[3]:$007C-$007D>>>
+
+<<<window[4]:$00D6-$00D7>>>
+
+<<<window[5]:$00E0-$00E1>>>
+
+<<<window[6]:$00EA-$00EB>>>
+
+<<<window[7]:$00F4-$00F5>>>
+
+<<<window[8]:$014E-$014F>>>
+
+<<<window[9]:$0158-$0159>>>
+
+<<<window[10]:$0162-$0163>>>
+
+<<<window[11]:$016C-$016D>>>
+
+<<<window[12]:$01C6-$01C7>>>
+
+<<<window[13]:$01D0-$01D1>>>
+
+<<<window[14]:$01DA-$01DB>>>
+
+<<<window[15]:$01E4-$01E5>>>
+
+<<<window[16]:$0201-$0209>>>
+
+<<<window[17]:$020A-$0221>>>
+[FF7F00]The temple guardian has appeared!
+<<<window[18]:$0237-$0247>>>
+[FF7F00]Yes! The pictures are matched.
+
+<<$1129115:27[$1135605]>>
+
+<<$1129115:28[$1135654]>>
+<<<window[0]:$0014-$0022>>>
+[FF7F08]A bird comes flying.
+
+<<$1129115:29[$1135766]>>
+<<<window[0]:$000E-$0038>>>
+[FF7F09]A tornado has appeared.[nl]Touch it and you'll be blown away.[nl]And it's a double.
+
+<<$1129115:30[$1135826]>>
+<<<window[0]:$0004-$001F>>>
+[FF7F09]Stepped on the seesaw.[nl]「Boiiiiing!」
+
+<<$1129115:31[$1135897]>>
+
+<<$1129115:32[$1135903]>>
+<<<window[0]:$000E-$001D>>>
+[FF7F09]Bu~rn, baby, bu~rn.
+
+<<$1129115:33[$1135936]>>
+<<<window[0]:$0029-$0060>>>
+「Arrgh, I told you not to move![nl][wait30] You lot![wait20] You've made me angry!」
+<<<window[1]:$006A-$0096>>>
+「I'll summon a tornado to blow you away![nl][wait30] Come, Hurricane Caaall!」
+<<<window[2]:$0098-$009D>>>
+
+
+<<$1129115:34[$1136156]>>
+
+<<$1129115:35[$1136156]>>
+
+<<$1129115:36[$1136162]>>
+<<<window[0]:$0010-$0037>>>
+[FF070C]Having repelled the Bombers,[FF0A0F]the heroes head for Matedoral Castle
+<<<window[1]:$0064-$008B>>>
+[FF070C]Led by Charles, the heroes[FF090F]head for the jungle ruins
+<<<window[2]:$009F-$00C1>>>
+[FF090C]In the unknown land of Matedoral,[FF090F]what awaits the heroes?
+
+<<$1129115:37[$1136162]>>
+
+<<$1129115:38[$1136162]>>
+
+<<$1129115:39[$1136162]>>
+
+<<$1129115:40[$1136162]>>
+
+<<$1129115:41[$1136162]>>
+
+<<$1129115:42[$1136162]>>
+
+<<$1129115:43[$1136373]>>
+
+<<$1129115:44[$1131051]>>
+<<<window[0]:$001F-$002F>>>
+[FF0A0E]PRESENTED　BY
+<<<window[1]:$0061-$0071>>>
+[FF0A0E]DEVELOPED　BY
+<<<window[2]:$0095-$009B>>>
+
+<<<window[3]:$00B3-$0121>>>
+[pink][FF020C]GOOD　BYE．．．[white][FF020E]NOW　WE　BRING　YOU　A　SECRET[FF0210]WORDS　OF　GAME．PLEASE　NOTICE[FF0212]S39　OF　13，AND　S43　SOMEWHERE．
+<<<window[4]:$013C-$01E7>>>
+[FF0507]The battle was over. The hero who defeated[FF0509]the final enemy felt memories of past[FF050B]battles resurging in his heart.[FF050D]And he couldn't help but think:[FF050F]The most powerful monster of all[FF0511]was the dice, wasn't it...[FF0E13]The End[FF0815]Thank you for playing.
+
+<<$1129115:45[$1131857]>>
+<<<window[0]:$0010-$0027>>>
+[FF7F00]Recovered HP on their own.
+
+<<$1129115:46[$1136396]>>
+
+<<$1129115:47[$1136410]>>
+<<<window[0]:$003D-$0064>>>
+「We'll come with you too.[nl][wait30] Please take us along.[wait30] Rabi rabi」
+<<<window[1]:$0068-$007E>>>
+[FF7F00]New allies have joined.
+<<<window[2]:$008F-$0094>>>
+
+<<<window[3]:$00A6-$00CB>>>
+[FF080C]Having parted with Peacock,[FF0A0F]the heroes head for Linark Castle
+
+<<$1129115:48[$1136626]>>
+
+<<$1129115:49[$1136649]>>
+<<<window[0]:$0012-$0026>>>
+「What's wrong with ya. Pathetic」[FFFE00]
+<<<window[1]:$003B-$004D>>>
+「That was one heck of an earthquake」[FFFE00]
+
+<<$1129115:50[$1136740]>>
+
+<<$1129115:51[$1136757]>>
+<<<window[0]:$0016-$0018>>>
+
+<<<window[1]:$002B-$0034>>>
+
+<<<window[2]:$005B-$005C>>>
+
+<<<window[3]:$0063-$0075>>>
+「Hmm... I have a bad feeling about this...」
+<<<window[4]:$0078-$007A>>>
+
+<<<window[5]:$0084-$0086>>>
+
+<<<window[6]:$00A8-$00AB>>>
+
+<<<window[7]:$00AE-$00B1>>>
+
+<<<window[8]:$00C9-$00CC>>>
+
+<<<window[9]:$00DD-$00DE>>>
+
+<<<window[10]:$00DF-$00E0>>>
+
+<<<window[11]:$00E3-$00E6>>>
+
+<<<window[12]:$00F3-$00F6>>>
+
+<<<window[13]:$00F9-$00FF>>>
+
+<<<window[14]:$010D-$0114>>>
+
+<<<window[15]:$0115-$0116>>>
+
+<<<window[16]:$011E-$011F>>>
+
+<<<window[17]:$0125-$0129>>>
+
+<<<window[18]:$0150-$0171>>>
+[FF7F01]A mysterious space appeared[nl]on the church floor.
+<<<window[19]:$0184-$0186>>>
+
+<<<window[20]:$0190-$0192>>>
+
+<<<window[21]:$01B7-$01CF>>>
+[FF7F01]A hero army unit was sucked in!
+<<<window[22]:$01E3-$0201>>>
+[FF7F01]Intense light is pouring from[nl]the stained glass.
+<<<window[23]:$0214-$0219>>>
+
+<<<window[24]:$03EC-$0403>>>
+
+<<<window[25]:$040C-$040D>>>
+
+<<<window[26]:$0416-$0417>>>
+
+<<<window[27]:$0424-$0425>>>
+
+<<<window[28]:$042E-$042F>>>
+
+<<<window[29]:$043A-$043D>>>
+
+<<<window[30]:$0444-$0447>>>
+
+<<<window[31]:$045E-$0461>>>
+
+<<<window[32]:$0530-$0534>>>
+
+<<<window[33]:$0546-$0555>>>
+「We did it, Professor!」
+<<<window[34]:$0562-$058A>>>
+「Yes, this time I've truly[nl]found it![wait20][cls]If this ancient manuscript[nl]is genuine...
+<<<window[35]:$0595-$05C7>>>
+It would be the proof[nl]I've been looking for![wait20][cls]The Prisma treasure of[nl]legend exists! [wait20][cls]We did it!」
+<<<window[36]:$05D2-$05D9>>>
+
+<<<window[37]:$05E3-$05F1>>>
+「Whoa, an earthquake!!」
+<<<window[38]:$0600-$060A>>>
+
+<<<window[39]:$061F-$062F>>>
+「Aaaaaaahhh!!」
+<<<window[40]:$0645-$0653>>>
+<<<window[41]:$0655-$065F>>>
+
+<<<window[42]:$0661-$0672>>>
+
+<<<window[43]:$0674-$067F>>>
+
+<<<window[44]:$0687-$0695>>>
+
+<<<window[45]:$0697-$06A1>>>
+
+<<<window[46]:$06A3-$06B5>>>
+
+<<<window[47]:$06B7-$06C8>>>
+
+<<<window[48]:$06CA-$06D6>>>
+
+<<<window[49]:$06EC-$06FE>>>
+
+<<<window[50]:$0700-$0705>>>
+
+<<<window[51]:$07AE-$07B1>>>
+
+<<<window[52]:$07B3-$07BA>>>
+
+<<<window[53]:$07BC-$07BF>>>
+
+<<<window[54]:$07C1-$07C8>>>
+
+<<<window[55]:$07CA-$07CD>>>
+
+<<<window[56]:$07CF-$07D6>>>
+
+<<<window[57]:$07D8-$07DB>>>
+
+<<<window[58]:$07DD-$07E4>>>
+
+<<<window[59]:$07E6-$07E9>>>
+
+<<<window[60]:$07EB-$07F2>>>
+
+<<<window[61]:$07F4-$07F7>>>
+
+<<<window[62]:$07F9-$080E>>>
+
+<<<window[63]:$0810-$0814>>>
+
+<<<window[64]:$0849-$086B>>>
+「This is bad, the entrance[nl] has been blocked off~~~~!」
+<<<window[65]:$0889-$089B>>>
+Knock knock....[wait0A]Knock knock....
+<<<window[66]:$08C8-$08EA>>>
+「Ah! We're saved![wait20][cls]Professor, it seems that[nl]help has arrived!」
+<<<window[67]:$08F7-$0905>>>
+「But, that isn't the way ou...」
+<<<window[68]:$090F-$092D>>>
+「Hey, over here, over here![nl] Help us~!」
+<<<window[69]:$0965-$0974>>>
+「Eeeeeeeeek!」
+<<<window[70]:$099E-$099F>>>
+
+<<<window[71]:$09A7-$09BF>>>
+「Someone! Anyone![nl]Help meeeee!!」
+<<<window[72]:$09E1-$09ED>>>
+「Waaaaahhh!!」
+<<<window[73]:$09F2-$09FA>>>
+
+<<<window[74]:$09FB-$0A03>>>
+
+<<<window[75]:$0A04-$0A0C>>>
+
+<<<window[76]:$0A0D-$0A15>>>
+
+<<<window[77]:$0A16-$0A1E>>>
+
+<<<window[78]:$0A1F-$0A27>>>
+
+<<<window[79]:$0A6B-$0A79>>>
+「You're safe now!」
+<<<window[80]:$0A82-$0A87>>>
+
+
+<<$1129115:52[$1136757]>>
+
+<<$1129115:53[$1136757]>>
+
+<<$1129115:54[$1131552]>>
+<<<window[0]:$000A-$001A>>>
+[FF0D1A]Surveying the map...
+
+<<$1129115:55[$1129991]>>
+<<<window[0]:$0036-$004E>>>
+[FF060D]Liam and friends
+[FF040F]head for Linark Castle
+<<<window[1]:$0062-$0098>>>
+[FF050B]Along the way, Professor
+[FF030D]Raddoc's assistant, Peacock
+[FF040F]must also be escorted
+[FF0611]to Pazta Village
+<<<window[2]:$00F6-$00F7>>>
+
+<<<window[3]:$00FA-$00FC>>>
+
+<<<window[4]:$010A-$010E>>>
+
+<<<window[5]:$0115-$0121>>>
+
+<<<window[6]:$0130-$0136>>>
+
+<<<window[7]:$016B-$017D>>>
+「Liam![wait20] Are you okay?」
+<<<window[8]:$0191-$01A6>>>
+「Yeah,[wait20] but more importantly, check on the professor.」
+<<<window[9]:$01B3-$01BB>>>
+[FFFD02]「You got it.」
+<<<window[10]:$01CB-$01D0>>>
+
+<<<window[11]:$01DA-$0204>>>
+「Oh,[wait20] TamTam.[wait30][nl]Take a look at this.[wait30][cls]I finally found it.」
+<<<window[12]:$0214-$023A>>>
+「Come now,[wait20] we can talk[nl]later.[wait20] Please hold still.[wait20]」
+<<<window[13]:$0283-$0291>>>
+
+<<<window[14]:$0297-$029B>>>
+
+<<<window[15]:$02A2-$02A6>>>
+
+<<<window[16]:$02B0-$02DD>>>
+「Oh, thanks. [wait30] But more[nl]importantly, this is huge.[wait30][cls] It was true after all!」
+<<<window[17]:$02E7-$030E>>>
+「Look at this ancient[nl]manuscript.[wait30][cls]See,[wait20] this part right here...」
+
+<<$1129115:56[$1136757]>>
+
+<<$1129115:57[$1136757]>>
+
+<<$1129115:58[$1136757]>>
+
+<<$1129115:59[$1136757]>>
+
+<<$1129115:60[$1136757]>>
+
+<<$1129115:61[$1136757]>>
+
+<<$1129115:62[$1136757]>>
+
+<<$1129115:63[$1136757]>>
+
+<<$1129115:64[$1136757]>>
+
+<<$1129115:65[$1136757]>>
+
+<<$1129115:66[$1136757]>>
+
+<<$1129115:67[$1136757]>>
+
+<<$1129115:68[$1136757]>>
+
+<<$1129115:69[$1136757]>>
+
+<<$1129115:70[$1136757]>>
+
+<<$1129115:71[$1136757]>>
+
+<<$1129115:72[$1136757]>>
+
+<<$1129115:73[$1136757]>>
+
+<<$1129115:74[$1136757]>>
+
+<<$1129115:75[$1136757]>>
+
+<<$1129115:76[$1136757]>>
+
+<<$1129115:77[$1136757]>>
+
+<<$1129115:78[$1136757]>>
+
+<<$1129115:79[$1136757]>>
+
+<<$1129115:80[$1139459]>>
+<<<window[0]:$002A-$0060>>>
+「Orders from Lord Fang and Lord Trump![nl][wait30] Don't let any intruders near here~!」
+<<<window[1]:$006A-$0074>>>
+「Hee-heee!」
+
+<<$1129115:81[$1139599]>>
+<<<window[0]:$005F-$008D>>>
+「Hahaha, looks like the rats walked into a trap.[nl][wait30] We'll surround them!」[FFFE00]
+
+<<$1129115:82[$1139746]>>
+<<<window[0]:$0015-$002E>>>
+[FF7F00]Heavy rain has created puddles.
+<<<window[1]:$00CB-$00D8>>>
+
+<<<window[2]:$010B-$010C>>>
+
+<<<window[3]:$010E-$010F>>>
+
+<<<window[4]:$0147-$0148>>>
+
+<<<window[5]:$01DB-$01E8>>>
+
+<<<window[6]:$020C-$020D>>>
+
+<<<window[7]:$020F-$0210>>>
+
+<<<window[8]:$0239-$023A>>>
+
+<<<window[9]:$02AF-$02BC>>>
+
+<<<window[10]:$02E5-$02E6>>>
+
+<<<window[11]:$02E8-$02E9>>>
+
+<<<window[12]:$0317-$0318>>>
+
+<<<window[13]:$03BF-$03CC>>>
+
+<<<window[14]:$03FF-$0400>>>
+
+<<<window[15]:$0402-$0403>>>
+
+<<<window[16]:$043B-$043C>>>
+
+
+<<$1129115:83[$1140962]>>
+<<<window[0]:$002D-$003C>>>
+「I'll destroy everything...」
+<<<window[1]:$0138-$014C>>>
+[FF7F01]A house was destroyed.[FFFE00]
+<<<window[2]:$0158-$015B>>>
+
+<<$1129115:84[$1141327]>>
+
+<<$1129115:85[$1141347]>>
+
+<<$1129115:86[$1141364]>>
+
+<<$1129115:87[$1141393]>>
+
+<<$1129115:88[$1141409]>>
+<<<window[0]:$0001-$000C>>>
+
+
+<<$1129115:89[$1141422]>>
+
+<<$1129115:90[$1141438]>>
+
+<<$1129115:91[$1141455]>>
+<<<window[0]:$000C-$001B>>>
+[FF7F00]The door has opened.
+<<<window[1]:$001E-$0027>>>
+
+<<<window[2]:$002C-$0035>>>
+
+<<$1129115:92[$1141516]>>
+<<<window[0]:$000C-$001B>>>
+[FF7F00]The door has opened.
+<<<window[1]:$004F-$0075>>>
+「Men, to arms!」[nl][wait30][FFFD00]Enemy reinforcements have appeared.
+
+<<$1129115:93[$1141703]>>
+
+<<$1129115:94[$1141726]>>
+
+<<$1129115:95[$1141750]>>
+<<<window[0]:$0025-$0039>>>
+「My other half, be reborn!」
+<<<window[1]:$0064-$0077>>>
+「I'm baaack![wait20] Hyaha!」
+<<<window[2]:$007B-$0091>>>
+[FF7F00]The monster has been revived.[FFFE00]
+<<<window[3]:$00AE-$00C2>>>
+「My other half, be reborn!」
+
+<<$1129115:96[$1141989]>>
+
+<<$1129115:97[$1142000]>>
+
+<<$1129115:98[$1142012]>>
+
+<<$1129115:99[$1142095]>>

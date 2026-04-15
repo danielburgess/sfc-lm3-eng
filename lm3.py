@@ -66,183 +66,9 @@ fmt_length = [
 ]
 
 
-def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filename='jap.tbl'):
+def extract_script_bins(file_name='base.sfc', folder_prefix='test', table_filename='jp_data/jap.tbl'):
     folder_name = f'{folder_prefix}_ptr_data'
-    #BF9B1B9C
-    tables = [
-        {   # main script data
-            'ptr_tbl_pos': 0x1B0000,
-            'tbl_len': 0x400,
-            'table_name': 'script'
-        },
-        {   # secondary script data (event scripts with embedded dialog)
-            # Master pointer table at $0A:$8010 (PC 0x050010), 120 entries × 2 bytes.
-            # Data blob starts at $0A:$8101 (PC 0x050101) right after the null terminator.
-            'ptr_tbl_pos': 0x050010,
-            'tbl_len': 0xF0,
-            'table_name': 'script_ext',
-            'event_script': False
-        },
-        {   # event script bytecodes with inline dialog text (bank $22)
-            'ptr_tbl_pos': 0x113A9B,
-            'tbl_len': 0xC8,
-            'table_name': 'event-text',
-            'event_script': True
-        },
-        {   # Scenario description
-            'ptr_tbl_pos': 0x111EE3,
-            'tbl_len': 0x13C,
-            'table_name': 'scenario-desc'
-        },
-        {   # unit and terrain and item descriptions
-            'ptr_tbl_pos': 0x30000,
-            'tbl_len': 0x500,
-            'table_name': 'unit-terrain-desc'
-        },
-        [   # data for unit attacks that are re-used (they seem to be exact) between the 5 unit type tables
-            {
-                'ptr_tbl_pos': 0x1B0800,
-                'tbl_len': 0x6A,
-                'table_name': 'unit-attacks',
-                'output': False
-            },
-            {
-                'ptr_tbl_pos': 0x1B0A00
-            },
-            {
-                'ptr_tbl_pos': 0x1B0C00
-            },
-            {
-                'ptr_tbl_pos': 0x1B0E00
-            },
-            {
-                'ptr_tbl_pos': 0x1B1000,
-                'output': True
-            },
-        ],
-        {   # unit equipment names (weapon + armor fields within 32-byte stat records)
-            'data_pos': 0x10050,
-            'data_len': 0x1FFE,
-            'block_len': 0x20,
-            'block_eval': [
-                {
-                    'label': 'weapon',
-                    'start': 0x0,
-                    'len': 0x9,
-                    'fill': 0x20
-                },
-                {
-                    'label': 'armor',
-                    'start': 0xC,
-                    'len': 0x9,
-                    'fill': 0x20
-                },
-            ],
-            'table_name': 'unit-equipment'
-        },
-        {   # playable unit names (8 bytes each, $20-padded)
-            'data_pos': 0x012050,
-            'data_len': 0x490,   # 146 entries × 8 bytes
-            'block_len': 0x8,
-            'block_eval': [
-                {
-                    'label': 'name',
-                    'start': 0x0,
-                    'len': 0x8,
-                    'fill': 0x20
-                },
-            ],
-            'table_name': 'unit-names'
-        },
-        {   # unit class/type names (12 bytes within 40-byte stat records)
-            'data_pos': 0x05C200,
-            'data_len': 0x5A0,   # 36 entries × 40 bytes
-            'block_len': 0x28,
-            'block_eval': [
-                {
-                    'label': 'class',
-                    'start': 0xC,
-                    'len': 0xC,
-                    'fill': 0x00
-                },
-            ],
-            'table_name': 'unit-classes'
-        },
-        {   # item/accessory names (9 bytes within 24-byte stat records)
-            'data_pos': 0x0124E0,
-            'data_len': 0xC00,   # 128 entries × 24 bytes
-            'block_len': 0x18,
-            'block_eval': [
-                {
-                    'label': 'item',
-                    'start': 0x0,
-                    'len': 0x9,
-                    'fill': 0x20
-                },
-            ],
-            'table_name': 'unit-items'
-        },
-        {   # supplementary character dialog (Charley, Momo, etc.)
-            'ptr_tbl_pos': 0x1B8000,
-            'tbl_len': 0x188,
-            'table_name': 'dialog-2'
-        },
-        {   # supplementary character dialog (Hauser, Weiss scenes)
-            'ptr_tbl_pos': 0x1B8100,
-            'tbl_len': 0x88,
-            'table_name': 'dialog-3'
-        },
-        {   # short dialog scenes (Yago)
-            'ptr_tbl_pos': 0x1B8200,
-            'tbl_len': 0x26,
-            'table_name': 'dialog-4'
-        },
-        {   # supplementary dialog (recruitment scenes, etc.)
-            'ptr_tbl_pos': 0x1B8300,
-            'tbl_len': 0xD0,
-            'table_name': 'dialog-5'
-        },
-        {   # quiz/trivia questions
-            'ptr_tbl_pos': 0x030800,
-            'tbl_len': 0xC0,
-            'table_name': 'quiz-text'
-        },
-        {   # field menu/shop/town text
-            'ptr_tbl_pos': 0x01BBB4,
-            'tbl_len': 0xEE,
-            'table_name': 'field-menu'
-        },
-        {   # field text (scenario/event descriptions)
-            'ptr_tbl_pos': 0x01BCA4,
-            'tbl_len': 0x5C,
-            'table_name': 'field-text'
-        },
-        {   # field NPC messages
-            'ptr_tbl_pos': 0x01BD00,
-            'tbl_len': 0x42,
-            'table_name': 'field-msg'
-        },
-        {   # battle menu prompts
-            'ptr_tbl_pos': 0x013100,
-            'tbl_len': 0x24,
-            'table_name': 'battle-menu'
-        },
-        {   # battle text (equip, items, save/load, scenario select, etc.)
-            'ptr_tbl_pos': 0x013124,
-            'tbl_len': 0xDC,
-            'table_name': 'battle-text',
-            # Entry 19's slot holds the "Animation Test" debug menu and a
-            # long list of spell-announcement strings after the visible
-            # [end] — only reachable via raw FF C0 pins from elsewhere.
-            # Extract the full slot so it can be translated / labeled.
-            'full_extent_entries': [19],
-        },
-        {   # battle messages (spell/item use, status effects)
-            'ptr_tbl_pos': 0x013200,
-            'tbl_len': 0x70,
-            'table_name': 'battle-msg'
-        },
-    ]
+    tables = _build_extract_tables()
 
     # 0x1456B - Unit Attribute Value Pointer (0x3 length) - 2 byte height, weight, 1 byte age
     # 0x1457F - Unit Weapon Name Pointer - Preceeding byte is entry length
@@ -731,7 +557,7 @@ def hexify_text(text, jp_tbl, en_tbl):
     return ''.join(result)
 
 
-def hexify_en_files(en_folder, jp_table_path='jap.tbl', en_table_path='eng.tbl',
+def hexify_en_files(en_folder, jp_table_path='jp_data/jap.tbl', en_table_path='en_data/eng.tbl',
                     tables_filter=None):
     """
     Convert remaining Japanese text in English dump files to hex byte placeholders.
@@ -1169,9 +995,9 @@ def get_character_widths(image_path, spacing=1):
     return character_widths
 
 
-def font_width_preview(font_bin_path='font/bin/font_accented_1bpp.bin',
-                       widths_bin_path='font/font_accented_widths.bin',
-                       table_path='eng.tbl', output_path='font/font_accented_preview.png',
+def font_width_preview(font_bin_path='en_data/bin/fonts/font_accented_1bpp.bin',
+                       widths_bin_path='en_data/fonts/font_accented_widths.bin',
+                       table_path='en_data/eng.tbl', output_path='en_data/fonts/font_accented_preview.png',
                        scale=3, chars_per_row=16, first_char=0x00, last_char=0xF0):
     """
     Generate a visual preview of the VWF font with width boundaries.
@@ -1278,90 +1104,103 @@ def font_width_preview(font_bin_path='font/bin/font_accented_1bpp.bin',
 
 # Tables that can be inserted with insert_table_into_rom.
 # script_ext and unit-equipment require special handling and are not listed here.
-SCRIPT_TABLES = [
-    # All tables use in-place insertion with FFC0 overflow to bank $C6.
-    # Original pointer tables are unchanged — no relocation or metatbl patches needed.
+import os as _os
+from retrotool.project import load_project, load_datadefs
 
-    # Main script: 512 entries × 2-byte ptrs at $1B:$8000.
-    {'name': 'script',           'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
-    # Dialog tables: ptr tables live at $1B8000-$1B83CF.
-    {'name': 'dialog-2',         'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
-    {'name': 'dialog-3',         'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
-    {'name': 'dialog-4',         'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
-    {'name': 'dialog-5',         'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
-    # scenario-desc: 158 entries × 2-byte ptrs at $22:$9EE3.
-    # Contains [FFC0@58:label] cross-entry references.
-    {'name': 'scenario-desc',    'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C,
-                                  'word_wrap': {'line_width': 26, 'max_lines': 6,
-                                                'entries': '0-56'},
-                                  'textbuf_limit': 0x1F0},
-    # unit-terrain-desc: 640 entries × 2-byte ptrs.  Data at $030A00.
-    {'name': 'unit-terrain-desc','ptr_tbl_pos': 0x030000, 'tbl_len': 0x500,
-                                  'data_start_pc': 0x030A00},
-    # unit-attacks: 53 entries × 2-byte ptrs.  Data at $1B1200.
-    {'name': 'unit-attacks',     'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A,
-                                  'data_start_pc': 0x1B1200},
-    # quiz-text: 96 entries × 2-byte ptrs at $06:$8800.
-    {'name': 'quiz-text',        'ptr_tbl_pos': 0x030800, 'tbl_len': 0xC0},
-    # field region: three contiguous pointer sub-tables.
-    {'name': 'field-menu',       'ptr_tbl_pos': 0x01BBB4, 'tbl_len': 0x0EE,
-                                  'data_start_pc': 0x01C0F1},
-    {'name': 'field-text',       'ptr_tbl_pos': 0x01BCA4, 'tbl_len': 0x05C,
-                                  'data_start_pc': 0x01E348},
-    {'name': 'field-msg',        'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042,
-                                  'data_start_pc': 0x01F2B7},
-    # script_ext: 120 entries × 2-byte ptrs at $0A:$8010.  Data at $0A:$8101.
-    # Bytecodes with absolute addresses — cannot be relocated.
-    {'name': 'script_ext',       'ptr_tbl_pos': 0x050010, 'tbl_len': 0x0F0,
-                                  'data_start_pc': 0x050101},
-    # event-text: 100 event bytecode entries with inline text (bank $22).
-    # Bytecodes with absolute addresses — cannot be relocated.
-    {'name': 'event-text',       'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0xC8,
-                                  'event_script': True},
-    # battle tables: original 2-byte ptr tables in bank $02.
-    {'name': 'battle-menu',      'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
-    {'name': 'battle-text',      'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
-    {'name': 'battle-msg',       'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
-]
-
-# All four dialog ptr tables end by $1B83D0; pack dialog text from here.
-DIALOG_TEXT_BASE = 0x1B83D0
-
-# Fixed-length tables: text fields embedded in stat/data records.
-# These are written in-place (no pointer table) — encoded text is padded/truncated
-# to fit the fixed field width and patched directly into the ROM record.
-FIXED_TABLES = [
-    {   'name': 'unit-names',
-        'data_pos': 0x220000,     # relocated to bank $C4:8000 (expanded ROM)
-        'entries': 146,
-        'block_len': 0x10,        # 16 bytes per entry (was 8)
-        'fields': [{'label': 'name', 'start': 0x0, 'len': 0x10, 'fill': 0x20}],
-    },
-    {   'name': 'unit-classes',
-        'data_pos': 0x05C200,
-        'entries': 36,
-        'block_len': 0x28,
-        'fields': [{'label': 'class', 'start': 0xC, 'len': 0xC, 'fill': 0x00}],
-    },
-    {   'name': 'unit-items',
-        'data_pos': 0x0124E0,
-        'entries': 128,
-        'block_len': 0x18,
-        'fields': [{'label': 'item', 'start': 0x0, 'len': 0x9, 'fill': 0x20}],
-    },
-    {   'name': 'unit-equipment',
-        'data_pos': 0x010050,
-        'entries': 256,
-        'block_len': 0x20,
-        'fields': [
-            {'label': 'weapon', 'start': 0x0, 'len': 0x9, 'fill': 0x20},
-            {'label': 'armor',  'start': 0xC, 'len': 0x9, 'fill': 0x20},
-        ],
-    },
-]
+_PROJECT_ROOT = _os.path.dirname(_os.path.abspath(__file__))
+_PROJECT = load_project(_PROJECT_ROOT)
+_DATADEFS = load_datadefs(_PROJECT)
 
 
-def build_font(font_png='font/font_accented.png', force=False):
+def _datadef_to_script_entry(d):
+    out = {'name': d.name,
+           'ptr_tbl_pos': d.pointers.address,
+           'tbl_len': d.pointers.count * d.pointers.size}
+    if d.pointers.size != 2:
+        out['ptr_size'] = d.pointers.size
+    if d.data and d.data.start is not None:
+        out['data_start_pc'] = d.data.start
+    for k in ('event_script', 'word_wrap', 'textbuf_limit', 'dte', 'group',
+              'full_extent_entries', 'mirror_ptr_tables'):
+        if k in d.extras:
+            out[k] = d.extras[k]
+    return out
+
+
+def _datadef_to_fixed_entry(d):
+    out = {'name': d.name,
+           'data_pos': d.data.start,
+           'entries': d.extras['entries'],
+           'block_len': d.extras['block_len'],
+           'fields': d.extras['fields']}
+    for k in ('source_data_start', 'extract_data_len',
+              'extract_block_len', 'extract_fields'):
+        if k in d.extras:
+            out[k] = d.extras[k]
+    return out
+
+
+def _build_extract_tables():
+    """Rebuild the legacy extract_script_bins tables list from _DATADEFS.
+    Preserves pointer/fixed ordering and LM3-specific extras
+    (mirror_ptr_tables, full_extent_entries, event_script, field overrides)."""
+    tables = []
+    for d in _DATADEFS:
+        if d.type == 'pointer':
+            entry = {
+                'ptr_tbl_pos': d.pointers.address,
+                'tbl_len': d.pointers.count * d.pointers.size,
+                'table_name': d.name,
+            }
+            if d.extras.get('event_script'):
+                entry['event_script'] = True
+            if 'full_extent_entries' in d.extras:
+                entry['full_extent_entries'] = list(d.extras['full_extent_entries'])
+            mirrors = d.extras.get('mirror_ptr_tables')
+            if mirrors:
+                primary = dict(entry)
+                primary['output'] = False
+                group = [primary]
+                for i, addr in enumerate(mirrors):
+                    sub = {'ptr_tbl_pos': addr}
+                    if i == len(mirrors) - 1:
+                        sub['output'] = True
+                    group.append(sub)
+                tables.append(group)
+            else:
+                tables.append(entry)
+        elif d.type == 'fixed':
+            data_pos = d.extras.get('source_data_start', d.data.start)
+            data_len = d.extras.get('extract_data_len',
+                                    d.extras['entries'] * d.extras['block_len'])
+            block_len = d.extras.get('extract_block_len', d.extras['block_len'])
+            fields = d.extras.get('extract_fields', d.extras['fields'])
+            tables.append({
+                'data_pos': data_pos,
+                'data_len': data_len,
+                'block_len': block_len,
+                'block_eval': fields,
+                'table_name': d.name,
+            })
+    return tables
+
+
+SCRIPT_TABLES = [_datadef_to_script_entry(d) for d in _DATADEFS if d.type == 'pointer']
+FIXED_TABLES  = [_datadef_to_fixed_entry(d)  for d in _DATADEFS if d.type == 'fixed']
+DIALOG_TEXT_BASE = _PROJECT.extras.get('dialog_text_base', 0x1B83D0)
+
+
+def _bin_dir(folder: str) -> str:
+    """Map a data folder to its sibling bin cache dir.
+    e.g. 'en_data/scripts' -> 'en_data/bin/scripts';
+         'en_data/fonts'   -> 'en_data/bin/fonts'."""
+    parent = _os.path.dirname(folder)
+    if not parent:
+        return _os.path.join(folder, 'bin')
+    return _os.path.join(parent, 'bin', _os.path.basename(folder))
+
+
+def build_font(font_png='en_data/fonts/font_accented.png', force=False):
     """
     Generate all font binary files needed by the build.
 
@@ -1375,8 +1214,8 @@ def build_font(font_png='font/font_accented.png', force=False):
     """
     import hashlib, os
 
-    font_dir = os.path.dirname(font_png) or 'font'
-    cache_dir = os.path.join(font_dir, 'bin')
+    font_dir = os.path.dirname(font_png) or 'en_data/fonts'
+    cache_dir = _bin_dir(font_dir)
     os.makedirs(cache_dir, exist_ok=True)
 
     stem = os.path.splitext(os.path.basename(font_png))[0]
@@ -1594,7 +1433,7 @@ def encode_script_file(script_file: str, table_filename: str,
     """
     Encode a script file into a list of binary entries, one per <<index>> block.
 
-    Uses a bin cache in cache_dir (e.g. en_ptr_data/bin/) to skip re-encoding
+    Uses a bin cache in cache_dir (e.g. en_data/bin/scripts/) to skip re-encoding
     when neither the script file nor the table file have changed.  The cache
     stores:
       {cache_dir}/{name}.bin       — concatenated encoded entries with 4-byte
@@ -1965,7 +1804,7 @@ def insert_table_into_rom(rom: bytearray, script_file: str, table_filename: str,
                           Defaults to ptr_tbl_pos + tbl_len.
                           Use this to skip preserved JP data structures or to
                           pack multiple tables into a shared text region.
-    :param cache_dir: Directory for encoded bin cache (e.g. en_ptr_data/bin/).
+    :param cache_dir: Directory for encoded bin cache (e.g. en_data/bin/scripts/).
 
     Returns total bytes written (text only, not pointer table).
     """
@@ -2126,9 +1965,9 @@ DTE_TRIGGER_TBL2 = bytes([0xFF, 0xF8])  # FF F8 INDEX
 DTE_RETURN = bytes([0xFF, 0xF6])         # FF F6 (appended to expansion string)
 
 
-def _collect_ffc0_pins(en_folder: str = 'en_ptr_data') -> set:
+def _collect_ffc0_pins(en_folder: str = 'en_data/scripts') -> set:
     """
-    Scan all en_ptr_data .txt files for raw [FFC0HHLLBB] hex literals and
+    Scan all en_data/scripts .txt files for raw [FFC0HHLLBB] hex literals and
     return the set of target PC offsets they reference.
 
     These pins represent absolute SNES addresses baked into text data — typically
@@ -2281,16 +2120,15 @@ def _find_safe_split(encoded: bytes, max_inline: int, ctrl_lengths: dict,
     return last_safe
 
 
-def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
-                     ptr_tbl_pos: int, tbl_len: int, source_rom: bytes,
-                     dte_table_num: int = 1,
-                     data_start_pc: int = None,
-                     cache_dir: str = None, force: bool = False,
-                     fallback_table: str = None,
-                     event_script: bool = False,
-                     word_wrap: dict = None,
-                     textbuf_limit: int = None,
-                     ffc0_pins: set = None) -> dict:
+def insert_table_with_expansion(rom: bytearray, script_file: str, table_filename: str,
+                                ptr_tbl_pos: int, tbl_len: int, source_rom: bytes,
+                                data_start_pc: int = None,
+                                cache_dir: str = None, force: bool = False,
+                                fallback_table: str = None,
+                                event_script: bool = False,
+                                word_wrap: dict = None,
+                                textbuf_limit: int = None,
+                                verbose=False) -> dict:
     """
     Universal in-place script insertion.  Each entry is written back to its
     original ROM location.  If the encoded English text is longer than the
@@ -2331,11 +2169,16 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
     # For event_script, 0x00 is not a terminator; use pointer-distance instead.
     ref_pc = data_start_pc if data_start_pc else ptr_tbl_pos
     bank_end_pc = ((ref_pc // 0x8000) + 1) * 0x8000
-    sorted_pcs = sorted(set(orig_pcs))
+    # retrotool 0.9.0: SFCAddress returns None for SNES addrs outside the
+    # LoROM window (e.g. $22:0011 system-area mirror ptrs that appear as
+    # unused trailer entries in scene-desc-name). These get skipped below
+    # (empty encoded → continue at the seen/encoded==\\x00 checks).
+    valid_pcs = [pc for pc in orig_pcs if pc is not None]
+    sorted_pcs = sorted(set(valid_pcs))
     rom_as_list = list(source_rom)  # find_entry_end expects list
 
     orig_entry_sizes = {}  # pc -> entry size as extraction sees it
-    for pc in set(orig_pcs):
+    for pc in set(valid_pcs):
         idx = sorted_pcs.index(pc)
         next_pc = sorted_pcs[idx + 1] if idx + 1 < len(sorted_pcs) else bank_end_pc
         if event_script:
@@ -2451,10 +2294,11 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                 ])
                 overflow_tail = text_content + b'\xFF\xC0' + return_addr
 
-                print(f'  SPLIT entry {i}: encoded={len(encoded)} max={max_size} '
-                      f'tw={tw_start}-{tw_end} split={split} '
-                      f'text={len(text_content)}b overflow={len(overflow_tail)}b '
-                      f'return→${return_snes:06X}')
+                if verbose:
+                    print(f'  SPLIT entry {i}: encoded={len(encoded)} max={max_size} '
+                          f'tw={tw_start}-{tw_end} split={split} '
+                          f'text={len(text_content)}b overflow={len(overflow_tail)}b '
+                          f'return→${return_snes:06X}')
             else:
                 split = _find_safe_split(encoded, max_size, ctrl_lengths,
                                          event_script=False, reserve=5)
@@ -2526,7 +2370,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
                 continue
             resolved_tail_fixups.append((tail_off, snes))
             ref = f'FFC0@{target_idx}:{label}' if label else f'FFC0@{target_idx}'
-            print(f'    entry {entry_idx} tail {ref} → ${snes:06X}')
+            if verbose:
+                print(f'    entry {entry_idx} tail {ref} → ${snes:06X}')
         resolved_overflow.append((entry_idx, fixup_pc, tail, resolved_tail_fixups))
     ffc0_overflow = resolved_overflow
 
@@ -2538,7 +2383,8 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
         rom[rom_pc + 1] = (target_snes >> 8) & 0xFF
         rom[rom_pc + 2] = (target_snes >> 16) & 0xFF
         ref = f'FFC0@{target_idx}:{label}' if label else f'FFC0@{target_idx}'
-        print(f'    {ref} → ${target_snes:06X}')
+        if verbose:
+            print(f'    {ref} → ${target_snes:06X}')
 
     return {
         'ffc0_overflow': ffc0_overflow,
@@ -2548,49 +2394,49 @@ def insert_dte_table(rom: bytearray, script_file: str, table_filename: str,
     }
 
 
-def write_dte_expansion(rom: bytearray, dte_results: list[dict]):
-    """
-    Write DTE expansion strings and pointer tables into bank $C6.
-
-    :param dte_results: list of dicts from insert_dte_table() calls
-    """
-    from retrotool.snes import SFCAddress, SFCAddressType
-
-    for result in dte_results:
-        tbl_num = result['dte_table_num']
-        entries = result['dte_entries']
-        if not entries:
-            continue
-
-        if tbl_num == 1:
-            ptr_pc = DTE_TABLE1_PTR_PC
-            data_pc = DTE_TABLE1_DATA_PC
-        else:
-            ptr_pc = DTE_TABLE2_PTR_PC
-            data_pc = DTE_TABLE2_DATA_PC
-
-        # Ensure ROM is large enough for expansion area.
-        max_needed = data_pc + sum(len(exp) for _, exp in entries)
-        if max_needed > len(rom):
-            rom.extend(b'\xff' * (max_needed - len(rom)))
-
-        # Write expansion strings and build pointer table.
-        data_offset = data_pc
-        for dte_idx, expansion in entries:
-            # Write 2-byte within-bank pointer.
-            snes_addr = SFCAddress(data_offset).get_address(SFCAddressType.LOROM2)
-            ptr_val = snes_addr & 0xFFFF  # within-bank 16-bit address
-            ptr_off = ptr_pc + dte_idx * 2
-            rom[ptr_off] = ptr_val & 0xFF
-            rom[ptr_off + 1] = (ptr_val >> 8) & 0xFF
-
-            # Write expansion string data.
-            rom[data_offset:data_offset + len(expansion)] = expansion
-            data_offset += len(expansion)
-
-        total_data = data_offset - data_pc
-        print(f'  DTE table {tbl_num}: {len(entries)} expansion strings, '
-              f'{total_data} bytes in bank $C6')
+# def write_dte_expansion(rom: bytearray, dte_results: list[dict]):
+#     """
+#     Write DTE expansion strings and pointer tables into bank $C6.
+#
+#     :param dte_results: list of dicts from insert_dte_table() calls
+#     """
+#     from retrotool.snes import SFCAddress, SFCAddressType
+#
+#     for result in dte_results:
+#         tbl_num = result['dte_table_num']
+#         entries = result['dte_entries']
+#         if not entries:
+#             continue
+#
+#         if tbl_num == 1:
+#             ptr_pc = DTE_TABLE1_PTR_PC
+#             data_pc = DTE_TABLE1_DATA_PC
+#         else:
+#             ptr_pc = DTE_TABLE2_PTR_PC
+#             data_pc = DTE_TABLE2_DATA_PC
+#
+#         # Ensure ROM is large enough for expansion area.
+#         max_needed = data_pc + sum(len(exp) for _, exp in entries)
+#         if max_needed > len(rom):
+#             rom.extend(b'\xff' * (max_needed - len(rom)))
+#
+#         # Write expansion strings and build pointer table.
+#         data_offset = data_pc
+#         for dte_idx, expansion in entries:
+#             # Write 2-byte within-bank pointer.
+#             snes_addr = SFCAddress(data_offset).get_address(SFCAddressType.LOROM2)
+#             ptr_val = snes_addr & 0xFFFF  # within-bank 16-bit address
+#             ptr_off = ptr_pc + dte_idx * 2
+#             rom[ptr_off] = ptr_val & 0xFF
+#             rom[ptr_off + 1] = (ptr_val >> 8) & 0xFF
+#
+#             # Write expansion string data.
+#             rom[data_offset:data_offset + len(expansion)] = expansion
+#             data_offset += len(expansion)
+#
+#         total_data = data_offset - data_pc
+#         print(f'  DTE table {tbl_num}: {len(entries)} expansion strings, '
+#               f'{total_data} bytes in bank $C6')
 
 
 # ---------------------------------------------------------------------------
@@ -2610,7 +2456,8 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
                                  tbl_len: int, source_rom: bytes,
                                  fallback_table: str = None,
                                  force: bool = False,
-                                 cache_dir: str = None) -> dict:
+                                 cache_dir: str = None,
+                                 verbose: bool = False) -> dict:
     """
     Insert event-script text using the windowed format.  For each text window
     in each entry, writes [P] + FFC0 redirect at the window's original ROM
@@ -2720,7 +2567,7 @@ def insert_event_script_windowed(rom: bytearray, script_file: str,
     return {'ffc0_overflow': ffc0_overflow}
 
 
-def write_ffc0_overflow(rom: bytearray, dte_results: list[dict]):
+def write_ffc0_overflow(rom: bytearray, dte_results: list[dict], verbose: bool = False):
     """
     Write FFC0 overflow tails into bank $C6 and patch the inline FFC0
     placeholders with the resolved SNES addresses.
@@ -2766,7 +2613,8 @@ def write_ffc0_overflow(rom: bytearray, dte_results: list[dict]):
         rom[fixup_pc + 1] = (snes >> 8) & 0xFF
         rom[fixup_pc + 2] = (snes >> 16) & 0xFF
 
-        print(f'    entry {entry_idx}: FFC0 → ${snes:06X} ({len(overflow_tail)} bytes)')
+        if verbose:
+            print(f'    entry {entry_idx}: FFC0 → ${snes:06X} ({len(overflow_tail)} bytes)')
         data_offset += len(overflow_tail)
 
     total_data = data_offset - data_pc
@@ -2883,13 +2731,15 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
 
     # Compute checksum over script + table file + source files.
     h = hashlib.sha256()
-    src_dir = os.path.dirname(os.path.abspath(__file__))
-    source_files = [
-        os.path.join(src_dir, 'lm3.py'),
-        os.path.join(src_dir, 'retrotool', 'script.py'),
-        os.path.join(src_dir, 'retrotool', 'snes.py'),
-    ]
-    for path in [script_file, table_filename] + source_files:
+    # NO NEED TO COMPUTE HASH INCLUDING SOURCE FILES
+    # WHEN A BREAKING CHANGE IS MADE, USE --FORCE
+    # src_dir = os.path.dirname(os.path.abspath(__file__))
+    # source_files = [
+    #     os.path.join(src_dir, 'lm3.py'),
+    #     os.path.join(src_dir, 'retrotool', 'script.py'),
+    #     os.path.join(src_dir, 'retrotool', 'snes.py'),
+    # ]
+    for path in [script_file, table_filename]:
         with open(path, 'rb') as f:
             h.update(f.read())
     if fallback_table:
@@ -2897,14 +2747,14 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
             h.update(f.read())
     current_checksum = h.hexdigest()
 
-    # Check cache.
+    # Check cache if it's not forced
     bin_path = cksum_path = None
-    if cache_dir:
+    if cache_dir and not force:
         os.makedirs(cache_dir, exist_ok=True)
         bin_path = os.path.join(cache_dir, f'{name}.bin')
         cksum_path = os.path.join(cache_dir, f'{name}.checksum')
 
-        if not force and os.path.exists(cksum_path) and os.path.exists(bin_path):
+        if os.path.exists(cksum_path) and os.path.exists(bin_path):
             with open(cksum_path, 'r') as f:
                 cached_checksum = f.read().strip()
             if cached_checksum == current_checksum:
@@ -3002,17 +2852,19 @@ def insert_fixed_table(rom: bytearray, script_file: str, table_filename: str,
                 f.write(rom_offset.to_bytes(4, 'little'))
                 f.write(len(padded).to_bytes(4, 'little'))
                 f.write(padded)
-        with open(cksum_path, 'w') as f:
-            f.write(current_checksum)
+        if cksum_path:
+            with open(cksum_path, 'w') as f:
+                f.write(current_checksum)
 
     return written
 
 
 def insert_all_fixed(rom: bytearray,
-                     en_folder: str = 'en_ptr_data',
-                     table_filename: str = 'eng.tbl',
+                     en_folder: str = 'en_data/scripts',
+                     table_filename: str = 'en_data/eng.tbl',
                      tables_filter: list = None,
-                     force: bool = False):
+                     force: bool = False,
+                     verbose: bool = False):
     """
     Insert all fixed-length translated text tables into the ROM bytearray.
     """
@@ -3028,8 +2880,8 @@ def insert_all_fixed(rom: bytearray,
             print(f'  skip {name} (not found: {script_file})')
             continue
 
-        fb_tbl = 'jap.tbl' if table_filename != 'jap.tbl' else None
-        cache_dir = os.path.join(en_folder, 'bin')
+        fb_tbl = 'jp_data/jap.tbl' if table_filename != 'jp_data/jap.tbl' else None
+        cache_dir = _bin_dir(en_folder)
         written = insert_fixed_table(rom, script_file, table_filename,
                                      tbl_info, fallback_table=fb_tbl,
                                      cache_dir=cache_dir, force=force)
@@ -3255,12 +3107,13 @@ def fixup_event_text_addresses(rom: bytearray, source_rom_path: str,
 
 
 def insert_all_scripts(rom_path: str,
-                       en_folder: str = 'en_ptr_data',
-                       table_filename: str = 'eng.tbl',
+                       en_folder: str = 'en_data/scripts',
+                       table_filename: str = 'en_data/eng.tbl',
                        tables_filter: list = None,
                        jp_tables: set = None,
                        force: bool = False,
-                       source_rom: str = 'lm3.sfc'):
+                       source_rom: str = 'lm3.sfc',
+                       verbose=False):
     """
     Insert translated script tables into rom_path in place.
 
@@ -3303,9 +3156,9 @@ def insert_all_scripts(rom_path: str,
             print(f'  skip {name} (not found: {script_file})')
             continue
 
-        cache_dir = os.path.join(folder, 'bin')
+        cache_dir = _bin_dir(folder)
         # When encoding with eng.tbl, use jap.tbl as fallback for untranslated chars
-        fb_tbl = 'jap.tbl' if tbl_file != 'jap.tbl' else None
+        fb_tbl = 'jp_data/jap.tbl' if tbl_file != 'jp_data/jap.tbl' else None
         jobs.append((tbl_info, script_file, tbl_file, cache_dir, lang_tag, fb_tbl))
 
     # Pre-encode all scripts in parallel (encoding is CPU-bound; ROM writes are serial).
@@ -3332,10 +3185,10 @@ def insert_all_scripts(rom_path: str,
 
     # Pre-scan all en files for raw [FFC0HHLLBB] pins.  Entries whose interior
     # is referenced by such pins must be preserved as JP (translation would
-    # invalidate the external reference).
-    ffc0_pins = _collect_ffc0_pins(en_folder)
-    if ffc0_pins:
-        print(f'  collected {len(ffc0_pins)} external FFC0 pin target(s)')
+    # invalidate the external reference). No longer used.
+    # ffc0_pins = _collect_ffc0_pins(en_folder)
+    # if ffc0_pins:
+    #     print(f'  collected {len(ffc0_pins)} external FFC0 pin target(s)')
 
     # Insert all tables in-place with FFC0 overflow to bank $C6.
     print('Inserting into ROM (in-place + FFC0 overflow)...')
@@ -3353,12 +3206,13 @@ def insert_all_scripts(rom_path: str,
                 fallback_table=fb_tbl,
                 force=force,
                 cache_dir=cache_dir,
+                verbose=verbose
             )
             all_results.append(result)
             ffc0_count = len(result.get('ffc0_overflow', []))
             print(f'  {name}: {ffc0_count} window redirects → FFC0{lang_tag}')
         else:
-            result = insert_dte_table(
+            result = insert_table_with_expansion(
                 rom, script_file, tbl_file,
                 tbl_info['ptr_tbl_pos'], tbl_info['tbl_len'],
                 source_rom=orig_rom,
@@ -3368,7 +3222,7 @@ def insert_all_scripts(rom_path: str,
                 event_script=False,
                 word_wrap=tbl_info.get('word_wrap'),
                 textbuf_limit=tbl_info.get('textbuf_limit'),
-                ffc0_pins=ffc0_pins,
+                verbose=verbose,
             )
             all_results.append(result)
             oc = result['overflow_count']
@@ -3400,7 +3254,7 @@ def insert_all_scripts(rom_path: str,
 
     # Write FFC0 overflow data to bank $C6.
     if all_results:
-        write_ffc0_overflow(rom, all_results)
+        write_ffc0_overflow(rom, all_results, verbose)
 
     with open(rom_path, 'wb') as f:
         f.write(rom)
@@ -3410,13 +3264,14 @@ def insert_all_scripts(rom_path: str,
 
 def build_scripted(source: str = 'lm3.sfc',
                    output: str = 'out/lm3_scripted.sfc',
-                   font_png: str = 'font/font_accented.png',
+                   font_png: str = 'en_data/fonts/font_accented.png',
                    font_rom_offset: int = 0x170000,
-                   en_folder: str = 'en_ptr_data',
-                   table_filename: str = 'eng.tbl',
+                   scripts_folder: str = 'en_data/scripts',
+                   table_filename: str = 'en_data/eng.tbl',
                    tables_filter: list = None,
                    jp_tables: set = None,
-                   force: bool = False):
+                   force: bool = False,
+                   verbose: bool = False):
     """
     Build the scripted ROM: font patch + all script insertions.
 
@@ -3437,9 +3292,9 @@ def build_scripted(source: str = 'lm3.sfc',
     shutil.copy2(source, output)
 
     # Patch the already-built IL font binary into the ROM.
-    font_dir = os.path.dirname(font_png) or 'font'
+    font_dir = os.path.dirname(font_png) or 'en_data/fonts'
     stem = os.path.splitext(os.path.basename(font_png))[0]
-    il_path = os.path.join(font_dir, 'bin', f'{stem}_1bppil.bin')
+    il_path = os.path.join(_bin_dir(font_dir), f'{stem}_1bppil.bin')
     with open(il_path, 'rb') as f:
         font_data = f.read()
     with open(output, 'r+b') as f:
@@ -3447,14 +3302,15 @@ def build_scripted(source: str = 'lm3.sfc',
         f.write(font_data)
     print(f'  Font patched into ROM at 0x{font_rom_offset:X}')
 
-    insert_all_scripts(output, en_folder=en_folder, table_filename=table_filename,
-                       tables_filter=tables_filter, jp_tables=jp_tables, force=force)
+    insert_all_scripts(output, en_folder=scripts_folder, table_filename=table_filename,
+                       tables_filter=tables_filter, jp_tables=jp_tables,
+                       force=force, verbose=verbose)
 
     # Insert fixed-length tables (unit names, classes, items, equipment).
     with open(output, 'rb') as f:
         rom = bytearray(f.read())
-    insert_all_fixed(rom, en_folder=en_folder, table_filename=table_filename,
-                     tables_filter=tables_filter, force=force)
+    insert_all_fixed(rom, en_folder=scripts_folder, table_filename=table_filename,
+                     tables_filter=tables_filter, force=force, verbose=verbose)
     with open(output, 'wb') as f:
         f.write(rom)
 
@@ -3482,14 +3338,14 @@ def build_scripted(source: str = 'lm3.sfc',
     import os as _os
     import subprocess
 
-    asm_patches = ['debug_mode_patch.asm']
+    asm_patches = ['asm/debug_mode_patch.asm']
     # name_expansion_patch relocates unit-name reads to $C4:8000.  Only safe
     # when unit-names is actually being inserted — otherwise the expansion
     # region is uninitialized (0xFF) and the space-terminated copy loop runs
     # away forever.
     building_unit_names = tables_filter is None or 'unit-names' in tables_filter
     if target >= 4 * 1024 * 1024 and building_unit_names:
-        asm_patches.append('name_expansion_patch.asm')
+        asm_patches.append('asm/name_expansion_patch.asm')
 
     for patch_file in asm_patches:
         if not _os.path.exists(patch_file):
@@ -3512,7 +3368,7 @@ def build_scripted(source: str = 'lm3.sfc',
 
 def build_vwf(source: str = 'out/lm3_scripted.sfc',
               output: str = 'out/lm3_en.sfc',
-              patch: str = 'vwf_patch.asm',
+              patch: str = 'asm/vwf_patch.asm',
               asar_path: str = 'disassembly/asar'):
     """
     Apply the VWF assembly patch to the scripted ROM.
@@ -3553,14 +3409,15 @@ def build_vwf(source: str = 'out/lm3_scripted.sfc',
 def build(source: str = 'lm3.sfc',
           scripted: str = 'out/lm3_scripted.sfc',
           output: str = 'out/lm3_en.sfc',
-          patch: str = 'vwf_patch.asm',
-          font_png: str = 'font/font_accented.png',
-          en_folder: str = 'en_ptr_data',
-          table_filename: str = 'eng.tbl'):
+          patch: str = 'asm/vwf_patch.asm',
+          font_png: str = 'en_data/fonts/font_accented.png',
+          en_folder: str = 'en_data/scripts',
+          table_filename: str = 'en_data/eng.tbl',
+          verbose: bool = False):
     """Full build: font → scripts → VWF patch."""
     print('=== FULL BUILD ===')
     build_scripted(source=source, output=scripted, font_png=font_png,
-                   en_folder=en_folder, table_filename=table_filename)
+                   scripts_folder=en_folder, table_filename=table_filename, verbose=verbose)
     build_vwf(source=scripted, output=output, patch=patch)
     print('=== BUILD COMPLETE ===')
 
@@ -3569,28 +3426,16 @@ def build(source: str = 'lm3.sfc',
 # Round-trip verification
 # ============================================================================
 
-# Extraction table definitions — maps table names to their original ROM layout
-# for round-trip verification.  Must match the extract_script_bins() tables.
-EXTRACT_TABLES = {
-    'script':           {'ptr_tbl_pos': 0x1B0000, 'tbl_len': 0x400},
-    'scenario-desc':    {'ptr_tbl_pos': 0x111EE3, 'tbl_len': 0x13C},
-    'unit-terrain-desc':{'ptr_tbl_pos': 0x030000, 'tbl_len': 0x500},
-    'unit-attacks':     {'ptr_tbl_pos': 0x1B0800, 'tbl_len': 0x06A},
-    'quiz-text':        {'ptr_tbl_pos': 0x030800, 'tbl_len': 0x0C0},
-    'dialog-2':         {'ptr_tbl_pos': 0x1B8000, 'tbl_len': 0x188},
-    'dialog-3':         {'ptr_tbl_pos': 0x1B8100, 'tbl_len': 0x088},
-    'dialog-4':         {'ptr_tbl_pos': 0x1B8200, 'tbl_len': 0x026},
-    'dialog-5':         {'ptr_tbl_pos': 0x1B8300, 'tbl_len': 0x0D0},
-    'field-menu':       {'ptr_tbl_pos': 0x01BBB4, 'tbl_len': 0x0EE},
-    'field-text':       {'ptr_tbl_pos': 0x01BCA4, 'tbl_len': 0x05C},
-    'field-msg':        {'ptr_tbl_pos': 0x01BD00, 'tbl_len': 0x042},
-    'battle-menu':      {'ptr_tbl_pos': 0x013100, 'tbl_len': 0x024},
-    'battle-text':      {'ptr_tbl_pos': 0x013124, 'tbl_len': 0x0DC},
-    'battle-msg':       {'ptr_tbl_pos': 0x013200, 'tbl_len': 0x070},
-    'script_ext':       {'ptr_tbl_pos': 0x050010, 'tbl_len': 0x0F0},
-    'event-text':       {'ptr_tbl_pos': 0x113A9B, 'tbl_len': 0x0C8,
-                         'event_script': True},
-}
+# Extraction table definitions — derived from SCRIPT_TABLES (TOML-driven).
+# Only the fields needed by verify_roundtrip are kept.
+def _extract_entry_from_script(e):
+    out = {'ptr_tbl_pos': e['ptr_tbl_pos'], 'tbl_len': e['tbl_len']}
+    if e.get('event_script'):
+        out['event_script'] = True
+    return out
+
+
+EXTRACT_TABLES = {e['name']: _extract_entry_from_script(e) for e in SCRIPT_TABLES}
 
 
 def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
@@ -3729,14 +3574,11 @@ def verify_roundtrip(rom_path: str, folder: str, table_filename: str,
 # EN structural validation
 # ============================================================================
 
-# Tables to validate (pointer-based script tables with JP counterparts).
-# Excludes fixed-width tables (unit-names, unit-classes, unit-items, unit-equipment).
-VALIDATE_TABLES = [
-    'script', 'scenario-desc', 'unit-terrain-desc', 'unit-attacks', 'quiz-text',
-    'dialog-2', 'dialog-3', 'dialog-4', 'dialog-5',
-    'field-menu', 'field-text', 'field-msg',
-    'battle-menu', 'battle-text', 'battle-msg',
-]
+# Tables to validate (pointer-based only — derived from SCRIPT_TABLES).
+# Bytecode tables (cutscene-bytecode, cutscene-bytecode-2) excluded since their
+# JP content is raw bytecodes, not translatable text.  DISABLED -- All need validated
+_VALIDATE_EXCLUDE = {}# 'cutscene-bytecode', 'cutscene-bytecode-2'}
+VALIDATE_TABLES = [e['name'] for e in SCRIPT_TABLES if e['name'] not in _VALIDATE_EXCLUDE]
 
 
 def _parse_entries(filepath):
@@ -3788,7 +3630,7 @@ def _is_raw_hex(content):
     return hex_codes > len(codes) * 0.5 and not plain
 
 
-def validate_en_scripts(jp_folder='jp_ptr_data', en_folder='en_ptr_data',
+def validate_en_scripts(jp_folder='jp_data/scripts', en_folder='en_data/scripts',
                         tables_filter=None, fix=False, report_file=None):
     """
     Compare EN script files against JP originals to find missing or malformed
@@ -4057,8 +3899,8 @@ def _apply_fixes(en_file, en_entries, fixed_entries):
         f.write(result)
 
 
-def jptest_orig(rom_path: str, output_path: str, jp_folder: str = 'jp_ptr_data',
-                table_filename: str = 'jap.tbl', tables_filter: list = None):
+def jptest_orig(rom_path: str, output_path: str, jp_folder: str = 'jp_data/scripts',
+                table_filename: str = 'jp_data/jap.tbl', tables_filter: list = None):
     """
     Re-insert JP scripts at original ROM locations by writing each entry back
     at its original address (from the dump header). This preserves the non-contiguous
@@ -4174,7 +4016,7 @@ commands:
   extract  Extract script from ROM to text files
   verify   Round-trip test: re-encode text dumps and compare against ROM binary
   validate-en  Check EN scripts have correct structural control codes vs JP
-  hexify   Convert untranslated Japanese in en_ptr_data to [XX] hex placeholders
+  hexify   Convert untranslated Japanese in en_data/scripts to [XX] hex placeholders
   jptest   Re-insert JP scripts into expanded ROM layout (round-trip insertion test)
   jptest-orig  Re-insert JP scripts at original ROM locations (data integrity test)
 """,
@@ -4183,22 +4025,24 @@ commands:
     parser.add_argument('--source',   default='lm3.sfc',          help='Source ROM (default: lm3.sfc)')
     parser.add_argument('--scripted', default='out/lm3_scripted.sfc',  help='Scripted ROM intermediate')
     parser.add_argument('--output',   default='out/lm3_en.sfc',        help='Final output ROM')
-    parser.add_argument('--patch',    default='vwf_patch.asm',     help='VWF patch file (default: vwf_patch.asm)')
-    parser.add_argument('--font',     default='font/font_accented.png', help='Font PNG (default: font/font_accented.png)')
+    parser.add_argument('--patch',    default='asm/vwf_patch.asm',     help='VWF patch file (default: vwf_patch.asm)')
+    parser.add_argument('--font',     default='en_data/fonts/font_accented.png', help='Font PNG (default: font/font_accented.png)')
     parser.add_argument('--lang',     default='jp',                help='Language for extract (jp or en, default: jp)')
-    parser.add_argument('--table',    default='eng.tbl',           help='Character table for insert (default: eng.tbl)')
-    parser.add_argument('--en-folder',default='en_ptr_data',       help='English text folder (default: en_ptr_data)')
+    parser.add_argument('--table',    default='en_data/eng.tbl',           help='Character table for insert (default: eng.tbl)')
+    parser.add_argument('--en-folder',default='en_data/scripts',       help='English text folder (default: en_data/scripts)')
     parser.add_argument('--tables',   default=None,
                         help='Comma-separated list of tables to insert '
                              '(e.g. "script,dialog-2"). Default: all tables.')
     parser.add_argument('--jp-tables', default=None,
                         help='Comma-separated list of tables to insert from JP source '
                              'instead of EN (e.g. "battle-msg,battle-menu"). '
-                             'Uses jp_ptr_data/ with jap.tbl.')
+                             'Uses jp_data/scripts/ with jap.tbl.')
     parser.add_argument('--force', action='store_true',
                         help='Force re-encode all scripts (ignore bin cache).')
     parser.add_argument('--fix', action='store_true',
                         help='Auto-repair EN entries with broken structural codes.')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Output extra stuff.')
     parser.add_argument('--report', default=None,
                         help='Write validation report to file.')
 
@@ -4212,9 +4056,9 @@ commands:
 
     elif args.command == 'font-preview':
         stem = os.path.splitext(os.path.basename(args.font))[0]
-        font_dir = os.path.dirname(args.font) or 'font'
+        font_dir = os.path.dirname(args.font) or 'en_data/fonts'
         font_width_preview(
-            font_bin_path=os.path.join(font_dir, 'bin', f'{stem}_1bpp.bin'),
+            font_bin_path=os.path.join(_bin_dir(font_dir), f'{stem}_1bpp.bin'),
             widths_bin_path=os.path.join(font_dir, f'{stem}_widths.bin'),
             table_path=args.table,
             output_path=os.path.join(font_dir, f'{stem}_preview.png'),
@@ -4225,11 +4069,12 @@ commands:
             source=args.source,
             output=args.scripted,
             font_png=args.font,
-            en_folder=args.en_folder,
+            scripts_folder=args.en_folder,
             table_filename=args.table,
             tables_filter=tables_filter,
             jp_tables=jp_tables,
             force=args.force,
+            verbose=args.verbose,
         )
 
     elif args.command == 'vwf':
@@ -4244,10 +4089,11 @@ commands:
             font_png=args.font,
             en_folder=args.en_folder,
             table_filename=args.table,
+            verbose=args.verbose,
         )
 
     elif args.command == 'extract':
-        tbl_file = 'jap.tbl' if args.lang == 'jp' else 'eng.tbl'
+        tbl_file = 'jp_data/jap.tbl' if args.lang == 'jp' else 'en_data/eng.tbl'
         extract_script_bins(
             file_name=args.source,
             folder_prefix=args.lang,
@@ -4255,8 +4101,12 @@ commands:
         )
 
     elif args.command == 'verify':
-        folder = 'jp_ptr_data' if args.lang == 'jp' else args.en_folder
-        tbl_file = 'jap.tbl' if args.lang == 'jp' else args.table
+        """
+        Build original Japanese data back into original areas to verify the encoded data matches original
+        """
+
+        folder = 'jp_data/scripts' if args.lang == 'jp' else args.en_folder
+        tbl_file = 'jp_data/jap.tbl' if args.lang == 'jp' else args.table
         print(f'=== Round-trip verification: {args.source} vs {folder}/ ({tbl_file}) ===')
         ok = verify_roundtrip(
             rom_path=args.source,
@@ -4267,9 +4117,9 @@ commands:
         print(f'=== {"ALL PASS" if ok else "FAILURES DETECTED"} ===')
 
     elif args.command == 'validate-en':
-        print(f'=== EN structural validation: jp_ptr_data/ vs {args.en_folder}/ ===')
+        print(f'=== EN structural validation: jp_data/scripts/ vs {args.en_folder}/ ===')
         validate_en_scripts(
-            jp_folder='jp_ptr_data',
+            jp_folder='jp_data/scripts',
             en_folder=args.en_folder,
             tables_filter=tables_filter,
             fix=args.fix,
@@ -4284,6 +4134,10 @@ commands:
         )
 
     elif args.command == 'jptest':
+        """
+        This is deprecated since we should no longer be relocating original code
+        (FFC0XXXXXX control code is built in, so we can simply relocate any text without modifying pointers)
+        """
         output = args.output.replace('_en.sfc', '_jptest.sfc') if '_en' in args.output else 'out/lm3_jptest.sfc'
         print(f'=== jptest: re-inserting JP scripts into expanded layout ===')
         print(f'  source: {args.source} → {output}')
@@ -4291,8 +4145,8 @@ commands:
             source=args.source,
             output=output,
             font_png=args.font,
-            en_folder='jp_ptr_data',
-            table_filename='jap.tbl',
+            scripts_folder='jp_data/scripts',
+            table_filename='jp_data/jap.tbl',
             tables_filter=tables_filter,
             force=args.force,
         )
