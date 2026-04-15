@@ -60,11 +60,8 @@ grow = "insert"
 # at entry 58. Text fits in-bank — no overflow config needed.
 [[mbuild.sections]]
 kind = "script"
-file = "en_data/scripts/scene-desc-name.txt"
-table = "en_data/eng.tbl"
-fallback-table = "jp_data/jap.tbl"
+file = "jp_data/scripts/scene-desc-name.txt"
+table = "jp_data/jap.tbl"
 pointer-table = 0x111EE3
 pointer-size = 2
 count = 158
-word-wrap = { line-width = 26, max-lines = 6, entries = "0-56" }
-textbuf-limit = 0x1F0
