@@ -13,7 +13,7 @@ fallback = "jp_data/jap.tbl"
 terminator = 0x00
 
 [pointers]
-address = 0x111EE3
+offset = 0x111EE3
 count = 158
 size = 2
 
@@ -21,3 +21,18 @@ size = 2
 line_width = 0x1A
 max_lines = 0x6
 entries = "0-56"
+
+# Build-pipeline step: assemble script text against the pointer table.
+# 141/158 entries overflow their inline slot — redirect via FFC0 marker
+# into bank $C6 freespace. Ctrl-aware splitter mirrors LM3 _find_safe_split.
+[section]
+kind = "script"
+file = "en_data/scripts/scene-desc-name.txt"
+
+[section.overflow]
+strategy = "inline-redirect"
+marker = "FFC0"
+pointer-size = 3
+pointer-encoder = "snes-lorom1-24le"
+splitter = "ctrl-aware"
+slot-measure = "source-entry"

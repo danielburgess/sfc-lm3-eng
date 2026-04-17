@@ -17,6 +17,17 @@ fallback = "jp_data/jap.tbl"
 terminator = 0x00
 
 [pointers]
-address = 0x13124
+offset = 0x13124
 count = 110
 size = 2
+
+[section]
+kind = "script"
+file = "en_data/scripts/combat-bytecode-2.txt"
+
+[section.overflow]
+strategy = "inline-redirect"
+marker = "FFC0"
+splitter = "ctrl-aware"
+pointer-encoder = "snes-lorom1-24le"
+slot-measure = "source-entry"

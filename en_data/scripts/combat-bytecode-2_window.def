@@ -1,0 +1,694 @@
+{
+  "table": "combat-bytecode-2",
+  "source_script": "en_data/scripts/combat-bytecode-2.txt",
+  "entries": {
+    "1": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0026"
+        }
+      ]
+    },
+    "5": {
+      "excluded": true,
+      "windows": []
+    },
+    "6": {
+      "excluded": true,
+      "windows": []
+    },
+    "8": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0012"
+        }
+      ]
+    },
+    "10": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "000D"
+        },
+        {
+          "start": "0012",
+          "end": "001F"
+        }
+      ]
+    },
+    "16": {
+      "excluded": true,
+      "windows": []
+    },
+    "17": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0011"
+        }
+      ]
+    },
+    "19": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "000E"
+        },
+        {
+          "start": "000F",
+          "end": "001A"
+        },
+        {
+          "start": "0052",
+          "end": "0058"
+        },
+        {
+          "start": "0058",
+          "end": "005E"
+        },
+        {
+          "start": "005E",
+          "end": "0064"
+        },
+        {
+          "start": "0064",
+          "end": "006A"
+        },
+        {
+          "start": "006A",
+          "end": "0070"
+        },
+        {
+          "start": "0070",
+          "end": "0076"
+        },
+        {
+          "start": "0076",
+          "end": "007C"
+        },
+        {
+          "start": "007C",
+          "end": "008E"
+        },
+        {
+          "start": "008E",
+          "end": "00A0"
+        },
+        {
+          "start": "00A0",
+          "end": "00B2"
+        },
+        {
+          "start": "00B2",
+          "end": "00C4"
+        },
+        {
+          "start": "00C4",
+          "end": "00D6"
+        },
+        {
+          "start": "00D6",
+          "end": "00E8"
+        },
+        {
+          "start": "00E8",
+          "end": "00FA"
+        },
+        {
+          "start": "00FA",
+          "end": "010C"
+        },
+        {
+          "start": "010C",
+          "end": "011E"
+        },
+        {
+          "start": "011E",
+          "end": "0130"
+        },
+        {
+          "start": "0130",
+          "end": "0142"
+        },
+        {
+          "start": "0142",
+          "end": "0154"
+        },
+        {
+          "start": "0154",
+          "end": "0166"
+        },
+        {
+          "start": "0166",
+          "end": "0178"
+        },
+        {
+          "start": "0178",
+          "end": "018A"
+        },
+        {
+          "start": "018A",
+          "end": "019C"
+        },
+        {
+          "start": "01B2",
+          "end": "01BB"
+        },
+        {
+          "start": "01BB",
+          "end": "01C3"
+        },
+        {
+          "start": "01C3",
+          "end": "01CB"
+        },
+        {
+          "start": "01CB",
+          "end": "01D2"
+        },
+        {
+          "start": "01D2",
+          "end": "01DA"
+        },
+        {
+          "start": "01DA",
+          "end": "01E0"
+        }
+      ]
+    },
+    "20": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "000F"
+        },
+        {
+          "start": "000F",
+          "end": "001B"
+        },
+        {
+          "start": "001B",
+          "end": "0025"
+        },
+        {
+          "start": "0025",
+          "end": "002F"
+        }
+      ]
+    },
+    "21": {
+      "excluded": true,
+      "windows": []
+    },
+    "23": {
+      "excluded": true,
+      "windows": []
+    },
+    "24": {
+      "excluded": true,
+      "windows": []
+    },
+    "25": {
+      "excluded": true,
+      "windows": []
+    },
+    "26": {
+      "excluded": true,
+      "windows": []
+    },
+    "27": {
+      "excluded": true,
+      "windows": []
+    },
+    "28": {
+      "excluded": true,
+      "windows": []
+    },
+    "29": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "011E",
+          "end": "0183"
+        }
+      ]
+    },
+    "30": {
+      "excluded": true,
+      "windows": []
+    },
+    "31": {
+      "excluded": true,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "000A"
+        },
+        {
+          "start": "0015",
+          "end": "001B"
+        },
+        {
+          "start": "0020",
+          "end": "0026"
+        }
+      ]
+    },
+    "32": {
+      "excluded": true,
+      "windows": [
+        {
+          "start": "0006",
+          "end": "000C"
+        },
+        {
+          "start": "0011",
+          "end": "0019"
+        }
+      ]
+    },
+    "33": {
+      "excluded": true,
+      "windows": []
+    },
+    "38": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000E",
+          "end": "003D"
+        },
+        {
+          "start": "004E",
+          "end": "0071"
+        },
+        {
+          "start": "0081",
+          "end": "0085"
+        },
+        {
+          "start": "008B",
+          "end": "0090"
+        },
+        {
+          "start": "0094",
+          "end": "009A"
+        },
+        {
+          "start": "00A1",
+          "end": "00AC"
+        }
+      ]
+    },
+    "41": {
+      "excluded": true,
+      "windows": []
+    },
+    "42": {
+      "excluded": true,
+      "windows": []
+    },
+    "46": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0010",
+          "end": "0024"
+        }
+      ]
+    },
+    "47": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "002C"
+        }
+      ]
+    },
+    "48": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "001B"
+        }
+      ]
+    },
+    "49": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0021"
+        }
+      ]
+    },
+    "53": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "01B4",
+          "end": "01BD"
+        },
+        {
+          "start": "01CC",
+          "end": "01D0"
+        }
+      ]
+    },
+    "54": {
+      "excluded": true,
+      "windows": []
+    },
+    "55": {
+      "excluded": true,
+      "windows": []
+    },
+    "56": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0023",
+          "end": "0032"
+        }
+      ]
+    },
+    "57": {
+      "excluded": true,
+      "windows": []
+    },
+    "58": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0028",
+          "end": "0030"
+        },
+        {
+          "start": "0033",
+          "end": "003C"
+        }
+      ]
+    },
+    "59": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "002B"
+        }
+      ]
+    },
+    "60": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0014",
+          "end": "001B"
+        },
+        {
+          "start": "002B",
+          "end": "003B"
+        }
+      ]
+    },
+    "61": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0017",
+          "end": "0023"
+        },
+        {
+          "start": "002F",
+          "end": "0037"
+        },
+        {
+          "start": "003D",
+          "end": "004B"
+        },
+        {
+          "start": "0053",
+          "end": "008C"
+        }
+      ]
+    },
+    "62": {
+      "excluded": true,
+      "windows": []
+    },
+    "63": {
+      "excluded": true,
+      "windows": []
+    },
+    "64": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0068",
+          "end": "0071"
+        }
+      ]
+    },
+    "66": {
+      "excluded": true,
+      "windows": []
+    },
+    "67": {
+      "excluded": true,
+      "windows": []
+    },
+    "68": {
+      "excluded": true,
+      "windows": []
+    },
+    "69": {
+      "excluded": true,
+      "windows": []
+    },
+    "70": {
+      "excluded": true,
+      "windows": []
+    },
+    "71": {
+      "excluded": true,
+      "windows": []
+    },
+    "72": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "001C",
+          "end": "0026"
+        },
+        {
+          "start": "0029",
+          "end": "0031"
+        }
+      ]
+    },
+    "73": {
+      "excluded": true,
+      "windows": []
+    },
+    "74": {
+      "excluded": true,
+      "windows": []
+    },
+    "77": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0011",
+          "end": "001E"
+        }
+      ]
+    },
+    "78": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0011",
+          "end": "0023"
+        }
+      ]
+    },
+    "80": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000D",
+          "end": "0025"
+        }
+      ]
+    },
+    "82": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000B",
+          "end": "0020"
+        }
+      ]
+    },
+    "84": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0006",
+          "end": "000E"
+        },
+        {
+          "start": "001F",
+          "end": "003C"
+        }
+      ]
+    },
+    "85": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0018",
+          "end": "0031"
+        }
+      ]
+    },
+    "89": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000B",
+          "end": "001B"
+        }
+      ]
+    },
+    "90": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000B",
+          "end": "001B"
+        }
+      ]
+    },
+    "91": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000B",
+          "end": "0040"
+        }
+      ]
+    },
+    "92": {
+      "excluded": true,
+      "windows": []
+    },
+    "93": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0013"
+        }
+      ]
+    },
+    "94": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0010"
+        },
+        {
+          "start": "001C",
+          "end": "0027"
+        }
+      ]
+    },
+    "97": {
+      "excluded": true,
+      "windows": []
+    },
+    "98": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "000E"
+        }
+      ]
+    },
+    "99": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0020"
+        }
+      ]
+    },
+    "103": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "0015"
+        }
+      ]
+    },
+    "104": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "001C"
+        }
+      ]
+    },
+    "105": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0003",
+          "end": "001C"
+        }
+      ]
+    },
+    "108": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0076",
+          "end": "0087"
+        },
+        {
+          "start": "008E",
+          "end": "0097"
+        },
+        {
+          "start": "009A",
+          "end": "00A9"
+        }
+      ]
+    },
+    "109": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0018",
+          "end": "0028"
+        }
+      ]
+    }
+  }
+}

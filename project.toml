@@ -29,6 +29,8 @@ mapping = "lorom"
 size = "2M"
 expanded_size = "4M"
 
+# [build] — retrotool.project.loader build-infrastructure only.
+# (source rom name + file live in [rom]; pipeline in [rom.build] below.)
 [build]
 assembler = "asar"
 output_dir = "out"
@@ -38,49 +40,29 @@ cache_dir = "en_data/bin/scripts"
 type = "mesen-diz"
 pipe_name = "Mesen2Diz_lm3"
 
-# ---- retrotool.mbuild pipeline (Phase 6c acceptance test) ----
-# Step 1: unit-names only. Pre-packed raw blob produced from the lm3.py
-# patch-cache (see en_data/bin/mbuild/unit-names.packed.bin). Later steps
-# replace lm3.py encoding with native mbuild handlers.
-[mbuild]
-original = "lm3.sfc"
-name = "lm3-mbuild-test"
+# [rom.build] — pipeline-wide config. Sections themselves are auto-included
+# from any `tables/<name>.toml` that has a `[section]` sub-table; declared
+# once there, not duplicated here. Set `order = [...]` to override auto-sort.
+[rom.build]
 pad = true
-# FFC0 overflow tail region (LM3: DTE_TABLE1_DATA_PC .. DTE_TABLE2_PTR_PC).
-freespace = [[0x230200, 0x234000]]
-
-[[mbuild.sections]]
-kind = "fixed-records"
-offset = 0x220000
-stride = 0x10
-count = 146
-file = "en_data/bin/mbuild/unit-names.packed.bin"
-grow = "insert"
-
-# scene-desc-name: 158 entries, 2-byte ptrs at $22:9EE3 (PC 0x111EE3),
-# word-wrap 26×6 on entries 0-56. 59 [FFC0@58:main] pins → shared block
-# at entry 58. Text fits in-bank — no overflow config needed.
-[[mbuild.sections]]
-kind = "script"
-file = "en_data/scripts/scene-desc-name.txt"
-table = "en_data/eng.tbl"
-fallback-table = "jp_data/jap.tbl"
-pointer-table = 0x111EE3
-pointer-size = 2
-count = 158
-
-[mbuild.sections.word-wrap]
-line-width = 26
-max-lines = 6
-entries = "0-56"
-
-# Overflow: 141/158 entries exceed their inline slot and redirect via
-# [FF C0 + 3-byte LOROM2 SNES addr] into bank $C6 freespace. Ctrl-aware
-# splitter mirrors LM3 `_find_safe_split` (non-event).
-[mbuild.sections.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"
+pad-byte = 0xFF
+# FFC0 overflow tail region. Starts after unit-names (0x220000 + 0x920 + pad)
+# and extends through bank $C6..$C8 freespace — lm3 reports ~68 KB total.
+freespace = [[0x230200, 0x300000]]
+# Match lm3.py script-table iteration order (alphabetical by DataDef name)
+# so FFC0 overflow tails get allocated identically. Fixed-records tables
+# are independent of this order.
+order = [
+    "combat-bytecode-2", "combat-bytecode",
+    "cutscene-bytecode-2", "cutscene-bytecode",
+    "dialog-1", "dialog-2", "dialog-3", "dialog-4", "dialog-5",
+    "info-panels",
+    "interaction-text",
+    "menu-prompts",
+    "quiz-questions",
+    "recruit-lines",
+    "scene-desc-name",
+    "scene-messages",
+    "unit-attacks",
+    "unit-equipment", "unit-items", "unit-names",
+]

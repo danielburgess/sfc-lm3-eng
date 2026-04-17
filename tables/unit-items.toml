@@ -13,10 +13,18 @@ table_file = "en_data/eng.tbl"
 fallback = "jp_data/jap.tbl"
 
 [data]
-start = 0x124E0
+offset = 0x124E0
 
 [[fields]]
 label = "item"
 start = 0x0
 len = 0x9
 fill = 0x20
+
+# Build-pipeline step. In-place replace at [data].offset. Packed bin is
+# currently snapshotted from `lm3.py script` output (retrotool has no
+# fixed-records encoder yet — tracked in PARITY_PLAN Phase 2c).
+[section]
+kind = "fixed-records"
+file = "en_data/bin/mbuild/unit-items.packed.bin"
+grow = "replace"

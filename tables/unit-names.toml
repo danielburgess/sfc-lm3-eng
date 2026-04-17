@@ -21,10 +21,18 @@ table_file = "en_data/eng.tbl"
 fallback = "jp_data/jap.tbl"
 
 [data]
-start = 0x220000
+offset = 0x220000
 
 [[fields]]
 label = "name"
 start = 0x0
 len = 0x10
 fill = 0x20
+
+# Build-pipeline step: patch unit-name records at [data].offset using the
+# pre-packed binary. grow="insert" because LM3 moves records from bank $01
+# (8-byte) to bank $C4 (16-byte) — new block, not an in-place overwrite.
+[section]
+kind = "fixed-records"
+file = "en_data/bin/mbuild/unit-names.packed.bin"
+grow = "insert"

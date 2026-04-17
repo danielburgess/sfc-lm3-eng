@@ -13,6 +13,10 @@ fallback = "jp_data/jap.tbl"
 terminator = 0x00
 
 [pointers]
-address = 0x113A9B
+offset = 0x113A9B
 count = 100
 size = 2
+
+[section]
+kind = "windowed-script"
+file = "en_data/scripts/cutscene-bytecode.txt"

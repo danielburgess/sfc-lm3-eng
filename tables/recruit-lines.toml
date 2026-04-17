@@ -10,9 +10,22 @@ fallback = "jp_data/jap.tbl"
 terminator = 0x00
 
 [pointers]
-address = 0x1BCA4
+offset = 0x1BCA4
 count = 46
 size = 2
 
 [data]
-start = 0x1E348
+offset = 0x1E348
+
+# Build-pipeline step. In-place + FFC0 overflow → bank $C6 freespace.
+[section]
+kind = "script"
+file = "en_data/scripts/recruit-lines.txt"
+
+[section.overflow]
+strategy = "inline-redirect"
+marker = "FFC0"
+pointer-size = 3
+pointer-encoder = "snes-lorom1-24le"
+splitter = "ctrl-aware"
+slot-measure = "source-entry"

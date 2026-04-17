@@ -16,7 +16,7 @@ table_file = "en_data/eng.tbl"
 fallback = "jp_data/jap.tbl"
 
 [data]
-start = 0x10050
+offset = 0x10050
 
 [[fields]]
 label = "weapon"
@@ -29,3 +29,8 @@ label = "armor"
 start = 0xC
 len = 0x9
 fill = 0x20
+
+[section]
+kind = "fixed-records"
+file = "en_data/bin/mbuild/unit-equipment.packed.bin"
+grow = "replace"

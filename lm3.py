@@ -1114,12 +1114,12 @@ _DATADEFS = load_datadefs(_PROJECT)
 
 def _datadef_to_script_entry(d):
     out = {'name': d.name,
-           'ptr_tbl_pos': d.pointers.address,
+           'ptr_tbl_pos': d.pointers.offset,
            'tbl_len': d.pointers.count * d.pointers.size}
     if d.pointers.size != 2:
         out['ptr_size'] = d.pointers.size
-    if d.data and d.data.start is not None:
-        out['data_start_pc'] = d.data.start
+    if d.data and d.data.offset is not None:
+        out['data_start_pc'] = d.data.offset
     for k in ('event_script', 'word_wrap', 'textbuf_limit', 'dte', 'group',
               'full_extent_entries', 'mirror_ptr_tables'):
         if k in d.extras:
@@ -1129,7 +1129,7 @@ def _datadef_to_script_entry(d):
 
 def _datadef_to_fixed_entry(d):
     out = {'name': d.name,
-           'data_pos': d.data.start,
+           'data_pos': d.data.offset,
            'entries': d.extras['entries'],
            'block_len': d.extras['block_len'],
            'fields': d.extras['fields']}
@@ -1148,7 +1148,7 @@ def _build_extract_tables():
     for d in _DATADEFS:
         if d.type == 'pointer':
             entry = {
-                'ptr_tbl_pos': d.pointers.address,
+                'ptr_tbl_pos': d.pointers.offset,
                 'tbl_len': d.pointers.count * d.pointers.size,
                 'table_name': d.name,
             }
@@ -1170,7 +1170,7 @@ def _build_extract_tables():
             else:
                 tables.append(entry)
         elif d.type == 'fixed':
-            data_pos = d.extras.get('source_data_start', d.data.start)
+            data_pos = d.extras.get('source_data_start', d.data.offset)
             data_len = d.extras.get('extract_data_len',
                                     d.extras['entries'] * d.extras['block_len'])
             block_len = d.extras.get('extract_block_len', d.extras['block_len'])
