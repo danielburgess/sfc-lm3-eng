@@ -24,7 +24,7 @@ fill = 0x20
 # Build-pipeline step. In-place replace at [data].offset. Packed bin is
 # currently snapshotted from `lm3.py script` output (retrotool has no
 # fixed-records encoder yet — tracked in PARITY_PLAN Phase 2c).
-[_disabled_section]
+[section]
 kind = "fixed-records"
 file = "en_data/bin/mbuild/unit-items.packed.bin"
 grow = "replace"

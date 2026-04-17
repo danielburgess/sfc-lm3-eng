@@ -17,4 +17,4 @@ offset = 0x1B8100
 count = 68
 size = 2
 
-[_disabled_section]
+[section]

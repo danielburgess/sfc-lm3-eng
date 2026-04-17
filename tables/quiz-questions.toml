@@ -14,4 +14,4 @@ offset = 0x30800
 count = 96
 size = 2
 
-[_disabled_section]
+[section]

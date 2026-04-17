@@ -17,4 +17,4 @@ size = 2
 [data]
 offset = 0x1C0F1
 
-[_disabled_section]
+[section]

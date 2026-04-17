@@ -21,4 +21,4 @@ offset = 0x30A00
 line_width = 0x1C
 max_lines = 0x3
 
-[_disabled_section]
+[section]

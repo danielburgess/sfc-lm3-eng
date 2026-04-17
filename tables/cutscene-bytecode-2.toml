@@ -20,7 +20,7 @@ size = 2
 [data]
 offset = 0x50101
 
-[_disabled_section]
+[section]
 
-[_disabled_section.placement]
+[section.placement]
 mode = "overflow"

@@ -25,4 +25,4 @@ offset = 0x1B1200
 # Build-pipeline step. In-place insertion at [pointers].offset; entries too
 # long for their inline slot redirect via FFC0 marker into bank $C6 freespace.
 
-[_disabled_section]
+[section]

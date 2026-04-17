@@ -17,7 +17,7 @@ offset = 0x13124
 count = 110
 size = 2
 
-[_disabled_section]
+[section]
 
-[_disabled_section.placement]
+[section.placement]
 mode = "overflow"

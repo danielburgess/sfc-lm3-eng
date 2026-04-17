@@ -32,7 +32,7 @@ fill = 0x20
 # Build-pipeline step: patch unit-name records at [data].offset using the
 # pre-packed binary. grow="insert" because LM3 moves records from bank $01
 # (8-byte) to bank $C4 (16-byte) — new block, not an in-place overwrite.
-[_disabled_section]
+[section]
 kind = "fixed-records"
 file = "en_data/bin/mbuild/unit-names.packed.bin"
 grow = "insert"
