@@ -17,15 +17,4 @@ offset = 0x1B8200
 count = 19
 size = 2
 
-# Build-pipeline step. In-place + FFC0 overflow → bank $C6 freespace.
-[section]
-kind = "script"
-file = "en_data/scripts/dialog-4.txt"
-
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"
+[_disabled_section]

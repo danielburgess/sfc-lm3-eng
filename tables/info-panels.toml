@@ -21,15 +21,4 @@ offset = 0x30A00
 line_width = 0x1C
 max_lines = 0x3
 
-# Build-pipeline step. In-place + FFC0 overflow → bank $C6 freespace.
-[section]
-kind = "script"
-file = "en_data/scripts/info-panels.txt"
-
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"
+[_disabled_section]

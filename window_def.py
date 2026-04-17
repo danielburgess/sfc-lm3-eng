@@ -98,14 +98,27 @@ class ScriptModel:
             self.fallback_tbl = Table(fallback_file)
         self.ctrl_lengths = self.tbl.ctrl_lengths
 
-        # .def path: same dir as script file, base name + _window.def
+        # Resolve script .txt from [section].file, or derive from project's
+        # `en_data_dir` + table name.
         section = self.toml_config.get("section", {})
         script_file = section.get("file", "")
-        if script_file:
-            base = os.path.splitext(script_file)[0]
-            self.def_path = base + "_window.def"
+        if not script_file:
+            scripts_dir = self.project_config.get("en_data_dir", "")
+            if scripts_dir:
+                script_file = os.path.join(scripts_dir, f"{self.table_name}.txt")
+            else:
+                script_file = f"{self.table_name}.txt"
+        self.script_file = script_file
+
+        # .def lives alongside the table TOML (in tables/) by default —
+        # window layout is a property of the JP bytecode, not lang-specific.
+        # Honors project `data_dirs` ordering, falling back to the TOML's dir.
+        data_dirs = self.project_config.get("data_dirs") or []
+        if data_dirs:
+            tables_dir = data_dirs[0]
         else:
-            self.def_path = f"{self.table_name}_window.def"
+            tables_dir = os.path.dirname(toml_path) or "tables"
+        self.def_path = os.path.join(tables_dir, f"{self.table_name}_window.def")
 
     def _load_rom(self):
         rom_file = self.project_config.get("source_rom", "lm3.sfc")
@@ -418,8 +431,7 @@ def _window_preview(binary, start, end, tbl, max_len=60):
 
 def export_windowed_script(model: ScriptModel, output_path: str | None = None):
     """Export windowed script file for retrotool."""
-    section = model.toml_config.get("section", {})
-    script_file = section.get("file", "")
+    script_file = model.script_file
     if output_path is None:
         base, ext = os.path.splitext(script_file)
         if "-windowed" not in base:
@@ -447,6 +459,13 @@ def export_windowed_script(model: ScriptModel, output_path: str | None = None):
             continue
 
         if not entry.windows:
+            # No windows defined — dump whole entry as plain text body.
+            # retrotool hybrid dispatch will auto-window (inline or FFC0)
+            # the whole slot for these entries.
+            bin_data = entry.binary
+            e = len(bin_data) - 1 if bin_data and bin_data[-1] == 0x00 else len(bin_data)
+            decoded = interpret_event_script(bin_data[:e], model.tbl)
+            lines.append(decoded + "[end]")
             continue
 
         for wi, w in enumerate(entry.windows):
@@ -704,8 +723,7 @@ class Api:
         """Export windowed script. If output_path given, use it; else prompt via native dialog."""
         if not output_path and self._window is not None:
             import webview
-            section = self.model.toml_config.get("section", {})
-            script_file = section.get("file", "")
+            script_file = self.model.script_file
             default_name = ""
             default_dir = ""
             if script_file:
@@ -799,13 +817,33 @@ class Api:
         return {"bytes": max(0, byte_end - byte_start), "byte_start": f"{byte_start:04X}", "byte_end": f"{byte_end:04X}"}
 
     def load_def_file(self, path):
-        """Load .def file. Backs up existing first."""
+        """Load .def file. Opens native file dialog if path is empty."""
+        if not path and self._window is not None:
+            import webview
+            default_dir = ""
+            if self.model.def_path:
+                default_dir = os.path.dirname(os.path.abspath(self.model.def_path)) or os.getcwd()
+            try:
+                dialog_type = getattr(webview, "FileDialog", None)
+                dialog_type = dialog_type.OPEN if dialog_type else webview.OPEN_DIALOG
+                result = self._window.create_file_dialog(
+                    dialog_type,
+                    directory=default_dir,
+                    allow_multiple=False,
+                    file_types=("Def Files (*.def)", "All files (*.*)"),
+                )
+            except Exception as exc:
+                return {"error": f"dialog failed: {exc}"}
+            if not result:
+                return {"cancelled": True}
+            path = result if isinstance(result, str) else result[0]
         if not path:
             path = self.model.def_path
-        if not os.path.exists(path):
+        if not path or not os.path.exists(path):
             return {"error": f"File not found: {path}"}
         load_def(self.model, path)
-        return {"ok": True}
+        self.model.def_path = path
+        return {"ok": True, "path": path}
 
     def get_char_to_byte(self, entry_idx, char_start, char_end):
         """Map text selection char positions to byte offsets."""
@@ -1675,8 +1713,8 @@ async function doExport() {{
 }}
 
 async function loadDef() {{
-    const path = prompt('Path to .def file (leave empty for default):');
-    const result = await pywebview.api.load_def_file(path || '');
+    const result = await pywebview.api.load_def_file('');
+    if (result.cancelled) {{ return; }}
     if (result.error) {{ alert(result.error); return; }}
     // Refresh everything
     for (const e of entriesData) {{

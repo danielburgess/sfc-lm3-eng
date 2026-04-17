@@ -3,10 +3,6 @@
 # LM3-specific scalars (top-level for extras)
 battle_group = 0x1
 
-# Entry 19's slot holds the "Animation Test" debug menu + spell-announcement
-# strings reachable only via raw FF C0 pins. Extract the full slot.
-full_extent_entries = [0x13]
-
 [table]
 name = "combat-bytecode-2"
 type = "pointer"
@@ -21,13 +17,7 @@ offset = 0x13124
 count = 110
 size = 2
 
-[section]
-kind = "script"
-file = "en_data/scripts/combat-bytecode-2.txt"
+[_disabled_section]
 
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-splitter = "ctrl-aware"
-pointer-encoder = "snes-lorom1-24le"
-slot-measure = "source-entry"
+[_disabled_section.placement]
+mode = "overflow"

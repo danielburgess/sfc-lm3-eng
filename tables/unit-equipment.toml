@@ -30,7 +30,7 @@ start = 0xC
 len = 0x9
 fill = 0x20
 
-[section]
+[_disabled_section]
 kind = "fixed-records"
 file = "en_data/bin/mbuild/unit-equipment.packed.bin"
 grow = "replace"

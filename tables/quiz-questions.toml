@@ -14,15 +14,4 @@ offset = 0x30800
 count = 96
 size = 2
 
-# Build-pipeline step. In-place + FFC0 overflow → bank $C6 freespace.
-[section]
-kind = "script"
-file = "en_data/scripts/quiz-questions.txt"
-
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"
+[_disabled_section]

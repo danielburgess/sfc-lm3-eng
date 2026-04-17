@@ -24,14 +24,5 @@ offset = 0x1B1200
 
 # Build-pipeline step. In-place insertion at [pointers].offset; entries too
 # long for their inline slot redirect via FFC0 marker into bank $C6 freespace.
-[section]
-kind = "script"
-file = "en_data/scripts/unit-attacks.txt"
 
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"
+[_disabled_section]

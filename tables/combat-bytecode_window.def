@@ -1,0 +1,169 @@
+{
+  "table": "combat-bytecode",
+  "source_script": "en_data/scripts/combat-bytecode.txt",
+  "entries": {
+    "0": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0006",
+          "end": "0013"
+        }
+      ]
+    },
+    "1": {
+      "excluded": true,
+      "windows": []
+    },
+    "2": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000D",
+          "end": "001F"
+        },
+        {
+          "start": "0027",
+          "end": "0034"
+        }
+      ]
+    },
+    "3": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000F",
+          "end": "0018"
+        },
+        {
+          "start": "0027",
+          "end": "0030"
+        }
+      ]
+    },
+    "4": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000D",
+          "end": "0030"
+        }
+      ]
+    },
+    "5": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000F",
+          "end": "0018"
+        },
+        {
+          "start": "0027",
+          "end": "0037"
+        }
+      ]
+    },
+    "6": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0044",
+          "end": "004C"
+        },
+        {
+          "start": "004F",
+          "end": "0057"
+        }
+      ]
+    },
+    "7": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0010",
+          "end": "001D"
+        },
+        {
+          "start": "0022",
+          "end": "0029"
+        },
+        {
+          "start": "0031",
+          "end": "0043"
+        },
+        {
+          "start": "0048",
+          "end": "004E"
+        },
+        {
+          "start": "0053",
+          "end": "0054"
+        }
+      ]
+    },
+    "9": {
+      "excluded": true,
+      "windows": []
+    },
+    "12": {
+      "excluded": true,
+      "windows": []
+    },
+    "14": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0006",
+          "end": "000C"
+        },
+        {
+          "start": "0011",
+          "end": "001A"
+        },
+        {
+          "start": "001F",
+          "end": "0026"
+        },
+        {
+          "start": "002B",
+          "end": "0034"
+        },
+        {
+          "start": "0039",
+          "end": "004C"
+        }
+      ]
+    },
+    "15": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0006",
+          "end": "0021"
+        },
+        {
+          "start": "0026",
+          "end": "0033"
+        }
+      ]
+    },
+    "16": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0025"
+        }
+      ]
+    },
+    "17": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0062",
+          "end": "006F"
+        }
+      ]
+    }
+  }
+}

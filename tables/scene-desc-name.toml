@@ -26,13 +26,3 @@ entries = "0-56"
 # 141/158 entries overflow their inline slot — redirect via FFC0 marker
 # into bank $C6 freespace. Ctrl-aware splitter mirrors LM3 _find_safe_split.
 [section]
-kind = "script"
-file = "en_data/scripts/scene-desc-name.txt"
-
-[section.overflow]
-strategy = "inline-redirect"
-marker = "FFC0"
-pointer-size = 3
-pointer-encoder = "snes-lorom1-24le"
-splitter = "ctrl-aware"
-slot-measure = "source-entry"

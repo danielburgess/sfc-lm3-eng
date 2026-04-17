@@ -52,17 +52,23 @@ freespace = [[0x230200, 0x300000]]
 # Match lm3.py script-table iteration order (alphabetical by DataDef name)
 # so FFC0 overflow tails get allocated identically. Fixed-records tables
 # are independent of this order.
-order = [
-    "combat-bytecode-2", "combat-bytecode",
-    "cutscene-bytecode-2", "cutscene-bytecode",
-    "dialog-1", "dialog-2", "dialog-3", "dialog-4", "dialog-5",
-    "info-panels",
-    "interaction-text",
-    "menu-prompts",
-    "quiz-questions",
-    "recruit-lines",
-    "scene-desc-name",
-    "scene-messages",
-    "unit-attacks",
-    "unit-equipment", "unit-items", "unit-names",
-]
+order = []
+
+# Project-wide placement default: in-place + FFC0 overflow for ALL script
+# tables. Pointer tables MUST NOT be rewritten — EN entries fit in the
+# original JP slot, oversized entries get an FFC0 redirect to freespace.
+# Sibling tables (dialog-1..5) share the data region, so any ptr-table
+# rewrite corrupts neighbors. Per-table override only if truly needed.
+[rom.build.section.placement]
+mode = "overflow"
+
+# Project-level defaults inherited by every kind="script" DataDef section
+# that doesn't declare its own [section.overflow]. Keeps individual
+# tables/*.toml files minimal — they only list [pointers]/[encoding]/[table].
+[rom.build.section.overflow]
+strategy = "inline-redirect"
+marker = "FFC0"
+pointer-size = 3
+pointer-encoder = "snes-lorom1-24le"
+splitter = "ctrl-aware"
+slot-measure = "source-entry"

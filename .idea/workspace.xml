@@ -4,36 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Updates for the current retrotool state.">
-      <change afterPath="$PROJECT_DIR$/PARITY_PLAN.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/en_data/bin/mbuild/unit-equipment.packed.bin" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/en_data/bin/mbuild/unit-items.packed.bin" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2_window.def" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/window_def.py" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Lots of work done to integrate the project with retrotool.">
+      <change afterPath="$PROJECT_DIR$/tables/combat-bytecode-2_window.def" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tables/combat-bytecode_window.def" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2-windowed.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2-windowed.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-windowed.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-windowed.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-2.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/dialog-2.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-3.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/dialog-3.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-4.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/dialog-4.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-5.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/dialog-5.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/info-panels.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/info-panels.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/interaction-text.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/interaction-text.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts-windowed.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts-windowed.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/quiz-questions.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/quiz-questions.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/recruit-lines.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/recruit-lines.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/scene-messages.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/scene-messages.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-attacks.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/scripts/unit-attacks.checksum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lm3.py" beforeDir="false" afterPath="$PROJECT_DIR$/lm3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/scene-desc-name.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/scene-desc-name.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2_window.def" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/combat-bytecode.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/recruit-lines.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/recruit-lines.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/project.toml" beforeDir="false" afterPath="$PROJECT_DIR$/project.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/combat-bytecode-2.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/combat-bytecode-2.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/combat-bytecode.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/combat-bytecode.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/cutscene-bytecode-2.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/cutscene-bytecode-2.toml" afterDir="false" />
@@ -51,11 +35,10 @@
       <change beforePath="$PROJECT_DIR$/tables/scene-desc-name.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/scene-desc-name.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/scene-messages.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/scene-messages.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/unit-attacks.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/unit-attacks.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tables/unit-classes.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/unit-classes.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/unit-equipment.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/unit-equipment.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/unit-items.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/unit-items.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tables/unit-names.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/unit-names.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/window_def.py" beforeDir="false" afterPath="$PROJECT_DIR$/window_def.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,29 +72,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.window_def.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/mnt/crucial/projects/sfc-lm3-eng&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.window_def.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/en_data/scripts",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/en_data/scripts" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
@@ -148,7 +132,7 @@
       <workItem from="1775499552146" duration="234387000" />
       <workItem from="1776104423000" duration="23000" />
       <workItem from="1776104523517" duration="79044000" />
-      <workItem from="1776361368085" duration="15891000" />
+      <workItem from="1776361368085" duration="37233000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -510,7 +494,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776293581748</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="Lots of work done to integrate the project with retrotool.">
+      <option name="closed" value="true" />
+      <created>1776390990711</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1776390990711</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -531,7 +523,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Fixed a bunch of stuff, but now the rom wont load, so..." />
     <MESSAGE value="Implemented DTE. DTE uses control code FF Instead of old method. Needs testing. Worked toward extraction/insertion 1:1." />
     <MESSAGE value="Added old DTE code for fun. Originally written by bongo, but one of the things that helped me learn assembly back in the day. Added separate metatable patches. Added pointer finder heuristics." />
     <MESSAGE value="Now using AI to help quickly iterate fixes. Added IPC connection to the custom Mesen debugger. Fixed some issues with the mattle-msg script" />
@@ -556,7 +547,8 @@
     <MESSAGE value="Entire project is refactored. Now using retrotool. (local only for now)" />
     <MESSAGE value="Committing changes for the retrotool integration M1-M2." />
     <MESSAGE value="Updates for the current retrotool state." />
-    <option name="LAST_COMMIT_MESSAGE" value="Updates for the current retrotool state." />
+    <MESSAGE value="Lots of work done to integrate the project with retrotool." />
+    <option name="LAST_COMMIT_MESSAGE" value="Lots of work done to integrate the project with retrotool." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776373208777" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

@@ -20,6 +20,7 @@ size = 2
 [data]
 offset = 0x50101
 
-[section]
-kind = "windowed-script"
-file = "en_data/scripts/cutscene-bytecode-2.txt"
+[_disabled_section]
+
+[_disabled_section.placement]
+mode = "overflow"
