@@ -46,6 +46,9 @@ pipe_name = "Mesen2Diz_lm3"
 [rom.build]
 pad = true
 pad-byte = 0xFF
+# Default build flavor. Flip to `vwf` (here or via `-D version=vwf`) to apply
+# vwf_patch.asm. Referenced by `if=` on inline sections below.
+version = "scripted"
 # FFC0 overflow tail region. Starts after unit-names (0x220000 + 0x920 + pad)
 # and extends through bank $C6..$C8 freespace — lm3 reports ~68 KB total.
 freespace = [[0x230200, 0x300000]]
@@ -72,3 +75,41 @@ pointer-size = 3
 pointer-encoder = "snes-lorom1-24le"
 splitter = "ctrl-aware"
 slot-measure = "source-entry"
+
+# --- Inline non-DataDef sections: font + graphics + asar patches ---
+# Font: 1BPP-IL bitmap pre-built by `python3 lm3.py font` into en_data/bin.
+[[rom.build.sections]]
+kind = "bin"
+offset = 0x170000
+file = "en_data/bin/fonts/font_accented_1bppil.bin"
+
+# Title bundle @ 0x11C200 = 12KB contiguous:
+#   0x000-0xE00  (3584B)  2BPP subtitle/credit/PUSH START tiles (BG2)
+#   0xE00-0x1600 (2048B)  BG tilemap (32×32 entries)
+#   0x1600-0x3000 (6656B) 8BPP logo tiles (BG1)
+# Copy loop at $00:B06F loads all 12KB from $23:C200 → WRAM $7E:22C0 → DMA $62C0.
+[[rom.build.sections]]
+kind = "bin"
+offset = 0x11C200
+file = [
+    "en_data/gfx/raw/title/2bpp_tiles.bin",
+    "en_data/gfx/raw/title/tilemap.bin",
+    "en_data/gfx/raw/title/8bpp_tiles.bin",
+]
+
+# Debug mode: keeps WRAM $0A87 non-zero to unlock scene/variable inspection.
+[[rom.build.sections]]
+kind = "asar"
+file = "asm/debug_mode_patch.asm"
+
+# Unit-names: expand 8->16 byte entries at bank $C4 + pointer-table rewrites.
+[[rom.build.sections]]
+kind = "asar"
+file = "asm/name_expansion_patch.asm"
+
+# VWF: opt-in. Flip `version = "vwf"` in [rom.build] (or `-D version=vwf` on
+# CLI) to enable the variable-width-font patch. Default builds skip it.
+[[rom.build.sections]]
+kind = "asar"
+file = "asm/vwf_patch.asm"
+if = "${version}==vwf"

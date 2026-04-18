@@ -4388,8 +4388,12 @@ CODE_80AF21: ; $00AF21
         db $49,$FF,$50,$51,$52,$53,$54,$55,$56,$57,$58,$60,$61,$62,$63,$64
         db $65,$66,$67,$68,$69,$6A,$6B,$6D,$6E,$6F,$9B,$59,$5A,$5B,$5C,$5D
         db $FF
-; [Text] Searches font/text table by ID, dispatches tile placement to $7E:2000 via textBuf helpers
-renderTextFromTable: ; $00AF6A
+; [VRAM] Plane-skip 8BPP tile decoder. Entry: A=recordID, $12=dir base. Searches 8B records for first-byte==A; reads stream/autostart/chunkcount offsets at +2/+4/+6 (into $08/$0A/$0C); advances $12 by $08; runs command-byte stream.
+; 
+; Stream cmds: $00=end, $01..$3F=literal run of N tiles (plane-pairs from chunk store), $40..$7F=combined-immediate (sub-count = cmd AND $3F), $80=repeat-prev-chunk with count from next byte, $81..$FF=delta (A = cmd AND $7F, +$06, emit once).
+; 
+; MISNAMED as renderTextFromTable; has nothing to do with text. Used by loadTitleGfx.
+decodeTileStream: ; $00AF6A
         PHP
         REP #$20
         STZ.B $1C
@@ -4434,7 +4438,7 @@ CODE_80AFAF: ; $00AFAF
         LDA.B [$12]
         INC.B $12
         AND.W #$00FF
-        BEQ textBuf_ReturnZero
+        BEQ decodeStreamEnd
         CMP.W #$0040
         BCC CODE_80AFD9
         CMP.W #$0080
@@ -4448,12 +4452,12 @@ CODE_80AFAF: ; $00AFAF
         REP #$20
         INC.B $12
         LDA.B $06
-        JSR.W textBuf_CalcTileIndex
+        JSR.W decoderCalcChunkSrc
         BRA CODE_80AFAF
 CODE_80AFD9: ; $00AFD9
         PHA
         LDA.B $0A
-        JSR.W textBuf_CalcTileIndex
+        JSR.W decoderCalcChunkSrc
         INC.B $0A
         PLA
         DEC A
@@ -4466,7 +4470,7 @@ CODE_80AFE7: ; $00AFE7
 CODE_80AFEE: ; $00AFEE
         PHA
         LDA.B $06
-        JSR.W textBuf_CalcTileIndex
+        JSR.W decoderCalcChunkSrc
         PLA
         DEC A
         BNE CODE_80AFEE
@@ -4475,25 +4479,28 @@ CODE_80AFFA: ; $00AFFA
         AND.W #$007F
         CLC
         ADC.B $06
-        JSR.W textBuf_CalcTileIndex
+        JSR.W decoderCalcChunkSrc
         BRA CODE_80AFAF
-; [Text] LDA #0, PLP, RTL. Returns zero result from text buffer operation.
-textBuf_ReturnZero: ; $00B005
+; [Helper] Decoder stream-end tail. LDA #0; PLP; RTL. Reached on cmd $00.
+decodeStreamEnd: ; $00B005
         LDA.W #$0000
         PLP
         RTL
         db $A9,$01,$00,$28,$6B
-; [Text] CMP #$1000, ASL x4, check $8000. Text tile calc.
-textBuf_CalcTileIndex: ; $00B00F
+; [Helper] Decoder helper: compute 16B chunk source pointer from chunk-index A.
+; For idx<$1000: offset=idx*16, src=$16+offset (bank $18 or $18+1 if high-bit spill).
+; For idx>=$1000: additional bank adjust via (idx>>3) AND $1E.
+; Feeds emit16BChunk with $1A = source pointer.
+decoderCalcChunkSrc: ; $00B00F
         CMP.W #$1000
-        BCC textBuf_ShiftIndex
+        BCC calcChunkSrcLowIdx
         STA.B $1B
         ASL A
         ASL A
         ASL A
         ASL A
         CMP.W #$8000
-        BCS textBuf_CalcPtrOffset
+        BCS calcChunkSrcHighSpill
         CLC
         ADC.B $16
         STA.B $1A
@@ -4505,9 +4512,9 @@ textBuf_CalcTileIndex: ; $00B00F
         CLC
         ADC.B $18
         STA.B $1C
-        BRA textBuf_CopyData
-; [Text] AND #$7FFF, CLC ADC $16, STA $1A. Calculates text data pointer offset.
-textBuf_CalcPtrOffset: ; $00B033
+        BRA emit16BChunk
+; [Helper] Decoder sub: chunk-src calc for idx>=$1000 branch; bank adjust (idx>>3) AND $1E.
+calcChunkSrcHighSpill: ; $00B033
         AND.W #$7FFF
         CLC
         ADC.B $16
@@ -4521,23 +4528,23 @@ textBuf_CalcPtrOffset: ; $00B033
         CLC
         ADC.B $18
         STA.B $1C
-        BRA textBuf_CopyData
-; [Text] ASL*4. Left-shifts index by 4 (multiply by 16) for table lookup.
-textBuf_ShiftIndex: ; $00B04B
+        BRA emit16BChunk
+; [Helper] Decoder sub: chunk-src calc for idx<$1000 branch; offset = idx*16 within bank.
+calcChunkSrcLowIdx: ; $00B04B
         ASL A
         ASL A
         ASL A
         ASL A
         CMP.W #$8000
-        BCS textBuf_CalcPtrOffset2
+        BCS calcChunkSrcLowIdxSpill
         CLC
         ADC.B $16
         STA.B $1A
         LDA.B $18
         STA.B $1C
-        BRA textBuf_CopyData
-; [Text] AND #$7FFF, CLC ADC $16, STA $1A. Second pointer offset calculation path.
-textBuf_CalcPtrOffset2: ; $00B05F
+        BRA emit16BChunk
+; [Helper] Decoder sub: low-idx path bank-bit spill fixup.
+calcChunkSrcLowIdxSpill: ; $00B05F
         AND.W #$7FFF
         CLC
         ADC.B $16
@@ -4545,8 +4552,8 @@ textBuf_CalcPtrOffset2: ; $00B05F
         LDA.B $18
         INC A
         STA.B $1C
-; [Text] LDY #0, LDA [$1A],Y STA [$22],Y INY. Copies text data from source to destination.
-textBuf_CopyData: ; $00B06C
+; [Helper] Decoder emit: copy 16 bytes (8 words) from [$1A] to [$22]; $22 += $10. One plane-pair row of an 8x8 tile.
+emit16BChunk: ; $00B06C
         LDY.W #$0000
         LDA.B [$1A],Y
         STA.B [$22],Y

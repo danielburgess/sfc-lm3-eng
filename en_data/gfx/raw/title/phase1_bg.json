@@ -1,0 +1,63 @@
+{
+  "success": true,
+  "data": {
+    "bgMode": 4,
+    "mode1Bg3Priority": false,
+    "mainScreenLayers": 1,
+    "subScreenLayers": 1,
+    "layers": [
+      {
+        "layer": 1,
+        "enabled": true,
+        "bpp": 8,
+        "charBaseAddress": "0000",
+        "mapBaseAddress": "7800",
+        "mapSize": "32x32",
+        "tileSize": "8x8",
+        "hScroll": 0,
+        "vScroll": 0,
+        "mainScreen": true,
+        "subScreen": true
+      },
+      {
+        "layer": 2,
+        "enabled": true,
+        "bpp": 2,
+        "charBaseAddress": "6000",
+        "mapBaseAddress": "7C00",
+        "mapSize": "32x32",
+        "tileSize": "8x8",
+        "hScroll": 0,
+        "vScroll": 0,
+        "mainScreen": false,
+        "subScreen": false
+      },
+      {
+        "layer": 3,
+        "enabled": false,
+        "bpp": 0,
+        "charBaseAddress": "6000",
+        "mapBaseAddress": "7C00",
+        "mapSize": "32x32",
+        "tileSize": "8x8",
+        "hScroll": 0,
+        "vScroll": 0,
+        "mainScreen": false,
+        "subScreen": false
+      },
+      {
+        "layer": 4,
+        "enabled": false,
+        "bpp": 0,
+        "charBaseAddress": "6000",
+        "mapBaseAddress": "5C00",
+        "mapSize": "32x32",
+        "tileSize": "8x8",
+        "hScroll": 0,
+        "vScroll": 0,
+        "mainScreen": false,
+        "subScreen": false
+      }
+    ]
+  }
+}

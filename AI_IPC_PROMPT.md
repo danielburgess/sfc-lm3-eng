@@ -1,10 +1,5 @@
 # Mesen2-Diz IPC
 
-## Emulator app location
-```
-/mnt/crucial/projects/Mesen2-Diz/bin/linux-x64/Release/linux-x64/publish/Mesen
-```
-
 ## Connection
 Pipe name: auto from ROM (e.g. `Mesen2Diz_SuperMetroid`). Override via config.
 - Linux: `/tmp/CoreFxPipe_{pipeName}`
@@ -63,6 +58,21 @@ All labels set via IPC are marked with an IPC flag (visible in label/function li
 | `writeMemory` | memoryType, address, hex\|values | hex: `"FF 00 42"`, values: `[255,0,66]` |
 | `getMemorySize` | memoryType | |
 
+### PPU Memory
+| Command | Params | Notes |
+|---------|--------|-------|
+| `getVram` | address?(0), length?(32768) | Word-addressed. Max 32768 words (64KB). Returns wordAddress, wordCount, hex, bytes |
+| `getCgram` | address?(0), length?(512) | Byte-addressed. Max 512 bytes. Returns hex, bytes + colors array with index/rgb555/r/g/b per entry |
+| `getOam` | _(none)_ | Returns raw 544 bytes + parsed sprites array (128 entries): index, x, y, tile, palette, priority, hFlip, vFlip, size, width, height. Also returns oamMode |
+
+### Memory Search & Diff
+| Command | Params | Notes |
+|---------|--------|-------|
+| `searchMemory` | memoryType, pattern, startAddress?(0), maxResults?(20) | Pattern: hex with `??` wildcards, e.g. `"B4 ?? 4A D6"`. Max 2MB search region, max 1000 results, max 256-byte pattern |
+| `snapshotMemory` | id, memoryType, address?(0), length?(256) | Save memory region snapshot. Max 16 snapshots, 64KB each, 5-min TTL |
+| `diffMemory` | snapshotId, memoryType?, address?, length? | Compare current memory against snapshot. Returns change runs with offset/address/oldHex/newHex + totals |
+| `clearSnapshots` | _(none)_ | Clear all stored snapshots |
+
 ### CPU State
 | Command | Params | Notes |
 |---------|--------|-------|
@@ -79,6 +89,17 @@ All labels set via IPC are marked with an IPC flag (visible in label/function li
 | `isPaused` | | Returns `{"paused":bool}` |
 | `step` | cpuType?(Snes), count?(1), stepType?(Step) | Fire-and-forget. For StepBack: count = StepBackType (0=Instruction,1=Scanline,2=Frame) |
 | `stepTrace` | cpuType?(Snes), count?(1), stepType?(Step), stepBackUnit?(Instruction) | Returns CPU state after **each** step. Max 500. `states` array in response |
+
+### Trace Log
+| Command | Params | Notes |
+|---------|--------|-------|
+| `getTraceLog` | count?(100), cpuType? | Recent execution history (up to 30000). Requires trace logging enabled. Returns pc, cpuType, byteCode, log (formatted disassembly + registers) |
+| `setTraceLogEnabled` | enabled?(true), cpuType?(Snes), format?, useLabels?(true), condition? | Enable/disable trace logging. Default format: `[Disassembly][Align,24] A:[A,4h] X:[X,4h] Y:[Y,4h] S:[SP,4h] D:[D,4h] DB:[DB,2h] P:[P,h]` |
+
+### Event Wait
+| Command | Params | Notes |
+|---------|--------|-------|
+| `waitForEvent` | event, timeout?(5000) | **Blocks** until event fires or timeout (ms, 100-60000). Events: `breakpoint`, `paused`, `resumed`, `debuggerResumed`, `frameComplete`, `romLoaded`, `stateLoaded`, `reset`. Returns triggered, event, timedOut. On breakpoint: includes cpuState |
 
 ### Disassembly
 | Command | Params | Notes |
@@ -169,17 +190,48 @@ Tap pattern: set → step PpuFrame ×N → clear.
 |---------|--------|-------|
 | `getTimingInfo` | cpuType?(Snes) | fps, masterClock, masterClockRate, frameCount, scanlineCount, firstScanline, cycleCount |
 | `getPpuState` | cpuType?(Snes) | SNES: cycle, scanline, hClock, frameCount, forcedBlank, screenBrightness, bgMode, mode1Bg3Priority, mainScreenLayers, subScreenLayers, vramAddress |
+| `getBgState` | layer?(all) | Layer 1-4 or omit for all. Per-layer: charBaseAddress, mapBaseAddress, mapSize, tileSize, bpp, hScroll, vScroll, mainScreen, subScreen. All-layers also returns bgMode, mode1Bg3Priority, mainScreenLayers, subScreenLayers |
+| `getDmaState` | channel?(all) | Channel 0-7 or omit for all. Per-channel: active, hdmaEnabled, transferMode, direction, fixedTransfer, decrement, ioAddress, sourceBank, sourceAddress, transferSize, hdmaIndirect, hdmaBank, hdmaTableAddress, hdmaLineCounter |
+
+### Tilemap / Graphics decode
+| Command | Params | Notes |
+|---------|--------|-------|
+| `getTilemap` | layer(1-4), startX?, startY?, width?, height? | Decodes tilemap entries from VRAM for BG layer. Handles DoubleWidth/Height quadrants. Returns entries:[{x,y,tileIndex,palette,priority,hFlip,vFlip,vramWord}], plus mapBaseAddress/charBaseAddress/bpp/tileSize. Default = full map. Max 8192 entries/call |
+| `decodeTiles` | source("vram"\|"rom"\|"wram"), address, count(1-4096), bpp(2\|4\|8), palette?("cgram"\|"grayscale"), paletteOffset?(0-255) | Decodes SNES planar tile bytes into 8x8 pixels. Returns indexed:[...] flat palette-index buffer + rgbaBase64 (count×64 pixels, RGBA row-major within each 8x8 tile, tiles concatenated). Color 0 alpha=0 (transparent). paletteOffset = CGRAM color index start |
+| `renderBgLayer` | layer(1-4) | Composites full BG layer to RGBA: tilemap + char + per-tile palette + flips + LargeTiles 2x2 sub-tile arrangement. Returns width/height + rgbaBase64 (row-major pixels). Color 0 = transparent (alpha=0). Output capped at 1024×1024 pixels |
+
+### Targeted Execution
+| Command | Params | Notes |
+|---------|--------|-------|
+| `runUntilVramWrite` | vramAddress, vramEndAddress?(=start), timeout?(10000ms) | Sets temp breakpoint on writes to $2118/$2119, resumes, loops: check ppu.VramAddress in [start,end] → return cpuState+pc; else resume. Cleans up breakpoint on all paths. Returns {triggered, timedOut, vramAddress, pc, cpuState, matchedRange} |
 
 ### IPC Info
 | Command | Params | Notes |
 |---------|--------|-------|
 | `getIpcInfo` | | pipeName, pipePath, romPath, platform |
+| `listCommands` | | Returns {count, commands:[...], categories:{cat:[cmds]}}. Alias: `getCommands`. Use for self-discovery when this prompt is stale |
 
 ### Cheats
 | Command | Params | Notes |
 |---------|--------|-------|
 | `setCheats` | cheats:[{type,code},...] | See CheatType enum. Replaces all active cheats |
 | `clearCheats` | | Remove all |
+
+### Memory Watch Hook (MMIO callback, pull model)
+Native SPSC ring captures CPU memory accesses matching registered ranges. Drain via `pollMemoryEvents`. Hot path is lock-free; filter is per-CpuType linear range scan. v1 = CPU memory only (read/write/exec/dma — no PPU/APU bus). Value is **pre-commit** for writes (new value being stored). Old value not captured (avoids extra DebugRead). To recover old value: issue `readMemory` at `event.address` BEFORE next poll cycle (intra-batch the prior event's value is the most recent old value). For bursty same-address writes, reconstruct from prior event in batch.
+
+| Command | Params | Notes |
+|---------|--------|-------|
+| `watchCpuMemory` | cpuType, ranges:[{start,end?,ops?,valueMin?,valueMax?,sampleRate?}], ops?:[...] | Replace all watches for cpuType. ops: read/write/exec/execoperand/dmaread/dmawrite/all/allaccess. Default ops=allaccess. valueMin/Max (hex/dec, default 0..0xFFFF) filter event value. sampleRate=N captures 1-in-N matching events (0/1=every). Auto-enables hook. Re-sending watches resets sample counters |
+| `addCpuMemoryWatch` | cpuType, start, end?, ops?, valueMin?, valueMax?, sampleRate? | Append one range. Same value/sample semantics as watchCpuMemory |
+| `clearCpuMemoryWatches` | | Drop all watches across all CpuTypes |
+| `pollMemoryEvents` | maxEvents?:1024 | Returns {count,dropped,highWater,events:[{masterClock,cpuType,address,absAddress,value,opType,accessWidth}]}. dropped/highWater since last poll |
+| `setMemoryWatchEnabled` | enabled:bool | Master gate. Off = zero hot-path cost |
+| `setMemoryWatchRingSize` | size | Power-of-2, 1024..4194304. Resets ring (drops in-flight events). Persisted to config |
+
+Event opType: Read, Write, ExecOpCode, ExecOperand, DmaRead, DmaWrite. AccessWidth: 1 or 2 bytes. Value is uint16 (covers SNES word — widest Mesen bus). absAddress is null in v1 (mapping not computed in hot path).
+
+Ring overflow policy: drop newest, increment dropped counter. If dropped > 0: poll faster, raise ring size, or narrow ranges.
 
 ## Key Rules
 - Labels use **absolute** addresses (SnesPrgRom). Use `getAbsoluteAddress` to convert CPU addresses.
@@ -228,6 +280,36 @@ Conditional breakpoints use the expression evaluator: registers (`A`, `X`, `Y`, 
 - `stepTrace` is **synchronous** — it steps and reads CPU state in a tight loop, returning all states in one response. Use this for tracing.
 - After `step`, poll `isPaused` before reading state. After `stepTrace`, states are already in the response.
 - `StepOver` skips subroutine calls (JSR/JSL). `StepOut` runs until the current subroutine returns.
+
+## Gathering Context from the User
+
+Before starting an RE task, ask the user for any of the following they can provide. Each item dramatically reduces wasted investigation time.
+
+### Critical (ask first)
+| Question | Why it matters |
+|----------|---------------|
+| **What game state shows the target?** | "Font appears during dialogue after title screen" prevents tracing the wrong data (e.g., title logo instead of dialogue font). Knowing the game phase narrows the search window from "entire boot sequence" to a specific moment. |
+| **Known addresses or partial RE work?** | Existing labels, tilemap locations, BG mode, RAM maps, or prior disassembly notes. Even partial info ("I think the tilemap is near $1000") eliminates entire categories of investigation. |
+| **Expected data format?** | 2bpp vs 4bpp tiles, compressed vs uncompressed, known compression type (LZ, Huffman, custom), tile size (8x8 vs 16x16). Wrong format assumption wastes full decompression attempts. |
+
+### High Value (ask if task involves graphics or text)
+| Question | Why it matters |
+|----------|---------------|
+| **Character encoding / expected glyphs?** | "Japanese game with hiragana + katakana + scene-swapped kanji" helps validate decompressed output. Status abbreviations or custom symbols are confusing without context. |
+| **ROM map or bank layout?** | Even rough ("game data in banks $B0-$BF, code in $80-$8F") helps prioritize where to scan when searching for data tables. |
+| **Screenshot of the target?** | A screenshot showing the font/sprite/tilemap in-game serves as ground truth for validating decoded output. Without it, you're guessing whether garbled output is wrong data or wrong decode. |
+
+### Helpful (ask if investigation stalls)
+| Question | Why it matters |
+|----------|---------------|
+| **Other games on the same engine?** | Same developer often reuses compression, tile formats, and memory layouts. Cross-referencing sister titles can confirm format assumptions. |
+| **DMA vs manual VRAM writes?** | Some games (like SBD) use manual `STA $2118` loops instead of DMA for tile transfers. This changes the entire tracing strategy — DMA register watches find nothing if the game doesn't use DMA. |
+| **How many variants of the target exist?** | Fonts may have a base set + overlay pages (like SBD's 25 kanji pages). Sprite sheets may be split across multiple tilesets. Knowing this prevents premature "found it" conclusions. |
+
+### Lessons from past investigations
+- **Don't assume the first VRAM write to a region is the target.** The same VRAM address range gets overwritten by different tilesets at different game phases. The title logo and dialogue font both wrote to $4000.
+- **Tileset/data table scanning is faster than runtime tracing** when the compression format and table location are known. Scanning all 512 entries in a tileset table takes seconds offline vs hours of breakpoint tracing.
+- **Standalone ROM analysis beats IPC tracing** for static data (fonts, graphics, tables). Reserve IPC/runtime analysis for dynamic behavior (what code calls what, runtime state).
 
 ## Annotation Guidelines
 - Follow the user's instructions on what to annotate and how to categorize.

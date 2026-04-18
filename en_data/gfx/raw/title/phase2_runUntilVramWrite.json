@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "error": "Command 'runUntilVramWrite' failed: Format string can be only \"G\", \"g\", \"X\", \"x\", \"F\", \"f\", \"D\" or \"d\"."
+}

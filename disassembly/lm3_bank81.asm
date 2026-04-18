@@ -4088,7 +4088,7 @@ drawEquipmentScreen: ; $01A73D
         STA.B $12
         LDA.L $7FC004
         AND.W #$00FF
-        JSR.W advanceDataPointer
+        JSR.W resolvePaletteSrc
         LDA.W #$0022
         STA.B $18
         LDA.W #$96E3
@@ -4166,7 +4166,7 @@ drawMagicScreen: ; $01A7E2
         LDA.W #$8000
         STA.B $12
         PLA
-        JSR.W advanceDataPointer
+        JSR.W resolvePaletteSrc
         LDX.W #$0000
         LDY.W #$0800
 CODE_81A7FD: ; $01A7FD
@@ -9903,7 +9903,7 @@ CODE_81E1B4: ; $01E1B4
         LDA.W #$1318
         JSR.W soundDispatcher
         LDA.W #$0001
-        JSR.W buildSpellMenuTilemap
+        JSR.W loadTitleGfx
         JSR.W drawMessageBox
         LDX.W #$04B0
 CODE_81E1D5: ; $01E1D5
@@ -11323,8 +11323,10 @@ CODE_81EF53: ; $01EF53
         db $08,$C2,$20,$E0,$00,$00,$F0,$1F,$85,$14,$20,$37,$EF,$85,$12,$8A
         db $20,$37,$EF,$5A,$A4,$12,$20,$DB,$EE,$A8,$A9,$0A,$00,$20,$C2,$EE
         db $7A,$20,$4A,$EF,$18,$65,$14,$28,$60
-; [Helper] Walks 4-byte records; advances 24-bit ptr [$12]:$14
-advanceDataPointer: ; $01EF85
+; [Palette] Palette-source index translator. Y=A*4; reads (offset_16, bank_adj_16) from table; computes new $12/$14. Used by loadTitleGfx to resolve palette entry index 1 -> $23:F80E.
+; 
+; MISNAMED as advanceDataPointer.
+resolvePaletteSrc: ; $01EF85
         REP #$20
         PHY
         ASL A
@@ -11419,7 +11421,7 @@ evtTilemap_SetPtrDefault: ; $01F01C
 ; [Script] PLA, JSL calculateSpellCost, DEC. Process tilemap entry count.
 evtTilemap_ProcessEntry: ; $01F030
         PLA
-        JSL.L renderTextFromTable
+        JSL.L decodeTileStream
         DEC A
         BEQ evtTilemap_Done
         LDA.W #$007E
@@ -11447,8 +11449,13 @@ evtTilemap_SetupIRQ: ; $01F05A
         JSL.L copyToTileBuffer
         PLP
         RTS
-; [Tilemap] Sets up tilemap at bank $23:$F800; spell menu layout
-buildSpellMenuTilemap: ; $01F060
+; [Init] Title screen gfx + palette loader. Called from $01:E168 boot loop after dispatchGameMode(5).
+; 1. JSR $EF85 + JSL uploadPaletteWrapper ($0094AB) — palette from $23:F800 table, entry 1 = $23:F80E (512B).
+; 2. Loop 7x calling decodeTileStream (JSL $00AF6A) with record IDs $0008..$000E; directory $23:8000, chunk store $23:9000.
+; 3. Each decoded record staged at $7E:2000 then DMAed via dmaToVRAMGeneric to successive VRAM offsets starting at VRAM 0.
+; 
+; MISNAMED as buildSpellMenuTilemap; builds title art not spell menu.
+loadTitleGfx: ; $01F060
         PHP
         REP #$20
         STA.B $28
@@ -11457,7 +11464,7 @@ buildSpellMenuTilemap: ; $01F060
         LDA.W #$F800
         STA.B $12
         LDA.B $28
-        JSR.W advanceDataPointer
+        JSR.W resolvePaletteSrc
         LDA.W #$0000
         STA.B $00
         LDA.W #$0010
@@ -11484,7 +11491,7 @@ evtTilemap_Init: ; $01F08F
         LDA.W #$9000
         STA.B $16
         LDA.B $28
-        JSL.L renderTextFromTable
+        JSL.L decodeTileStream
         LDA.W #$007E
         STA.B $14
         LDA.W #$2000

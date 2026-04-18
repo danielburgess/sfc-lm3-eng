@@ -104,7 +104,7 @@
 <<<window[0]:$001D-$0032>>>
 「Here goes, Snow Spark Blizzard!」
 <<<window[1]:$0035-$0037>>>
-[03]
+
 <<<window[2]:$0040-$0041>>>
 
 <<<window[3]:$0049-$004A>>>

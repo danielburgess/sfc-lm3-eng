@@ -1,0 +1,14 @@
+{
+  "cpuType": "Snes",
+  "cycle": 171,
+  "scanline": 210,
+  "hClock": 684,
+  "frameCount": 9743,
+  "forcedBlank": false,
+  "screenBrightness": 4,
+  "bgMode": 4,
+  "mode1Bg3Priority": false,
+  "mainScreenLayers": 1,
+  "subScreenLayers": 1,
+  "vramAddress": "7C00"
+}
