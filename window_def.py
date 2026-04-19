@@ -8,6 +8,7 @@ text, lets user confirm/edit/create window regions, exports windowed
 script files for retrotool.
 
 Usage:
+    python3 window_def.py                         # interactive picker
     python3 window_def.py combat-bytecode-2
     python3 window_def.py --def combat-bytecode-2_window.def
 """
@@ -20,6 +21,11 @@ import struct
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# pywebview/Qt defaults — set before any webview/Qt import. setdefault preserves
+# user overrides (e.g. `env QT_QPA_PLATFORM=wayland python3 window_def.py`).
+os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu --no-sandbox")
 
 # ---------------------------------------------------------------------------
 # Imports from project
@@ -1783,6 +1789,46 @@ def find_project_toml():
     return None
 
 
+def pick_table_interactive(tables_dir: str = "tables") -> str | None:
+    """Show a numbered list of tables/*.toml and return the chosen table name.
+
+    Returns None if the user bails (empty input, Ctrl-C, Ctrl-D).
+    """
+    tables = sorted(
+        p.stem for p in Path(tables_dir).glob("*.toml")
+    )
+    if not tables:
+        print(f"No .toml files found in {tables_dir}/")
+        return None
+
+    print(f"\nAvailable tables in {tables_dir}/:")
+    width = len(str(len(tables)))
+    for i, name in enumerate(tables, 1):
+        print(f"  {i:>{width}}. {name}")
+
+    try:
+        raw = input("\nSelect a table (number or name, blank to cancel): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+
+    if not raw:
+        return None
+
+    if raw.isdigit():
+        idx = int(raw)
+        if 1 <= idx <= len(tables):
+            return tables[idx - 1]
+        print(f"Error: {idx} is out of range (1..{len(tables)})")
+        return None
+
+    if raw in tables:
+        return raw
+
+    print(f"Error: {raw!r} is not a valid table name")
+    return None
+
+
 def main():
     import argparse
 
@@ -1810,8 +1856,9 @@ def main():
     elif args.table:
         table_name = args.table
     else:
-        parser.print_help()
-        sys.exit(1)
+        table_name = pick_table_interactive()
+        if table_name is None:
+            sys.exit(0)
 
     toml_path = f"tables/{table_name}.toml"
     if not os.path.exists(toml_path):

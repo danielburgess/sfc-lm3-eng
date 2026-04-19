@@ -198,7 +198,7 @@
 <<<window[0]:$0009-$001E>>>
 [FF7F08]The belt moves.[nl]And so do we.
 <<<window[1]:$0056-$0072>>>
- From somewhere, D[r.]. Skull's voice can be heard.[FFFE00]
+ From somewhere, Dr. Skull's voice can be heard.[FFFE00]
 <<<window[2]:$0079-$0094>>>
 「How's the conveyor ride?[wait20] Hmm?」
 <<<window[3]:$009E-$00C7>>>
@@ -270,7 +270,7 @@
 
 <<$1129115:29[$1135766]>>
 <<<window[0]:$000E-$0038>>>
-[FF7F09]A tornado has appeared.[nl]Touch it and you'll be blown away.[nl]And it's a double.
+[FF7F09]A tornado has appeared.[nl]Touch it, and you'll be blown away.[nl]And it's a double.
 
 <<$1129115:30[$1135826]>>
 <<<window[0]:$0004-$001F>>>
