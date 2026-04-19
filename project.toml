@@ -40,6 +40,14 @@ cache_dir = "en_data/bin/scripts"
 type = "mesen-diz"
 pipe_name = "Mesen2Diz_lm3"
 
+# Extract-phase config. `default_lang = "jp"` ensures bare
+# `retrotool extract project.toml` targets jp_data/scripts — the EN dir
+# contains hand-maintained translations and must NEVER be overwritten.
+# Override per-invocation with `--lang en` (and --yes once you're sure).
+# TODO: expand this section as more extract-only knobs are needed.
+[extract]
+default_lang = "jp"
+
 # [rom.build] — pipeline-wide config. Sections themselves are auto-included
 # from any `tables/<name>.toml` that has a `[section]` sub-table; declared
 # once there, not duplicated here. Set `order = [...]` to override auto-sort.
