@@ -1,0 +1,5277 @@
+[
+  {
+    "table_src_file": 1580,
+    "stride": 6,
+    "count": 6,
+    "table_end_file": 1613,
+    "first_target_file": 1420006,
+    "first_target_snes": "$2B:AAE6",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1417259,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2B": 6
+    }
+  },
+  {
+    "table_src_file": 1923,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1942,
+    "first_target_file": 1451264,
+    "first_target_snes": "$2C:A500",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1254698,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$28": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 4036,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 4055,
+    "first_target_file": 1150395,
+    "first_target_snes": "$23:8DBB",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1510675,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 4853,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 4864,
+    "first_target_file": 1189267,
+    "first_target_snes": "$24:A593",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1320196,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 4947,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 4958,
+    "first_target_file": 1189216,
+    "first_target_snes": "$24:A560",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1320196,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 5394,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 5413,
+    "first_target_file": 1150395,
+    "first_target_snes": "$23:8DBB",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1510679,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 10909,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 10928,
+    "first_target_file": 1433853,
+    "first_target_snes": "$2B:E0FD",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1433451,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 3
+    }
+  },
+  {
+    "table_src_file": 11182,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 11197,
+    "first_target_file": 1433699,
+    "first_target_snes": "$2B:E063",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1433283,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 4
+    }
+  },
+  {
+    "table_src_file": 11787,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 11802,
+    "first_target_file": 1312000,
+    "first_target_snes": "$28:8500",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1123332,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "compressed.likely",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 2
+    }
+  },
+  {
+    "table_src_file": 11789,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 11804,
+    "first_target_file": 1123880,
+    "first_target_snes": "$22:A628",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1189410,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 12400,
+    "stride": 6,
+    "count": 8,
+    "table_end_file": 12445,
+    "first_target_file": 1120026,
+    "first_target_snes": "$22:971A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1120026,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 8
+    }
+  },
+  {
+    "table_src_file": 35007,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 35016,
+    "first_target_file": 1317984,
+    "first_target_snes": "$28:9C60",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1445129,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$28": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 39179,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 39190,
+    "first_target_file": 1246480,
+    "first_target_snes": "$26:8510",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1271334,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 39181,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 39196,
+    "first_target_file": 1189158,
+    "first_target_snes": "$24:A526",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1254711,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$26": 2
+    }
+  },
+  {
+    "table_src_file": 39647,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 39662,
+    "first_target_file": 1349704,
+    "first_target_snes": "$29:9848",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1419674,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2A": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 39895,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 39910,
+    "first_target_file": 1320348,
+    "first_target_snes": "$28:A59C",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1273382,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 2,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 41711,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 41726,
+    "first_target_file": 1191171,
+    "first_target_snes": "$24:AD03",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1470498,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$28": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 42281,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 42300,
+    "first_target_file": 1150395,
+    "first_target_snes": "$23:8DBB",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1510679,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 43461,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 43472,
+    "first_target_file": 1123592,
+    "first_target_snes": "$22:A508",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1205794,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 2
+    }
+  },
+  {
+    "table_src_file": 43485,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 43496,
+    "first_target_file": 1314303,
+    "first_target_snes": "$28:8DFF",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1189124,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 44133,
+    "stride": 6,
+    "count": 6,
+    "table_end_file": 44166,
+    "first_target_file": 1349754,
+    "first_target_snes": "$29:987A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1123594,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$29": 4
+    }
+  },
+  {
+    "table_src_file": 44155,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 44174,
+    "first_target_file": 1132050,
+    "first_target_snes": "$22:C612",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1115394,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 44468,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 44479,
+    "first_target_file": 1320243,
+    "first_target_snes": "$28:A533",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1320224,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 49407,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 49418,
+    "first_target_file": 1246682,
+    "first_target_snes": "$26:85DA",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1140258,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$26": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 49409,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 49424,
+    "first_target_file": 1312294,
+    "first_target_snes": "$28:8626",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1189120,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 49413,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 49432,
+    "first_target_file": 1123624,
+    "first_target_snes": "$22:A528",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1263104,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$26": 1
+    }
+  },
+  {
+    "table_src_file": 53175,
+    "stride": 6,
+    "count": 4,
+    "table_end_file": 53196,
+    "first_target_file": 1349712,
+    "first_target_snes": "$29:9850",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1349711,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 4
+    }
+  },
+  {
+    "table_src_file": 54464,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 54483,
+    "first_target_file": 1246464,
+    "first_target_snes": "$26:8500",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1312016,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$28": 2
+    }
+  },
+  {
+    "table_src_file": 55638,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 55649,
+    "first_target_file": 1115392,
+    "first_target_snes": "$22:8500",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1189156,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$24": 1
+    }
+  },
+  {
+    "table_src_file": 182834,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 182845,
+    "first_target_file": 1122946,
+    "first_target_snes": "$22:A282",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1116706,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 182836,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 182847,
+    "first_target_file": 1122850,
+    "first_target_snes": "$22:A222",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1115682,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 197322,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 197337,
+    "first_target_file": 1158663,
+    "first_target_snes": "$23:AE07",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1158691,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 4
+    }
+  },
+  {
+    "table_src_file": 197410,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 197425,
+    "first_target_file": 1289993,
+    "first_target_snes": "$27:AF09",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1290023,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$27": 4
+    }
+  },
+  {
+    "table_src_file": 198560,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 198587,
+    "first_target_file": 1196766,
+    "first_target_snes": "$24:C2DE",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1294375,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 2,
+      "$27": 2
+    }
+  },
+  {
+    "table_src_file": 198576,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 198591,
+    "first_target_file": 1294406,
+    "first_target_snes": "$27:C046",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1294375,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$27": 4
+    }
+  },
+  {
+    "table_src_file": 198578,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 198593,
+    "first_target_file": 1294375,
+    "first_target_snes": "$27:C027",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1294375,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$27": 4
+    }
+  },
+  {
+    "table_src_file": 198612,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 198631,
+    "first_target_file": 1196343,
+    "first_target_snes": "$24:C137",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1196441,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 3
+    }
+  },
+  {
+    "table_src_file": 240741,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 240752,
+    "first_target_file": 1444668,
+    "first_target_snes": "$2C:8B3C",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1517868,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$2C": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 245796,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 245807,
+    "first_target_file": 1310479,
+    "first_target_snes": "$27:FF0F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1228627,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$27": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 248687,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 248698,
+    "first_target_file": 1365865,
+    "first_target_snes": "$29:D769",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1137980,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$29": 2
+    }
+  },
+  {
+    "table_src_file": 249759,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 249770,
+    "first_target_file": 1452224,
+    "first_target_snes": "$2C:A8C0",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1501220,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2C": 2,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 250176,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 250187,
+    "first_target_file": 1496555,
+    "first_target_snes": "$2D:D5EB",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1236257,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 2,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 268592,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 268607,
+    "first_target_file": 1343232,
+    "first_target_snes": "$28:FF00",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1400608,
+    "slot_classifications": [
+      "unknown",
+      "ascii-ish",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 269204,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 269215,
+    "first_target_file": 1539845,
+    "first_target_snes": "$2E:FF05",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1408768,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 269600,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 269611,
+    "first_target_file": 1408769,
+    "first_target_snes": "$2A:FF01",
+    "first_target_sniff": "ascii-ish",
+    "last_target_file": 1146624,
+    "slot_classifications": [
+      "ascii-ish",
+      "ascii-ish",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 271378,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 271389,
+    "first_target_file": 1376638,
+    "first_target_snes": "$2A:817E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1408768,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 273886,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 273897,
+    "first_target_file": 1306767,
+    "first_target_snes": "$27:F08F",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1309479,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$27": 3
+    }
+  },
+  {
+    "table_src_file": 273888,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 273899,
+    "first_target_file": 1309479,
+    "first_target_snes": "$27:FB27",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1309479,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$27": 3
+    }
+  },
+  {
+    "table_src_file": 293073,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 293084,
+    "first_target_file": 1440267,
+    "first_target_snes": "$2B:FA0B",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1519402,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2B": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 360619,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 360630,
+    "first_target_file": 1473024,
+    "first_target_snes": "$2C:FA00",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1521152,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2C": 1,
+      "$2D": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 387080,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 387095,
+    "first_target_file": 1474306,
+    "first_target_snes": "$2C:FF02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1474546,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2C": 4
+    }
+  },
+  {
+    "table_src_file": 388492,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 388503,
+    "first_target_file": 1179394,
+    "first_target_snes": "$23:FF02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1179633,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 3
+    }
+  },
+  {
+    "table_src_file": 388516,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 388531,
+    "first_target_file": 1343234,
+    "first_target_snes": "$28:FF02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1343474,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 4
+    }
+  },
+  {
+    "table_src_file": 390099,
+    "stride": 6,
+    "count": 5,
+    "table_end_file": 390126,
+    "first_target_file": 1411623,
+    "first_target_snes": "$2B:8A27",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1386016,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2,
+      "$2B": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 402889,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 402904,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 415374,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 415389,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 433158,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 433173,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 434911,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 434926,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 436672,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 436687,
+    "first_target_file": 1369087,
+    "first_target_snes": "$29:E3FF",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$29": 1
+    }
+  },
+  {
+    "table_src_file": 438225,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 438240,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1238015,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 442343,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 442358,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 453502,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 453517,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 456927,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 456942,
+    "first_target_file": 1336319,
+    "first_target_snes": "$28:E3FF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1172479,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$25": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 575093,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 575112,
+    "first_target_file": 1170227,
+    "first_target_snes": "$23:DB33",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1471293,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$28": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 602791,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 602818,
+    "first_target_file": 1213375,
+    "first_target_snes": "$25:83BF",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1456256,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$25": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 689148,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 689163,
+    "first_target_file": 1272447,
+    "first_target_snes": "$26:EA7F",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1507211,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$27": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 700697,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 700716,
+    "first_target_file": 1272320,
+    "first_target_snes": "$26:EA00",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1335552,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$27": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 731160,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 731175,
+    "first_target_file": 1236444,
+    "first_target_snes": "$25:DDDC",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1531289,
+    "slot_classifications": [
+      "unknown",
+      "ascii-ish",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 734001,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 734016,
+    "first_target_file": 1259874,
+    "first_target_snes": "$26:B962",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1129760,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 750144,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 750163,
+    "first_target_file": 1539842,
+    "first_target_snes": "$2E:FF02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1146690,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$26": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 775368,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 775383,
+    "first_target_file": 1277839,
+    "first_target_snes": "$26:FF8F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1235622,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$26": 1
+    }
+  },
+  {
+    "table_src_file": 776016,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 776027,
+    "first_target_file": 1228609,
+    "first_target_snes": "$25:BF41",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1399585,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$25": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 780016,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 780027,
+    "first_target_file": 1228609,
+    "first_target_snes": "$25:BF41",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1399585,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$27": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 781696,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 781707,
+    "first_target_file": 1228609,
+    "first_target_snes": "$25:BF41",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1399585,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$26": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 796368,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 796379,
+    "first_target_file": 1274436,
+    "first_target_snes": "$26:F244",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1274406,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 796370,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 796381,
+    "first_target_file": 1274406,
+    "first_target_snes": "$26:F226",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1274406,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 798192,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 798203,
+    "first_target_file": 1177890,
+    "first_target_snes": "$23:F922",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1173795,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 3
+    }
+  },
+  {
+    "table_src_file": 798194,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 798205,
+    "first_target_file": 1173795,
+    "first_target_snes": "$23:E923",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1173795,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 3
+    }
+  },
+  {
+    "table_src_file": 805861,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 805872,
+    "first_target_file": 1473312,
+    "first_target_snes": "$2C:FB20",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1536046,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2C": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 806273,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 806284,
+    "first_target_file": 1536047,
+    "first_target_snes": "$2E:F02F",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1400887,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2B": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 816847,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 816862,
+    "first_target_file": 1436416,
+    "first_target_snes": "$2B:EB00",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1338920,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$29": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 816849,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 816864,
+    "first_target_file": 1371435,
+    "first_target_snes": "$29:ED2B",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1338920,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 3,
+      "$29": 1
+    }
+  },
+  {
+    "table_src_file": 817359,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 817370,
+    "first_target_file": 1337406,
+    "first_target_snes": "$28:E83E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1437480,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 817361,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 817372,
+    "first_target_file": 1343016,
+    "first_target_snes": "$28:FE28",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1470251,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 817619,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 817630,
+    "first_target_file": 1392394,
+    "first_target_snes": "$2A:BF0A",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1392426,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 817873,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 817884,
+    "first_target_file": 1212192,
+    "first_target_snes": "$24:FF20",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1205796,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$24": 3
+    }
+  },
+  {
+    "table_src_file": 817875,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 817886,
+    "first_target_file": 1211940,
+    "first_target_snes": "$24:FE24",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1271332,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 2,
+      "$26": 1
+    }
+  },
+  {
+    "table_src_file": 818365,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 818380,
+    "first_target_file": 1245238,
+    "first_target_snes": "$26:8036",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1208100,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$26": 1,
+      "$29": 1
+    }
+  },
+  {
+    "table_src_file": 818371,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 818382,
+    "first_target_file": 1238821,
+    "first_target_snes": "$25:E725",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1141540,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$25": 1
+    }
+  },
+  {
+    "table_src_file": 819343,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 819358,
+    "first_target_file": 1469446,
+    "first_target_snes": "$2C:EC06",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1502509,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2C": 2,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 819839,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 819854,
+    "first_target_file": 1440518,
+    "first_target_snes": "$2B:FB06",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1408810,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$2A": 3,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 819841,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 819856,
+    "first_target_file": 1408555,
+    "first_target_snes": "$2A:FE2B",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1407786,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "ascii-ish",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2A": 4
+    }
+  },
+  {
+    "table_src_file": 820337,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 820352,
+    "first_target_file": 1403648,
+    "first_target_snes": "$2A:EB00",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1403690,
+    "slot_classifications": [
+      "unknown",
+      "ascii-ish",
+      "ascii-ish",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 4
+    }
+  },
+  {
+    "table_src_file": 820799,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 820814,
+    "first_target_file": 1403890,
+    "first_target_snes": "$2A:EBF2",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1437483,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 820801,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 820816,
+    "first_target_file": 1408554,
+    "first_target_snes": "$2A:FE2A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1375531,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2A": 2,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 821263,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 821278,
+    "first_target_file": 1376218,
+    "first_target_snes": "$29:FFDA",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1374505,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$29": 4
+    }
+  },
+  {
+    "table_src_file": 821265,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 821280,
+    "first_target_file": 1375017,
+    "first_target_snes": "$29:FB29",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1375017,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 4
+    }
+  },
+  {
+    "table_src_file": 821775,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 821790,
+    "first_target_file": 1371906,
+    "first_target_snes": "$29:EF02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1436203,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 2,
+      "$2B": 2
+    }
+  },
+  {
+    "table_src_file": 825999,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 826010,
+    "first_target_file": 1260095,
+    "first_target_snes": "$26:BA3F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1260070,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 826001,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 826012,
+    "first_target_file": 1260070,
+    "first_target_snes": "$26:BA26",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1260070,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 3
+    }
+  },
+  {
+    "table_src_file": 830414,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 830429,
+    "first_target_file": 1343232,
+    "first_target_snes": "$28:FF00",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1440299,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2B": 1,
+      "$2C": 1,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 830416,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 830431,
+    "first_target_file": 1538344,
+    "first_target_snes": "$2E:F928",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1342251,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2B": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 830452,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 830463,
+    "first_target_file": 1337088,
+    "first_target_snes": "$28:E700",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1404814,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 830752,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 830767,
+    "first_target_file": 1374249,
+    "first_target_snes": "$29:F829",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1374248,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$29": 2
+    }
+  },
+  {
+    "table_src_file": 831136,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 831151,
+    "first_target_file": 1341480,
+    "first_target_snes": "$28:F828",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1372707,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$29": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 831438,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 831453,
+    "first_target_file": 1409023,
+    "first_target_snes": "$2A:FFFF",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1341484,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "ascii-ish",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2B": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 855722,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 855737,
+    "first_target_file": 1442451,
+    "first_target_snes": "$2C:8293",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387179,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 856143,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 856152,
+    "first_target_file": 1376426,
+    "first_target_snes": "$2A:80AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1385194,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 856388,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 856403,
+    "first_target_file": 1384969,
+    "first_target_snes": "$2A:A209",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1354276,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$29": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 856592,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 856601,
+    "first_target_file": 1114634,
+    "first_target_snes": "$22:820A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1320576,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 857055,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 857082,
+    "first_target_file": 1385128,
+    "first_target_snes": "$2A:A2A8",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1395362,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 4
+    }
+  },
+  {
+    "table_src_file": 858122,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 858137,
+    "first_target_file": 1329802,
+    "first_target_snes": "$28:CA8A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1124874,
+    "slot_classifications": [
+      "unknown",
+      "zero-padding",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 858659,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 858674,
+    "first_target_file": 1385130,
+    "first_target_snes": "$2A:A2AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1378954,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 858888,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 858903,
+    "first_target_file": 1337866,
+    "first_target_snes": "$28:EA0A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1378952,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 858960,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 858971,
+    "first_target_file": 1321634,
+    "first_target_snes": "$28:AAA2",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1516162,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 858978,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 858997,
+    "first_target_file": 1460906,
+    "first_target_snes": "$2C:CAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1124490,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$29": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 859214,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 859233,
+    "first_target_file": 1387179,
+    "first_target_snes": "$2A:AAAB",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1321642,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 859596,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 859615,
+    "first_target_file": 1387214,
+    "first_target_snes": "$2A:AACE",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1391282,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 860017,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 860032,
+    "first_target_file": 1390730,
+    "first_target_snes": "$2A:B88A",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1390758,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 910173,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 910184,
+    "first_target_file": 1495824,
+    "first_target_snes": "$2D:D310",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1138178,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$24": 1,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 921224,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 921233,
+    "first_target_file": 1531905,
+    "first_target_snes": "$2E:E001",
+    "first_target_sniff": "zero-padding",
+    "last_target_file": 1531906,
+    "slot_classifications": [
+      "zero-padding",
+      "zero-padding",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$2E": 3
+    }
+  },
+  {
+    "table_src_file": 923997,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 924006,
+    "first_target_file": 1430918,
+    "first_target_snes": "$2B:D586",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1430800,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 3
+    }
+  },
+  {
+    "table_src_file": 924414,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 924429,
+    "first_target_file": 1170689,
+    "first_target_snes": "$23:DD01",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1170689,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 4
+    }
+  },
+  {
+    "table_src_file": 924721,
+    "stride": 4,
+    "count": 5,
+    "table_end_file": 924740,
+    "first_target_file": 1155841,
+    "first_target_snes": "$23:A301",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1170689,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 5
+    }
+  },
+  {
+    "table_src_file": 928146,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 928155,
+    "first_target_file": 1204511,
+    "first_target_snes": "$24:E11F",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1211616,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$24": 3
+    }
+  },
+  {
+    "table_src_file": 929969,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 929980,
+    "first_target_file": 1467408,
+    "first_target_snes": "$2C:E410",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1451355,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 936444,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 936455,
+    "first_target_file": 1467408,
+    "first_target_snes": "$2C:E410",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1451355,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 942124,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 942133,
+    "first_target_file": 1415503,
+    "first_target_snes": "$2B:994F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1508182,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 968109,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 968120,
+    "first_target_file": 1172784,
+    "first_target_snes": "$23:E530",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1175026,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 2,
+      "$27": 1
+    }
+  },
+  {
+    "table_src_file": 975299,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 975314,
+    "first_target_file": 1172471,
+    "first_target_snes": "$23:E3F7",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1170686,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 2,
+      "$29": 2
+    }
+  },
+  {
+    "table_src_file": 979723,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 979742,
+    "first_target_file": 1419370,
+    "first_target_snes": "$2B:A86A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1385122,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2B": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 979917,
+    "stride": 3,
+    "count": 4,
+    "table_end_file": 979929,
+    "first_target_file": 1389310,
+    "first_target_snes": "$2A:B2FE",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1519594,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2A": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 994865,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 994880,
+    "first_target_file": 1170704,
+    "first_target_snes": "$23:DD10",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1170704,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 3
+    }
+  },
+  {
+    "table_src_file": 999753,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 999772,
+    "first_target_file": 1430792,
+    "first_target_snes": "$2B:D508",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1430786,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 3
+    }
+  },
+  {
+    "table_src_file": 1007282,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1007291,
+    "first_target_file": 1387178,
+    "first_target_snes": "$2A:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1403586,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1008233,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1008248,
+    "first_target_file": 1452590,
+    "first_target_snes": "$2C:AA2E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 1008407,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1008416,
+    "first_target_file": 1387242,
+    "first_target_snes": "$2A:AAEA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1255978,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1008593,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1008602,
+    "first_target_file": 1387178,
+    "first_target_snes": "$2A:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387234,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1008599,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1008618,
+    "first_target_file": 1387234,
+    "first_target_snes": "$2A:AAE2",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387194,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1009088,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1009103,
+    "first_target_file": 1419434,
+    "first_target_snes": "$2B:A8AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1386666,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1009530,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1009549,
+    "first_target_file": 1403818,
+    "first_target_snes": "$2A:EBAA",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1389226,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1012092,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1012103,
+    "first_target_file": 1387170,
+    "first_target_snes": "$2A:AAA2",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1391274,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1012279,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1012290,
+    "first_target_file": 1518378,
+    "first_target_snes": "$2E:AB2A",
+    "first_target_sniff": "zero-padding",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "zero-padding",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1012317,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1012336,
+    "first_target_file": 1376931,
+    "first_target_snes": "$2A:82A3",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1391234,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1012716,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1012725,
+    "first_target_file": 1376426,
+    "first_target_snes": "$2A:80AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1403562,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1015583,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1015598,
+    "first_target_file": 1387182,
+    "first_target_snes": "$2A:AAAE",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387182,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1015675,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1015684,
+    "first_target_file": 1355434,
+    "first_target_snes": "$29:AEAA",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1387183,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$29": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1016123,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1016150,
+    "first_target_file": 1425176,
+    "first_target_snes": "$2B:BF18",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1526554,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2B": 1,
+      "$2C": 1,
+      "$2D": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1029118,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1029133,
+    "first_target_file": 1377296,
+    "first_target_snes": "$2A:8410",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1220435,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1040813,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1040828,
+    "first_target_file": 1391328,
+    "first_target_snes": "$2A:BAE0",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1141450,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1040916,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1040943,
+    "first_target_file": 1313514,
+    "first_target_snes": "$28:8AEA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1348258,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$29": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1040944,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1040953,
+    "first_target_file": 1376936,
+    "first_target_snes": "$2A:82A8",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387434,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1041305,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1041314,
+    "first_target_file": 1126091,
+    "first_target_snes": "$22:AECB",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1128992,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1041658,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1041677,
+    "first_target_file": 1386674,
+    "first_target_snes": "$2A:A8B2",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1129130,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1041758,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1041773,
+    "first_target_file": 1417898,
+    "first_target_snes": "$2B:A2AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1419946,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2B": 2
+    }
+  },
+  {
+    "table_src_file": 1042967,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1042976,
+    "first_target_file": 1518250,
+    "first_target_snes": "$2E:AAAA",
+    "first_target_sniff": "zero-padding",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "zero-padding",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1042973,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1042992,
+    "first_target_file": 1387178,
+    "first_target_snes": "$2A:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1125034,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1043042,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1043057,
+    "first_target_file": 1388162,
+    "first_target_snes": "$2A:AE82",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1256162,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$2A": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1043355,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1043370,
+    "first_target_file": 1384490,
+    "first_target_snes": "$2A:A02A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387168,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1044509,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1044520,
+    "first_target_file": 1121826,
+    "first_target_snes": "$22:9E22",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1129002,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1044814,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1044825,
+    "first_target_file": 1401354,
+    "first_target_snes": "$2A:E20A",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1390762,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1044822,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1044837,
+    "first_target_file": 1390762,
+    "first_target_snes": "$2A:B8AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1385130,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1044910,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1044921,
+    "first_target_file": 1387146,
+    "first_target_snes": "$2A:AA8A",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1385002,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1044918,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1044933,
+    "first_target_file": 1385002,
+    "first_target_snes": "$2A:A22A",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1526450,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1045234,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1045249,
+    "first_target_file": 1124904,
+    "first_target_snes": "$22:AA28",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1391530,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1045287,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1045306,
+    "first_target_file": 1403562,
+    "first_target_snes": "$2A:EAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1378978,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1045352,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1045363,
+    "first_target_file": 1125034,
+    "first_target_snes": "$22:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1141418,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 1045571,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1045582,
+    "first_target_file": 1420010,
+    "first_target_snes": "$2B:AAEA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1386726,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 2,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1045867,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1045878,
+    "first_target_file": 1420968,
+    "first_target_snes": "$2B:AEA8",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1452776,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2B": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 1092752,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1092767,
+    "first_target_file": 1515688,
+    "first_target_snes": "$2E:A0A8",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387018,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1093297,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1093308,
+    "first_target_file": 1124512,
+    "first_target_snes": "$22:A8A0",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1378346,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1093351,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1093366,
+    "first_target_file": 1378986,
+    "first_target_snes": "$2A:8AAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1384618,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1093946,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1093957,
+    "first_target_file": 1116802,
+    "first_target_snes": "$22:8A82",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1122850,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 1094100,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1094119,
+    "first_target_file": 1319427,
+    "first_target_snes": "$28:A203",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387124,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1094182,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1094197,
+    "first_target_file": 1124890,
+    "first_target_snes": "$22:AA1A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1124896,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 3
+    }
+  },
+  {
+    "table_src_file": 1094194,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1094213,
+    "first_target_file": 1124896,
+    "first_target_snes": "$22:AA20",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1320992,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 2
+    }
+  },
+  {
+    "table_src_file": 1094210,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1094225,
+    "first_target_file": 1320992,
+    "first_target_snes": "$28:A820",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1124906,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$26": 1,
+      "$28": 1
+    }
+  },
+  {
+    "table_src_file": 1094385,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1094400,
+    "first_target_file": 1118122,
+    "first_target_snes": "$22:8FAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387427,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1094485,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1094494,
+    "first_target_file": 1376938,
+    "first_target_snes": "$2A:82AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1124522,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$23": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1094958,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1094973,
+    "first_target_file": 1387016,
+    "first_target_snes": "$2A:AA08",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1321514,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1094962,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1094981,
+    "first_target_file": 1388042,
+    "first_target_snes": "$2A:AE0A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1311394,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1096006,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1096025,
+    "first_target_file": 1255938,
+    "first_target_snes": "$26:AA02",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$26": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1096054,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1096069,
+    "first_target_file": 1387176,
+    "first_target_snes": "$2A:AAA8",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1190543,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1096714,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1096733,
+    "first_target_file": 1387050,
+    "first_target_snes": "$2A:AA2A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387114,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1096790,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1096801,
+    "first_target_file": 1376930,
+    "first_target_snes": "$2A:82A2",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1321640,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1101409,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1101424,
+    "first_target_file": 1385130,
+    "first_target_snes": "$2A:A2AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1101451,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1101462,
+    "first_target_file": 1155754,
+    "first_target_snes": "$23:A2AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387170,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1102785,
+    "stride": 8,
+    "count": 11,
+    "table_end_file": 1102868,
+    "first_target_file": 1245184,
+    "first_target_snes": "$26:8000",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1276672,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 11
+    }
+  },
+  {
+    "table_src_file": 1102977,
+    "stride": 8,
+    "count": 9,
+    "table_end_file": 1103044,
+    "first_target_file": 1278464,
+    "first_target_snes": "$27:8200",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1295616,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "compressed.likely",
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$27": 9
+    }
+  },
+  {
+    "table_src_file": 1113905,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1113914,
+    "first_target_file": 1387178,
+    "first_target_snes": "$2A:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1129185,
+    "stride": 4,
+    "count": 5,
+    "table_end_file": 1129204,
+    "first_target_file": 1136156,
+    "first_target_snes": "$22:D61C",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1431285,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 4,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1135610,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1135625,
+    "first_target_file": 1135638,
+    "first_target_snes": "$22:D416",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1278102,
+    "slot_classifications": [
+      "unknown",
+      "zero-padding",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$23": 1,
+      "$27": 1
+    }
+  },
+  {
+    "table_src_file": 1142830,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1142849,
+    "first_target_file": 1387178,
+    "first_target_snes": "$2A:AAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1321610,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1143059,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1143070,
+    "first_target_file": 1120938,
+    "first_target_snes": "$22:9AAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1385130,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1143307,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1143326,
+    "first_target_file": 1387050,
+    "first_target_snes": "$2A:AA2A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1376938,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1143323,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1143338,
+    "first_target_file": 1376938,
+    "first_target_snes": "$2A:82AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1125034,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1143363,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1143372,
+    "first_target_file": 1124898,
+    "first_target_snes": "$22:AA22",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387194,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1143394,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1143413,
+    "first_target_file": 1133226,
+    "first_target_snes": "$22:CAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1386922,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1143685,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1143700,
+    "first_target_file": 1385122,
+    "first_target_snes": "$2A:A2A2",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1391202,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1143702,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1143711,
+    "first_target_file": 1387040,
+    "first_target_snes": "$2A:AA20",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1387146,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1144357,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1144372,
+    "first_target_file": 1387434,
+    "first_target_snes": "$2A:ABAA",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1144729,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1144738,
+    "first_target_file": 1403562,
+    "first_target_snes": "$2A:EAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1407146,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1145180,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1145207,
+    "first_target_file": 1403562,
+    "first_target_snes": "$2A:EAAA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1378986,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1176435,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1176446,
+    "first_target_file": 1417762,
+    "first_target_snes": "$2B:A222",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1122859,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$28": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1176626,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1176637,
+    "first_target_file": 1125036,
+    "first_target_snes": "$22:AAAC",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1485475,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$22": 2,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 1176872,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1176887,
+    "first_target_file": 1311272,
+    "first_target_snes": "$28:8228",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1517739,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1176899,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1176910,
+    "first_target_file": 1311394,
+    "first_target_snes": "$28:82A2",
+    "first_target_sniff": "ascii-ish",
+    "last_target_file": 1387178,
+    "slot_classifications": [
+      "ascii-ish",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 2
+    }
+  },
+  {
+    "table_src_file": 1178853,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1178864,
+    "first_target_file": 1378474,
+    "first_target_snes": "$2A:88AA",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1387042,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 3
+    }
+  },
+  {
+    "table_src_file": 1188350,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1188359,
+    "first_target_file": 1441565,
+    "first_target_snes": "$2B:FF1D",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1507115,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 1,
+      "$2C": 1,
+      "$2D": 1
+    }
+  },
+  {
+    "table_src_file": 1191386,
+    "stride": 6,
+    "count": 5,
+    "table_end_file": 1191413,
+    "first_target_file": 1212196,
+    "first_target_snes": "$24:FF24",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1539886,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "ascii-ish",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$29": 1,
+      "$2A": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1195887,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1195906,
+    "first_target_file": 1343272,
+    "first_target_snes": "$28:FF28",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1408810,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "ascii-ish"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 1208480,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1208491,
+    "first_target_file": 1331240,
+    "first_target_snes": "$28:D028",
+    "first_target_sniff": "zero-padding",
+    "last_target_file": 1496874,
+    "slot_classifications": [
+      "zero-padding",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1252392,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1252407,
+    "first_target_file": 1376057,
+    "first_target_snes": "$29:FF39",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1310522,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$27": 1,
+      "$29": 2
+    }
+  },
+  {
+    "table_src_file": 1304685,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1304696,
+    "first_target_file": 1202996,
+    "first_target_snes": "$24:DB34",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1333032,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$28": 2
+    }
+  },
+  {
+    "table_src_file": 1304809,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1304820,
+    "first_target_file": 1202944,
+    "first_target_snes": "$24:DB00",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1202980,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 3
+    }
+  },
+  {
+    "table_src_file": 1304811,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1304822,
+    "first_target_file": 1202980,
+    "first_target_snes": "$24:DB24",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1202980,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 3
+    }
+  },
+  {
+    "table_src_file": 1305261,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1305272,
+    "first_target_file": 1333032,
+    "first_target_snes": "$28:D728",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1332992,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 3
+    }
+  },
+  {
+    "table_src_file": 1343515,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1343534,
+    "first_target_file": 1235968,
+    "first_target_snes": "$25:DC00",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1432064,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$28": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1379082,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 1379097,
+    "first_target_file": 1329192,
+    "first_target_snes": "$28:C828",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1460778,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$29": 1,
+      "$2A": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 1417961,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1417980,
+    "first_target_file": 1147074,
+    "first_target_snes": "$23:80C2",
+    "first_target_sniff": "zero-padding",
+    "last_target_file": 1247882,
+    "slot_classifications": [
+      "zero-padding",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$26": 1,
+      "$2A": 1
+    }
+  },
+  {
+    "table_src_file": 1421984,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1421999,
+    "first_target_file": 1359507,
+    "first_target_snes": "$29:BE93",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1534523,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$29": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1424816,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1424827,
+    "first_target_file": 1319630,
+    "first_target_snes": "$28:A2CE",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1420194,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2A": 1,
+      "$2B": 1
+    }
+  },
+  {
+    "table_src_file": 1437502,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1437513,
+    "first_target_file": 1537289,
+    "first_target_snes": "$2E:F509",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1507304,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "zero-padding"
+    ],
+    "bank_distribution": {
+      "$2D": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 1438397,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1438408,
+    "first_target_file": 1534767,
+    "first_target_snes": "$2E:EB2F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1539928,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 1438439,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1438450,
+    "first_target_file": 1534767,
+    "first_target_snes": "$2E:EB2F",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1539928,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$28": 1,
+      "$2E": 2
+    }
+  },
+  {
+    "table_src_file": 1438477,
+    "stride": 8,
+    "count": 7,
+    "table_end_file": 1438528,
+    "first_target_file": 1272832,
+    "first_target_snes": "$26:EC00",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1336872,
+    "slot_classifications": [
+      "compressed.likely",
+      "tile.likely-Nbpp",
+      "compressed.likely",
+      "unknown",
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$27": 3,
+      "$28": 3
+    }
+  },
+  {
+    "table_src_file": 1438509,
+    "stride": 4,
+    "count": 6,
+    "table_end_file": 1438532,
+    "first_target_file": 1314088,
+    "first_target_snes": "$28:8D28",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1341992,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 6
+    }
+  },
+  {
+    "table_src_file": 1438547,
+    "stride": 6,
+    "count": 4,
+    "table_end_file": 1438568,
+    "first_target_file": 1346857,
+    "first_target_snes": "$29:8D29",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1373478,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 4
+    }
+  },
+  {
+    "table_src_file": 1441249,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1441268,
+    "first_target_file": 1140002,
+    "first_target_snes": "$22:E522",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1182756,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$23": 1,
+      "$24": 1
+    }
+  },
+  {
+    "table_src_file": 1441259,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1441278,
+    "first_target_file": 1174307,
+    "first_target_snes": "$23:EB23",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1220133,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$24": 1,
+      "$25": 1
+    }
+  },
+  {
+    "table_src_file": 1441269,
+    "stride": 8,
+    "count": 6,
+    "table_end_file": 1441312,
+    "first_target_file": 1210660,
+    "first_target_snes": "$24:F924",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1343529,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$26": 1,
+      "$27": 1,
+      "$28": 1,
+      "$29": 1
+    }
+  },
+  {
+    "table_src_file": 1441287,
+    "stride": 8,
+    "count": 9,
+    "table_end_file": 1441354,
+    "first_target_file": 1274406,
+    "first_target_snes": "$26:F226",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1530414,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown",
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$26": 1,
+      "$27": 1,
+      "$28": 1,
+      "$29": 1,
+      "$2A": 1,
+      "$2B": 1,
+      "$2C": 1,
+      "$2D": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1559591,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1559606,
+    "first_target_file": 1226537,
+    "first_target_snes": "$25:B729",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1484597,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$2D": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1569687,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1569702,
+    "first_target_file": 1494561,
+    "first_target_snes": "$2D:CE21",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1355553,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1569847,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1569862,
+    "first_target_file": 1494561,
+    "first_target_snes": "$2D:CE21",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1355553,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1570165,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1570184,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1503529,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1570325,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1570344,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1503529,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1570645,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1570664,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1503529,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 2
+    }
+  },
+  {
+    "table_src_file": 1570805,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1570832,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1488421,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 3
+    }
+  },
+  {
+    "table_src_file": 1570965,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1570992,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1488421,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 3
+    }
+  },
+  {
+    "table_src_file": 1571125,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1571152,
+    "first_target_file": 1372957,
+    "first_target_snes": "$29:F31D",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1488421,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 3
+    }
+  },
+  {
+    "table_src_file": 1571285,
+    "stride": 8,
+    "count": 4,
+    "table_end_file": 1571312,
+    "first_target_file": 1346329,
+    "first_target_snes": "$29:8B19",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1488421,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2D": 3
+    }
+  },
+  {
+    "table_src_file": 1598601,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1598612,
+    "first_target_file": 1285130,
+    "first_target_snes": "$27:9C0A",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1265544,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$25": 1,
+      "$26": 1,
+      "$27": 1
+    }
+  },
+  {
+    "table_src_file": 1598735,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1598744,
+    "first_target_file": 1227956,
+    "first_target_snes": "$25:BCB4",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1171246,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$24": 1,
+      "$25": 1
+    }
+  },
+  {
+    "table_src_file": 1610671,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1610690,
+    "first_target_file": 1302282,
+    "first_target_snes": "$27:DF0A",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1236902,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 2,
+      "$27": 1
+    }
+  },
+  {
+    "table_src_file": 1635455,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1635466,
+    "first_target_file": 1200298,
+    "first_target_snes": "$24:D0AA",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1285870,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$27": 1
+    }
+  },
+  {
+    "table_src_file": 1651216,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1651227,
+    "first_target_file": 1528359,
+    "first_target_snes": "$2E:D227",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1372240,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$22": 1,
+      "$29": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1696904,
+    "stride": 6,
+    "count": 3,
+    "table_end_file": 1696919,
+    "first_target_file": 1490785,
+    "first_target_snes": "$2D:BF61",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1531324,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2D": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1697792,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1697801,
+    "first_target_file": 1236764,
+    "first_target_snes": "$25:DF1C",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1203640,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1702947,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1702956,
+    "first_target_file": 1328544,
+    "first_target_snes": "$28:C5A0",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1524804,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$28": 2,
+      "$2E": 1
+    }
+  },
+  {
+    "table_src_file": 1729376,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 1729391,
+    "first_target_file": 1308535,
+    "first_target_snes": "$27:F777",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1308535,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$27": 4
+    }
+  },
+  {
+    "table_src_file": 1734990,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 1735005,
+    "first_target_file": 1209380,
+    "first_target_snes": "$24:F424",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1209380,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 4
+    }
+  },
+  {
+    "table_src_file": 1736973,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 1736988,
+    "first_target_file": 1209380,
+    "first_target_snes": "$24:F424",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1209380,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 4
+    }
+  },
+  {
+    "table_src_file": 1737172,
+    "stride": 4,
+    "count": 4,
+    "table_end_file": 1737187,
+    "first_target_file": 1209380,
+    "first_target_snes": "$24:F424",
+    "first_target_sniff": "tile.likely-Nbpp",
+    "last_target_file": 1209380,
+    "slot_classifications": [
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp",
+      "tile.likely-Nbpp"
+    ],
+    "bank_distribution": {
+      "$24": 4
+    }
+  },
+  {
+    "table_src_file": 1739501,
+    "stride": 4,
+    "count": 12,
+    "table_end_file": 1739548,
+    "first_target_file": 1242405,
+    "first_target_snes": "$25:F525",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1242405,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$25": 12
+    }
+  },
+  {
+    "table_src_file": 1763496,
+    "stride": 3,
+    "count": 3,
+    "table_end_file": 1763505,
+    "first_target_file": 1209397,
+    "first_target_snes": "$24:F435",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1242149,
+    "slot_classifications": [
+      "unknown",
+      "tile.likely-Nbpp",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 2,
+      "$25": 1
+    }
+  },
+  {
+    "table_src_file": 1872384,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1872395,
+    "first_target_file": 1472526,
+    "first_target_snes": "$2C:F80E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1472606,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2C": 3
+    }
+  },
+  {
+    "table_src_file": 1872447,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 1872458,
+    "first_target_file": 1472526,
+    "first_target_snes": "$2C:F80E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1472606,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "compressed.likely"
+    ],
+    "bank_distribution": {
+      "$2C": 3
+    }
+  },
+  {
+    "table_src_file": 1878035,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1878054,
+    "first_target_file": 1437992,
+    "first_target_snes": "$2B:F128",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1437953,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2B": 3
+    }
+  },
+  {
+    "table_src_file": 1966661,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 1966680,
+    "first_target_file": 1170227,
+    "first_target_snes": "$23:DB33",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1471293,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$23": 1,
+      "$28": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 2032268,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2032279,
+    "first_target_file": 1472542,
+    "first_target_snes": "$2C:F81E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1472572,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 2032306,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2032317,
+    "first_target_file": 1472604,
+    "first_target_snes": "$2C:F85C",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1472572,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 2032350,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2032361,
+    "first_target_file": 1472604,
+    "first_target_snes": "$2C:F85C",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1472572,
+    "slot_classifications": [
+      "compressed.likely",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$2A": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 2032394,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2032405,
+    "first_target_file": 1439836,
+    "first_target_snes": "$2B:F85C",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1439804,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$29": 1,
+      "$2B": 2
+    }
+  },
+  {
+    "table_src_file": 2047125,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2047136,
+    "first_target_file": 1210372,
+    "first_target_snes": "$24:F804",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1276014,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$25": 1,
+      "$26": 1
+    }
+  },
+  {
+    "table_src_file": 2051923,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 2051942,
+    "first_target_file": 1472574,
+    "first_target_snes": "$2C:F83E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1210382,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 2,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 2051988,
+    "stride": 8,
+    "count": 3,
+    "table_end_file": 2052007,
+    "first_target_file": 1470494,
+    "first_target_snes": "$2C:F01E",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1210394,
+    "slot_classifications": [
+      "unknown",
+      "unknown",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 2064864,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2064875,
+    "first_target_file": 1404954,
+    "first_target_snes": "$2A:F01A",
+    "first_target_sniff": "compressed.likely",
+    "last_target_file": 1472566,
+    "slot_classifications": [
+      "compressed.likely",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$2A": 1,
+      "$2C": 1
+    }
+  },
+  {
+    "table_src_file": 2077526,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2077537,
+    "first_target_file": 1472523,
+    "first_target_snes": "$2C:F80B",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1472550,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$2C": 2
+    }
+  },
+  {
+    "table_src_file": 2077854,
+    "stride": 4,
+    "count": 3,
+    "table_end_file": 2077865,
+    "first_target_file": 1472523,
+    "first_target_snes": "$2C:F80B",
+    "first_target_sniff": "unknown",
+    "last_target_file": 1472550,
+    "slot_classifications": [
+      "unknown",
+      "compressed.likely",
+      "unknown"
+    ],
+    "bank_distribution": {
+      "$24": 1,
+      "$2C": 2
+    }
+  }
+]

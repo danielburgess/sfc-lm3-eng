@@ -1,0 +1,402 @@
+{
+  "table": "recruit-lines",
+  "source_script": "",
+  "entries": {
+    "0": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "002F"
+        }
+      ]
+    },
+    "1": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "002D"
+        }
+      ]
+    },
+    "2": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "002B"
+        }
+      ]
+    },
+    "3": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0027"
+        }
+      ]
+    },
+    "4": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0043"
+        }
+      ]
+    },
+    "5": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "005B"
+        }
+      ]
+    },
+    "6": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0028"
+        }
+      ]
+    },
+    "7": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "002D"
+        }
+      ]
+    },
+    "8": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "002D"
+        }
+      ]
+    },
+    "9": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0027"
+        }
+      ]
+    },
+    "10": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "003F"
+        }
+      ]
+    },
+    "11": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0047"
+        }
+      ]
+    },
+    "12": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "003C"
+        }
+      ]
+    },
+    "13": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0025"
+        }
+      ]
+    },
+    "14": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0042"
+        }
+      ]
+    },
+    "15": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "001A"
+        }
+      ]
+    },
+    "16": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "003E"
+        }
+      ]
+    },
+    "17": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0037"
+        }
+      ]
+    },
+    "18": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "19": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "20": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "21": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "22": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "23": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "24": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0038"
+        }
+      ]
+    },
+    "25": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "0037"
+        }
+      ]
+    },
+    "26": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "003D"
+        }
+      ]
+    },
+    "29": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0070"
+        }
+      ]
+    },
+    "30": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0015"
+        }
+      ]
+    },
+    "31": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0063"
+        }
+      ]
+    },
+    "32": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "006F"
+        }
+      ]
+    },
+    "33": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "008C"
+        }
+      ]
+    },
+    "34": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0029"
+        }
+      ]
+    },
+    "35": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "007B"
+        }
+      ]
+    },
+    "36": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "000C",
+          "end": "0043"
+        }
+      ]
+    },
+    "37": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "003D"
+        }
+      ]
+    },
+    "38": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0037"
+        }
+      ]
+    },
+    "39": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "00AC"
+        }
+      ]
+    },
+    "40": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "00A7"
+        }
+      ]
+    },
+    "41": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0032"
+        }
+      ]
+    },
+    "42": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0052"
+        }
+      ]
+    },
+    "43": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "002F"
+        }
+      ]
+    },
+    "44": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "003A"
+        }
+      ]
+    },
+    "45": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "003E"
+        }
+      ]
+    }
+  }
+}

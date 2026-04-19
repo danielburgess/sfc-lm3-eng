@@ -83,19 +83,39 @@ kind = "bin"
 offset = 0x170000
 file = "en_data/bin/fonts/font_accented_1bppil.bin"
 
-# Title bundle @ 0x11C200 = 12KB contiguous:
-#   0x000-0xE00  (3584B)  2BPP subtitle/credit/PUSH START tiles (BG2)
-#   0xE00-0x1600 (2048B)  BG tilemap (32×32 entries)
-#   0x1600-0x3000 (6656B) 8BPP logo tiles (BG1)
-# Copy loop at $00:B06F loads all 12KB from $23:C200 → WRAM $7E:22C0 → DMA $62C0.
+# Title BG1 graphics — plane-pair chunk-stream format decoded by
+# `decodeTileStream @ $00:AF6A`, called from `loadTitleGfx @ $01:F060`.
+# Pre-built by `python3 tools/title_gfx/build_title.py` from the canonical
+# source PNG (en_data/gfx/title_bg1_tiles.png, tile-order layout 256x224).
+# Three correlated changes to the ROM:
+#   0x118000  directory (8B skip + 7×8B records) + packed command streams
+#   0x200000  flat chunk store (16 B per chunk) — moved OUT of bank $23 to
+#             avoid stomping battle-scene palette data at $23:D000..F800.
+#             SNES $40:8000; lands in clean expansion space before script
+#             (0x208000). See asm/title_chunk_relocate.asm header.
+#   asar patch: chunk-bank immediate $01:F09D -> #$40,
+#               chunk-offset immediate $01:F0A3 -> high byte $80.
+# Constraint: dir_streams.bin <= 0x5800 B (bank $23 slot up to palette @
+# $F800, but battle palette at $D000 makes effective cap 0x5000; current
+# usage ~0x1320 B — ample headroom). chunks.bin <= 0x8000 B (file
+# 0x200000..0x208000 before script).
+# See docs/ROM_MAP.md and TITLE_GFX_PLAN.md Phase 5 for the full format spec.
 [[rom.build.sections]]
 kind = "bin"
-offset = 0x11C200
-file = [
-    "en_data/gfx/raw/title/2bpp_tiles.bin",
-    "en_data/gfx/raw/title/tilemap.bin",
-    "en_data/gfx/raw/title/8bpp_tiles.bin",
-]
+offset = 0x118000
+file = "en_data/bin/gfx/title_dir_streams.bin"
+
+[[rom.build.sections]]
+kind = "bin"
+offset = 0x200000
+file = "en_data/bin/gfx/title_chunks.bin"
+
+[[rom.build.sections]]
+kind = "asar"
+file = "asm/title_chunk_relocate.asm"
+
+# Legacy 0x11C200 "title bundle" removed 2026-04-18 — was source-ROM
+# pass-through; nothing references $23:C200 for title rendering.
 
 # Debug mode: keeps WRAM $0A87 non-zero to unlock scene/variable inspection.
 [[rom.build.sections]]

@@ -4,30 +4,61 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Fixes and tweaks from last night.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AI_IPC_PROMPT.md" beforeDir="false" afterPath="$PROJECT_DIR$/AI_IPC_PROMPT.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2-windowed.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2-windowed.checksum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-2.checksum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-windowed.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode-windowed.checksum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/cutscene-bytecode.checksum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-1.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-1.checksum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/credit.png" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/gfx/credit.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/push_start.png" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/gfx/push_start.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title_tilemap.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title_tiles_2bpp.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title_tiles_8bpp.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_data/gfx/credit.png" beforeDir="false" afterPath="$PROJECT_DIR$/jp_data/gfx/credit.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_data/gfx/push_start.png" beforeDir="false" afterPath="$PROJECT_DIR$/jp_data/gfx/push_start.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_data/gfx/raw/title_tilemap.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_data/gfx/raw/title_tiles_2bpp.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/jp_data/gfx/raw/title_tiles_8bpp.bin" beforeDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Phase 4 result">
+      <change afterPath="$PROJECT_DIR$/asm/title_chunk_relocate.asm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/bin/gfx/title_chunks.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/bin/gfx/title_dir_streams.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2-windowed.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2-windowed.checksum" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/raw/title/palette.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/raw/title/pointer_scan.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles.ai" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles.kra" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles2.ai" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles_modern.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles_old.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-windowed.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode.old" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt.bak" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/recruit-lines.old" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name-windowed.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name1.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tables/recruit-lines_window.def" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tables/scene-desc-name_window.def" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/build_title.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/compose.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/decoder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/encoder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/phase2b_readwatch.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/probe_corrupt.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/scan_pointers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/tile_codec.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/title_gfx/verify_roundtrip.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/03_master_kb.snesdb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI_IPC_PROMPT.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PARITY_PLAN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/2bpp_preview.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/2bpp_tiles.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/2bpp_tiles.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/8bpp_preview.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/8bpp_tiles.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/tilemap.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/title_256x224.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/title_bg1_indexed.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/title_composite.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/gfx/title_shift1row.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/equipment-expansion-plan.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/0x170000_Font_Set.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/0x170000_Font_Set_1BPP-IL.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/0x170000_Font_Set_1BPP-IL_en.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/0x170000_Font_Set_en.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/0x20000_Kanji_and_Menus.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/x09DA00_Speech_Bubble.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/x09DA00_Speech_Bubble_en.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gfx/x11C200_Title_Screen_Subtitle_Credit.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lm3_annotation_notes.md" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/project.toml" beforeDir="false" afterPath="$PROJECT_DIR$/project.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -90,11 +121,11 @@
       <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/out/archive" />
       <recent name="$PROJECT_DIR$/resolved bug reports" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/DEBUGGER_FRAGMENTS" />
       <recent name="$PROJECT_DIR$/gfx" />
-      <recent name="C:\Users\dburg\PycharmProjects\sfc-lm3-eng\font" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -122,7 +153,7 @@
       <workItem from="1775499552146" duration="234387000" />
       <workItem from="1776104423000" duration="23000" />
       <workItem from="1776104523517" duration="79044000" />
-      <workItem from="1776361368085" duration="76546000" />
+      <workItem from="1776361368085" duration="85101000" />
     </task>
     <task id="LOCAL-00001" summary="Small todo change.">
       <option name="closed" value="true" />
@@ -508,7 +539,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776449369631</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="Phase 4 result">
+      <option name="closed" value="true" />
+      <created>1776555756355</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1776555756355</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -529,7 +568,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Now using AI to help quickly iterate fixes. Added IPC connection to the custom Mesen debugger. Fixed some issues with the mattle-msg script" />
     <MESSAGE value="quietly broke any table where the extractor emitted entries out of their                                                                                                                                                                                                                                                                                               &#10;  original sub-entry order.                                                                                                                                                                                                                                                                                                                                            &#10;                                                                                                                                                                                                                                                                                                                                                                         &#10;  battle-menu.txt triggered it: the extractor placed entry :0 at file                                                                                                                                                                                                                                                                                                    &#10;  position 17 (because entry 0's data pointer sorts after entries 1-17 in the                                                                                                                                                                                                                                                                                            &#10;  ROM's original layout). Every sub-entry in the battle region of                                                                                                                                                                                                                                                                                                        &#10;  meta-table entry 0 ended up off-by-one — sub 33's slot received                                                                                                                                                                                                                                                                                                      &#10;  battle-menu entry 0's &quot;select unit&quot; text, while the original sub 33 content                                                                                                                                                                                                                                                                                            &#10;  (the shared &quot;Are you sure?&quot; YES/NO confirmation dialog) landed in sub 32's                                                                                                                                                                                                                                                                                             &#10;  slot.                                                                                                                                                                                                                                                                                                                                                                  &#10;                                                                                                                                                                                                                                                                                                                                                                         &#10;  Symptom: scenario info screen (e.g. Fusion Temple) showed body text cut off                                                                                                                                                                                                                                                                                            &#10;  after &quot;You're done&quot; with an empty YES/NO prompt box. The shared                                                                                                                                                                                                                                                                                                        &#10;  confirmation dialog is loaded from battle-menu sub 33 by the scenario info                                                                                                                                                                                                                                                                                             &#10;  function at $01:EB0F, so every screen that pops a YES/NO confirmation saw                                                                                                                                                                                                                                                                                            &#10;  wrong content once metatbl_battle.asm relocated entry 0 to $C5.                                                                                                                                                                                                                                                                                                        &#10;                                                                                                                                                                                                                                                                                                                                                                         &#10;  The fix parses `:(\d+)` from the header, stores entries keyed by that index,                                                                                                                                                                                                                                                                                           &#10;  then emits encoded_entries in range(0, max_idx+1) order, filling any                                                                                                                                                                                                                                                                                                   &#10;  missing indices with empty stubs. Falls back to file order if a header has                                                                                                                                                                                                                                                                                             &#10;  no :N component (preserves behavior for any non-conforming tables).                                                                                                                                                                                                                                                                                                    &#10;                                                                                                                                                                                                                                                                                                                                                                         &#10;  Diagnosis notes:                                                                                                                                                                                                                                                                                                                                                       &#10;  - TextPtrDispatch and the 3-byte $C5 ptr table were both correct; verified                                                                                                                                                                                                                                                                                             &#10;    by read-breakpoint on $228000-$228257 — hit inside TextPtrDispatch at                                                                                                                                                                                                                                                                                                &#10;    $2E:AA7B with $14/$16 = $C5:$8000 resolving sub 33 to a valid target.                                                                                                                                                                                                                                                                                                &#10;  - Phase 1 text buffer at WRAM $0400 contained the full resolved text                                                                                                                                                                                                                                                                                                   &#10;    including the tail prompt, but phase 2 rendered only up to &quot;You're done&quot;                                                                                                                                                                                                                                                                                             &#10;    because sub 33's bytes were unrelated data for the renderer to process.                                                                                                                                                                                                                                                                                              &#10;  - Byte-level comparison of sub 33 data at $C5:$8E42 vs. original $02:$BE16                                                                                                                                                                                                                                                                                             &#10;    revealed completely different content; the original sub 33 signature                                                                                                                                                                                                                                                                                                 &#10;    `FF 15 1A FF 80 04 FF FC 82 00` was found in the new build at $C5:$8DCD                                                                                                                                                                                                                                                                                              &#10;    (sub 32's slot), confirming the off-by-one shift.                                                                                                                                                                                                                                                                                                                    &#10;  - scenario-desc, script, quiz-text, etc. were unaffected because their                                                                                                                                                                                                                                                                                                 &#10;    extractions happened to be in natural index order already.                                                                                                                                                                                                                                                                                                           &#10;                                                                                                                                                                                                                                                                                                                                                                         &#10;  Minor unrelated observation (not fixed here): battle-menu entry 17 contains                                                                                                                                                                                                                                                                                            &#10;  `[c]` which isn't defined in eng.tbl, so the encoder emits literal ASCII                                                                                                                                                                                                                                                                                               &#10;  `5B 63 5D` instead of the original single byte `$40`. Does not affect the                                                                                                                                                                                                                                                                                              &#10;  metatbl redirect path." />
     <MESSAGE value="Improved/fixed translations." />
     <MESSAGE value="committing inconsistent state as a backup" />
@@ -554,7 +592,8 @@
     <MESSAGE value="Lots of work done to integrate the project with retrotool." />
     <MESSAGE value="Lots of work on script files." />
     <MESSAGE value="Fixes and tweaks from last night." />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixes and tweaks from last night." />
+    <MESSAGE value="Phase 4 result" />
+    <option name="LAST_COMMIT_MESSAGE" value="Phase 4 result" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776373208777" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

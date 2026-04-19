@@ -1,0 +1,80 @@
+{
+  "table": "scene-desc-name",
+  "source_script": "",
+  "entries": {
+    "0": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "007A"
+        }
+      ]
+    },
+    "1": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "006E"
+        }
+      ]
+    },
+    "2": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0000",
+          "end": "0076"
+        }
+      ]
+    },
+    "24": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0042",
+          "end": "004B"
+        }
+      ]
+    },
+    "37": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0001",
+          "end": "002D"
+        }
+      ]
+    },
+    "58": {
+      "excluded": false,
+      "windows": [
+        {
+          "start": "0008",
+          "end": "001D"
+        },
+        {
+          "start": "0025",
+          "end": "0038"
+        },
+        {
+          "start": "0040",
+          "end": "0056"
+        },
+        {
+          "start": "005E",
+          "end": "006E"
+        },
+        {
+          "start": "0096",
+          "end": "009D"
+        },
+        {
+          "start": "00A0",
+          "end": "00AA"
+        }
+      ]
+    }
+  }
+}
