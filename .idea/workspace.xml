@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Title screen now has a replacement in. (not final, probably)">
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode-2.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project.toml" beforeDir="false" afterPath="$PROJECT_DIR$/project.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/window_def.py" beforeDir="false" afterPath="$PROJECT_DIR$/window_def.py" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="windows fixes in place for cutscene-bytecode-2">
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,15 +100,7 @@
       <workItem from="1775499552146" duration="234387000" />
       <workItem from="1776104423000" duration="23000" />
       <workItem from="1776104523517" duration="79044000" />
-      <workItem from="1776361368085" duration="92428000" />
-    </task>
-    <task id="LOCAL-00002" summary="A few fixes.">
-      <option name="closed" value="true" />
-      <created>1704168737485</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1704168737485</updated>
+      <workItem from="1776361368085" duration="93531000" />
     </task>
     <task id="LOCAL-00003" summary="Added a routine that gets the character widths for each font tile.">
       <option name="closed" value="true" />
@@ -497,7 +486,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776576497376</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="windows fixes in place for cutscene-bytecode-2">
+      <option name="closed" value="true" />
+      <created>1776585462347</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1776585462348</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -548,7 +545,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Improved/fixed translations." />
     <MESSAGE value="committing inconsistent state as a backup" />
     <MESSAGE value="removed a bunch of asm patches now that the FFC0 control code is understood. it's like a built in relocation code. I can relocate text willy-nilly anytime." />
     <MESSAGE value="current build success for script and scene desc" />
@@ -573,7 +569,8 @@
     <MESSAGE value="Fixes and tweaks from last night." />
     <MESSAGE value="Phase 4 result" />
     <MESSAGE value="Title screen now has a replacement in. (not final, probably)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Title screen now has a replacement in. (not final, probably)" />
+    <MESSAGE value="windows fixes in place for cutscene-bytecode-2" />
+    <option name="LAST_COMMIT_MESSAGE" value="windows fixes in place for cutscene-bytecode-2" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776577341313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
