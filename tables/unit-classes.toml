@@ -23,5 +23,4 @@ fill = 0x0
 
 [section]
 kind = "fixed-records"
-file = "en_data/bin/mbuild/unit-classes.packed.bin"
 grow = "replace"

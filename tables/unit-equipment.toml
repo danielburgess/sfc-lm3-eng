@@ -18,9 +18,14 @@ fallback = "jp_data/jap.tbl"
 [data]
 offset = 0x10050
 
+# Record layout: [00-01] icon/type prefix, [02-0A] weapon (9 bytes, space-pad),
+# [0B] spacer, [0C-14] armor (9 bytes, space-pad), [15] spacer, [16-1F] stats.
+# weapon.start MUST be 0x2 — starting at 0x0 clobbers the 2-byte icon prefix
+# (caused corrupt unit icons + first letter of weapon cut off). Fixed
+# originally 2026-04-11; regressed during retrotool migration — redone here.
 [[fields]]
 label = "weapon"
-start = 0x0
+start = 0x2
 len = 0x9
 fill = 0x20
 
@@ -32,5 +37,7 @@ fill = 0x20
 
 [section]
 kind = "fixed-records"
-file = "en_data/bin/mbuild/unit-equipment.packed.bin"
+# Source resolves to en_data/scripts/unit-equipment.txt (auto-default).
+# retrotool's fixed-records handler packs records from the `<<$HEX:idx.label>>`
+# script using the [[fields]] schema above.
 grow = "replace"

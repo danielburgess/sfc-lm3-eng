@@ -3,24 +3,10 @@
 
 data_dirs = ["tables"]
 
-# LM3-specific top-level keys (loader folds into ProjectConfig.extras)
-source_rom = "lm3.sfc"
-scripted_output = "out/lm3_scripted.sfc"
-final_output = "out/lm3_en.sfc"
-font_png = "en_data/fonts/font_accented.png"
-font_rom_offset = 0x170000
-dialog_text_base = 0x1B83D0
+# Per-language script dirs consumed by retrotool's project.toml front-end
+# (folded into spec.data_dirs_by_lang via the generic *_data_dir loop).
 en_data_dir = "en_data/scripts"
 jp_data_dir = "jp_data/scripts"
-primary_table = "en_data/eng.tbl"
-fallback_table = "jp_data/jap.tbl"
-
-[asm_patches]
-scripted = [
-    "asm/debug_mode_patch.asm",
-    "asm/name_expansion_patch.asm",
-]
-vwf = ["asm/vwf_patch.asm"]
 
 [rom]
 name = "Little Master III"
@@ -28,17 +14,31 @@ file = "lm3.sfc"
 mapping = "lorom"
 size = "2M"
 expanded_size = "4M"
-
-# [build] — retrotool.project.loader build-infrastructure only.
-# (source rom name + file live in [rom]; pipeline in [rom.build] below.)
-[build]
-assembler = "asar"
-output_dir = "out"
-cache_dir = "en_data/bin/scripts"
+# Encoding tables consumed by DataDef [encoding] blocks (fallback) and by
+# window_def.py when a table TOML doesn't override them.
+primary_table = "en_data/eng.tbl"
+fallback_table = "jp_data/jap.tbl"
 
 [debugger]
 type = "mesen-diz"
 pipe_name = "Mesen2Diz_lm3"
+
+# Mesen2 SRAM auto-sync. After each build, retrotool copies
+# <saves-dir>/lm3.srm → <saves-dir>/<out_stem>.srm so the output ROM
+# inherits the base ROM's save state (unlock progress, scenario state,
+# etc.) — makes iterative build-and-playtest painless. The source
+# lm3.srm is never written to (driver refuses the copy if src/dst
+# resolve to the same file).
+#
+# `archive-overwritten`: before overwriting a pre-existing output SRM
+# whose bytes differ from both the source and every prior archive
+# entry, the outgoing bytes are appended to
+# <saves-dir>/<out_stem>_archive.tar.gz under <YYYY-MM-DD>/<stem>_<HHMMSS>.srm.
+# Content-addressed dedupe — identical states aren't archived twice.
+[mesen]
+sync-sram = true
+saves-dir = "~/.config/Mesen2/Saves"
+archive-overwritten = true
 
 # Extract-phase config. `default_lang = "jp"` ensures bare
 # `retrotool extract project.toml` targets jp_data/scripts — the EN dir
@@ -85,8 +85,13 @@ splitter = "ctrl-aware"
 slot-measure = "source-entry"
 
 # --- Inline non-DataDef sections: font + graphics + asar patches ---
+# `alias=` lets --only/--skip select inline sections by name. Multiple
+# sections may share an alias (e.g. "title" tags three correlated pieces
+# below); --only <alias> builds them together.
+#
 # Font: 1BPP-IL bitmap pre-built by `python3 lm3.py font` into en_data/bin.
 [[rom.build.sections]]
+alias = "font"
 kind = "bin"
 offset = 0x170000
 file = "en_data/bin/fonts/font_accented_1bppil.bin"
@@ -109,16 +114,19 @@ file = "en_data/bin/fonts/font_accented_1bppil.bin"
 # 0x200000..0x208000 before script).
 # See docs/ROM_MAP.md and TITLE_GFX_PLAN.md Phase 5 for the full format spec.
 [[rom.build.sections]]
+alias = "title"
 kind = "bin"
 offset = 0x118000
 file = "en_data/bin/gfx/title_dir_streams.bin"
 
 [[rom.build.sections]]
+alias = "title"
 kind = "bin"
 offset = 0x200000
 file = "en_data/bin/gfx/title_chunks.bin"
 
 [[rom.build.sections]]
+alias = "title"
 kind = "asar"
 file = "asm/title_chunk_relocate.asm"
 
@@ -126,18 +134,23 @@ file = "asm/title_chunk_relocate.asm"
 # pass-through; nothing references $23:C200 for title rendering.
 
 # Debug mode: keeps WRAM $0A87 non-zero to unlock scene/variable inspection.
+# cache=true: pure-write patch (no ROM reads), safe for diff-mode caching.
 [[rom.build.sections]]
+alias = "debug-mode"
 kind = "asar"
 file = "asm/debug_mode_patch.asm"
+cache = true
 
 # Unit-names: expand 8->16 byte entries at bank $C4 + pointer-table rewrites.
 [[rom.build.sections]]
+alias = "unit-names"
 kind = "asar"
 file = "asm/name_expansion_patch.asm"
 
 # VWF: opt-in. Flip `version = "vwf"` in [rom.build] (or `-D version=vwf` on
 # CLI) to enable the variable-width-font patch. Default builds skip it.
 [[rom.build.sections]]
+alias = "vwf"
 kind = "asar"
 file = "asm/vwf_patch.asm"
 if = "${version}==vwf"

@@ -18,7 +18,14 @@ size = 2
 offset = 0x30A00
 
 [word_wrap]
-line_width = 0x1C
+line_width = 0x1D
 max_lines = 0x3
+# Unit-info panels hardware-wrap at column `line_width`. Emitting `[nl]`
+# tokens causes visible artifacts on this screen, so pad each wrapped line
+# to the column boundary with a plain space and let the engine wrap on its
+# own. Flip back to newline mode if a different info-panel needs explicit
+# breaks.
+wrap_mode = "pad"
+fill_char = " "
 
 [section]

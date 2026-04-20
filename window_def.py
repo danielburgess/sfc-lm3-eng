@@ -89,8 +89,9 @@ class ScriptModel:
             self.project_config = tomllib.load(f)
 
         enc = self.toml_config.get("encoding", {})
-        en_tbl = enc.get("table_file", self.project_config.get("primary_table", ""))
-        jp_tbl = enc.get("fallback", self.project_config.get("fallback_table", ""))
+        rom = self.project_config.get("rom", {})
+        en_tbl = enc.get("table_file", rom.get("primary_table", ""))
+        jp_tbl = enc.get("fallback", rom.get("fallback_table", ""))
 
         if self.lang == "jp" and jp_tbl and os.path.exists(jp_tbl):
             tbl_file = jp_tbl
@@ -127,7 +128,7 @@ class ScriptModel:
         self.def_path = os.path.join(tables_dir, f"{self.table_name}_window.def")
 
     def _load_rom(self):
-        rom_file = self.project_config.get("source_rom", "lm3.sfc")
+        rom_file = self.project_config.get("rom", {}).get("file", "lm3.sfc")
         with open(rom_file, "rb") as f:
             self.rom = f.read()
 
@@ -529,8 +530,9 @@ class Api:
     def set_preview_lang(self, lang):
         """Toggle preview decode table. lang: 'jp'|'en'."""
         enc = self.model.toml_config.get("encoding", {})
-        en_file = enc.get("table_file", self.model.project_config.get("primary_table", ""))
-        jp_file = enc.get("fallback", self.model.project_config.get("fallback_table", ""))
+        rom = self.model.project_config.get("rom", {})
+        en_file = enc.get("table_file", rom.get("primary_table", ""))
+        jp_file = enc.get("fallback", rom.get("fallback_table", ""))
         target = jp_file if lang == "jp" else en_file
         if not target or not os.path.exists(target):
             return {"error": f"table file missing for lang={lang}"}

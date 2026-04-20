@@ -29,10 +29,10 @@ start = 0x0
 len = 0x10
 fill = 0x20
 
-# Build-pipeline step: patch unit-name records at [data].offset using the
-# pre-packed binary. grow="insert" because LM3 moves records from bank $01
-# (8-byte) to bank $C4 (16-byte) — new block, not an in-place overwrite.
+# Build-pipeline step: retrotool packs the script into stride×count bytes
+# and patches at [data].offset. grow="insert" because LM3 moves records
+# from bank $01 (8-byte) to bank $C4 (16-byte) — new block, not an
+# in-place overwrite. Source resolves to en_data/scripts/unit-names.txt.
 [section]
 kind = "fixed-records"
-file = "en_data/bin/mbuild/unit-names.packed.bin"
 grow = "insert"
