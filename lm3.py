@@ -992,6 +992,11 @@ def get_character_widths(image_path, spacing=1):
     # 16 zero bytes), so PNG tile 0 = ROM tile 1.  Shift widths to match.
     character_widths = [0] + character_widths[:-1]
 
+    # Space (0x20) glyph is empty → scanner returns 0, which VWF treats as
+    # "blank tile, no advance." Force a visible pixel advance so words separate.
+    if len(character_widths) > 0x20 and character_widths[0x20] == 0:
+        character_widths[0x20] = 4
+
     return character_widths
 
 

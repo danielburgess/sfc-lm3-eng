@@ -47,9 +47,18 @@ org $80BC75
     NOP : NOP : NOP : NOP      ; 4 (pad to 15)
 
 ; ============================================================================
-; VWF Code - Bank $C0
+; Hook 3: $80:C022 (textStream_ExtFF — [cls] screen transition)
+; Original: JSL initTilemapAndSync_Long  (4 bytes)
+; Replace with JSL to VWFClsHook which calls the original, then resets VWF
+; state + clears VWF tile buffer/VRAM so new page starts clean.
 ; ============================================================================
-org $C08000
+org $80C022
+    JSL.L VWFClsHook           ; 4 (same size as displaced JSL)
+
+; ============================================================================
+; VWF Code - Bank $E0 ($C0 collides w/ title_chunks @ PC 0x200000)
+; ============================================================================
+org $E08000
 
 ; -------------------------------------------------------------------
 ; VWFCharHandler
@@ -269,9 +278,11 @@ VWFCharHandler:
     STA.W $2116
     SEP #$20
 
-    ; Upload 2 tiles (32 bytes = 16 word writes) for current column
+    ; Upload 4 tiles (64 bytes = 32 word writes): current column + spill column.
+    ; Covers both the char we just drew AND the spillover bits into col+1.
+    ; Bulk upload in VWFPostRender removed → no mid-frame flicker.
     LDX.B $0A                 ; buffer offset
-    LDY.W #$0010              ; 16 word writes
+    LDY.W #$0020              ; 32 word writes
 .upLoop:
     LDA.L !TILE_BUF,X : STA.W $2118 : INX
     LDA.L !TILE_BUF,X : STA.W $2119 : INX
@@ -327,7 +338,7 @@ VWFCharHandler:
 ; VWFPreRender - called before processText
 ; Displaced: LDA #$0400 / STA $14 / STZ $16
 ; -------------------------------------------------------------------
-org $C08F00
+org $E08F00
 
 VWFPreRender:
     ; Displaced instructions from $80:BC75
@@ -355,13 +366,35 @@ VWFPreRender:
     INX : INX
     CPX.W #$1000 : BCC -
 
+    ; --- Bulk-clear VRAM tile range at $6100 (2048 bytes = 4 rows × 512B) ---
+    ; Per-char render uploads tiles it writes, but trailing tilemap entries
+    ; from longer prior messages still reference *old* VRAM pixels. Clear up
+    ; front under forced blank — happens before reveal so it's invisible.
+    SEP #$20
+    SEI
+    LDA.B #$00 : STA.W $4200   ; disable NMI
+    LDA.B #$80 : STA.W $2100   ; forced blank
+    LDA.B #$80 : STA.W $2115   ; VRAM word inc on high byte
+    REP #$20
+    LDA.W #$6100 : STA.W $2116
+    SEP #$20
+    LDX.W #$0800               ; 2048 word writes = 4096 bytes = 256 tiles (4 rows)
+.vclrLoop:
+    STZ.W $2118
+    STZ.W $2119
+    DEX : BNE .vclrLoop
+    LDA.B $58  : STA.W $2100   ; restore display
+    LDA.B #$81 : STA.W $4200   ; re-enable NMI
+    CLI
+    REP #$20
+
     RTL
 
 ; -------------------------------------------------------------------
 ; VWFPostRender - called after processText
 ; Bulk uploads all VWF tiles, then displaced: REP #$20 / LDA $0A16
 ; -------------------------------------------------------------------
-org $C08F80
+org $E08F80
 
 VWFPostRender:
     SEP #$20
@@ -371,31 +404,12 @@ VWFPostRender:
     JMP .done
 
 .doUpload:
-    ; Bulk VRAM upload with NMI disabled
-    SEI
-    LDA.B #$00 : STA.W $4200  ; disable NMI
-    LDA.B #$80 : STA.W $2100  ; forced blank
-    LDA.B #$80 : STA.W $2115  ; VRAM word increment on high write
-
-    ; Upload entire tile buffer to VRAM $6100 (tile $20)
-    REP #$20
-    LDA.W #$6100 : STA.W $2116
-    SEP #$20
-
-    LDX.W #$0000
-    LDY.W #$0800              ; 2048 word writes = 4096 bytes
-.bulkLoop:
-    LDA.L !TILE_BUF,X : STA.W $2118 : INX
-    LDA.L !TILE_BUF,X : STA.W $2119 : INX
-    DEY : BNE .bulkLoop
-
-    ; Clear VWF flag
+    ; Bulk upload removed — per-char upload in VWFCharHandler now writes
+    ; both the rendered column AND the spillover column each character,
+    ; so VRAM is always up-to-date without a mid-frame 4KB blast
+    ; (which caused visible flicker during tile-by-tile reveal).
+    ; Just clear the VWF flag; displaced instructions run below.
     LDA.B #$00 : STA.W !VWF_FLAG
-
-    ; Restore display + NMI
-    LDA.B $58 : STA.W $2100
-    LDA.B #$81 : STA.W $4200
-    CLI
 
 .done:
     ; Displaced instructions from $80:BC7F
@@ -403,18 +417,56 @@ VWFPostRender:
     LDA.W $0A16
     RTL
 
+; -------------------------------------------------------------------
+; VWFClsHook - replaces JSL initTilemapAndSync_Long at $80:C022.
+; Runs the original clear+sync, then resets VWF so the new text page
+; starts with an empty tile buffer, cleared VRAM tile range, and
+; VWF_PX/VWF_ROW reset to current cursor position.
+; -------------------------------------------------------------------
+org $E08FC0
+
+VWFClsHook:
+    ; Original displaced op — must run first so tilemap clear completes
+    JSL.L $81ECE1              ; initTilemapAndSync_Long
+
+    ; Only reset VWF state if VWF is active
+    SEP #$20
+    LDA.W !VWF_FLAG
+    CMP.B #$A5
+    REP #$20
+    BNE .done
+
+    ; Clear WRAM tile buffer ($7F:B000, 4096 bytes) — per-char OR
+    ; accumulates into this; leftover pixels from prior page would
+    ; merge into new page's glyphs as garble. VRAM tiles do NOT need
+    ; clearing: game's initTilemapAndSync_Long wipes the tilemap to
+    ; blank-fill, so tilemap entries not rewritten by the new page
+    ; reference blank tiles, not leftover VWF tiles.
+    LDX.W #$0000
+    LDA.W #$0000
+-   STA.L !TILE_BUF,X
+    INX : INX
+    CPX.W #$1000 : BCC -
+
+    ; Sentinel so next char triggers per-row reinit of VWF_PX
+    LDA.W #$FFFF
+    STA.W !VWF_ROW
+
+.done:
+    RTL
+
 ; ============================================================================
-; Data — placed at $C09000, safely after VWFPostRender and before TextPtrDispatch
-; ($C09000 + 256 widths + 16 zeros + ~3840 font bytes ≈ $C09FFF < $C0A000)
+; Data — placed at $E09000, safely after VWFPostRender.
+; ($E09000 + 256 widths + 16 zeros + ~3840 font bytes ≈ $E09FFF < $E0A000)
 ; ============================================================================
-org $C09000
+org $E09000
 
 VWFWidthTable:
-    incbin "font/font_accented_widths.bin"
+    incbin "en_data/fonts/font_accented_widths.bin"
 
 VWFFontData:
     db $00,$00,$00,$00,$00,$00,$00,$00
     db $00,$00,$00,$00,$00,$00,$00,$00
-    incbin "font/bin/font_accented_1bpp.bin"
+    incbin "en_data/bin/fonts/font_accented_1bpp.bin"
 
 print "VWF v4.2 end: $", pc
