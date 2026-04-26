@@ -4,7 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Hopefully on the right path.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Before major changes. 4">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -51,7 +52,7 @@
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/en_data/scripts",
+    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -63,8 +64,8 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/en_data/scripts" />
       <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/en_data/scripts" />
       <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -102,38 +103,7 @@
       <workItem from="1776104523517" duration="79044000" />
       <workItem from="1776361368085" duration="118388000" />
       <workItem from="1776648745697" duration="79641000" />
-    </task>
-    <task id="LOCAL-00009" summary="static rendering is working for VWF! Still work to do, but it's progress!">
-      <option name="closed" value="true" />
-      <created>1775459474089</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1775459474089</updated>
-    </task>
-    <task id="LOCAL-00010" summary="Committing some changes. Relly annoyed that the vwf patch is fully broken once more. Renamed the current version for archival and rolling back to 4.2 (last commit)">
-      <option name="closed" value="true" />
-      <created>1775499346140</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1775499346140</updated>
-    </task>
-    <task id="LOCAL-00011" summary="Add single-command build system to lm3.py            &#10;   Commands: font, script, vwf, build, extract via argparse CLI.&#10;   - font: converts font_accented.png → font_1bppil.bin + font_1bpp.bin + widths.bin&#10;   - script: patches font into ROM + inserts all translated text tables → lm3_scripted.sfc&#10;   - vwf: applies vwf_patch.asm via asar to scripted ROM → lm3_en.sfc (fast iteration)&#10;   - build: full pipeline in one command&#10;&#10;   Adds SCRIPT_TABLES constant, insert_table_into_rom() helper (in-place bytearray),&#10;   insert_all_scripts(), build_font(), build_scripted(), build_vwf(), build().&#10;   Also adds pillow and chardet as tracked dependencies.">
-      <option name="closed" value="true" />
-      <created>1775500776995</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1775500776995</updated>
-    </task>
-    <task id="LOCAL-00012" summary="Big changes for script dumping and insertion. Still some bugs, but we'll figure it out.">
-      <option name="closed" value="true" />
-      <created>1775610509019</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1775610509019</updated>
+      <workItem from="1777186530812" duration="14231000" />
     </task>
     <task id="LOCAL-00013" summary="Round-trip verification now passing for original data.">
       <option name="closed" value="true" />
@@ -495,7 +465,39 @@
       <option name="project" value="LOCAL" />
       <updated>1776865868700</updated>
     </task>
-    <option name="localTasksCounter" value="58" />
+    <task id="LOCAL-00058" summary="Before major changes.">
+      <option name="closed" value="true" />
+      <created>1777187086430</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1777187086430</updated>
+    </task>
+    <task id="LOCAL-00059" summary="Before major changes. 2">
+      <option name="closed" value="true" />
+      <created>1777187918739</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1777187918740</updated>
+    </task>
+    <task id="LOCAL-00060" summary="Before major changes. 3">
+      <option name="closed" value="true" />
+      <created>1777192032106</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1777192032107</updated>
+    </task>
+    <task id="LOCAL-00061" summary="Before major changes. 4">
+      <option name="closed" value="true" />
+      <created>1777220948411</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1777220948411</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -546,10 +548,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="committing a ton of event script changes, etc" />
-    <MESSAGE value="fast" />
-    <MESSAGE value="formatting fixes" />
-    <MESSAGE value="More changes and fixes." />
     <MESSAGE value="Aded new master rom hacking database for ai to reference. Added recent changes." />
     <MESSAGE value="Added windowed script file caching. some script fixes." />
     <MESSAGE value="Removed garbage from script_ext and reformatted to use the window format." />
@@ -571,7 +569,11 @@
     <MESSAGE value="Getting very close. Still flickery." />
     <MESSAGE value="VWF restarted. Progressing step-by-step instead of trying to do it all at once." />
     <MESSAGE value="Hopefully on the right path." />
-    <option name="LAST_COMMIT_MESSAGE" value="Hopefully on the right path." />
+    <MESSAGE value="Before major changes." />
+    <MESSAGE value="Before major changes. 2" />
+    <MESSAGE value="Before major changes. 3" />
+    <MESSAGE value="Before major changes. 4" />
+    <option name="LAST_COMMIT_MESSAGE" value="Before major changes. 4" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776577341313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

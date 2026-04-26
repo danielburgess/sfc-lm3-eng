@@ -62,6 +62,19 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; Canvas (the offscreen 2bpp tile RAM that DMAs to VRAM)
 !TILE_BUF   = $7FB000                       ; 4 KB buffer = 4 rows x 32 cols x 32 B/col
 
+; NMI-deferred DMA state — sits in $7F WRAM, well clear of canvas and the
+; contended $0A30..$0A3B window. Long-addressed.
+;   VWF_DIRTY: $A5 = canvas range needs uploading at next vblank, $00 = idle
+;   VWF_DMA_LO: 16-bit canvas byte offset, lower bound of dirty range
+;               (sentinel $FFFF = no range yet — never updated)
+;   VWF_DMA_HI: 16-bit canvas byte offset, upper bound EXCLUSIVE
+;               (sentinel $0000 = no range yet)
+; NMI uses LO/HI to upload only the dirty bytes — a few chars per frame
+; in typewriter mode = ~100 bytes, far inside vblank's 52K-cycle budget.
+!VWF_DIRTY    = $7F5D00
+!VWF_DMA_LO   = $7F5D02
+!VWF_DMA_HI   = $7F5D04
+
 ; Saturation guard — when computed tile column >= this value, fall back to
 ; the original tile path so we never write a tilemap entry pointing at an
 ; un-rendered slot.
@@ -104,6 +117,17 @@ org $80BC75
 ; ============================================================================
 org $80C022
     JSL.L VWFClsHook                        ; 4 bytes — same size as displaced JSL
+
+; ============================================================================
+; Hook 4 — NMI entry  ($00:D469, 4 bytes overwritten)
+; Original: PHP / REP #$30 / PHA  (4 bytes through $D46C)
+; JML to VWFNMI which replicates those 3 ops, performs deferred DMA on
+; channel 7 (which the game never uses — channels 0,1,2,5 are taken by
+; OAM/VRAM/palette uploads), then JMLs back to $00:D46D so the original
+; NMI handler resumes at PHX. No forced blank → no flicker.
+; ============================================================================
+org $00D469
+    JML VWFNMI                              ; 4 bytes — exact replacement of PHP/REP/PHA
 
 ; ============================================================================
 ; VWF body — bank $E0 (avoids $C0 collision with title_chunks @ PC 0x200000)
@@ -316,32 +340,27 @@ VWFCharHandler:
     JMP .rowLoop                            ; continue with next row
 
 .doneRows:
-    ; --- Per-character incremental VRAM upload ------------------------------
-    ; Push the two newly-touched tiles into VRAM right now (forced blank,
-    ; NMI off) so the screen sees the partial line as it draws. PostRender
-    ; will later bulk-upload everything once processText returns.
-    SEP #$20                                ; 8-bit for register writes
-    SEI                                     ; mask IRQs during VRAM access
-    LDA.B #$00 : STA.W $4200                ; disable NMI (NMITIMEN bit 7 cleared)
-    LDA.B #$80 : STA.W $2100                ; INIDISP forced blank (allows VRAM writes)
-    LDA.B #$80 : STA.W $2115                ; VMAIN: word inc on $2119 high write
-
-    REP #$20                                ; 16-bit for VRAM addr math
-    LDA.B $0A : LSR A                       ; canvas byte offset → word offset
-    CLC : ADC.W #$6100                      ; +VRAM tile-$20 word base
-    STA.W $2116                             ; VMADDL/H combined 16-bit write
-    SEP #$20                                ; back to 8-bit for upload loop
-
-    LDX.B $0A                               ; X = canvas read offset
-    LDY.W #$0010                            ; Y = 16 word writes (= 32 bytes = 2 tiles)
-.upLoop:
-    LDA.L !TILE_BUF,X : STA.W $2118 : INX   ; bp0 byte → VMDATAL, advance read
-    LDA.L !TILE_BUF,X : STA.W $2119 : INX   ; bp1 byte → VMDATAH, advance read
-    DEY : BNE .upLoop                       ; loop until 16 word writes done
-
-    LDA.B $58 : STA.W $2100                 ; restore INIDISP from game's brightness shadow
-    LDA.B #$81 : STA.W $4200                ; re-enable NMI + auto-joypad read
-    CLI                                     ; allow IRQs again
+    ; --- Defer VRAM upload to next vblank, track dirty byte range ----------
+    ; $0A = canvas byte offset of the just-rendered tile pair (top+bot, 32 B).
+    ; Update LO = min(LO, $0A) and HI = max(HI, $0A + $20). NMI uploads
+    ; only that range — keeps vblank budget healthy when only a few chars
+    ; rendered this frame.
+    REP #$20                                ; 16-bit for word compares
+    LDA.B $0A                               ; current tile-pair start
+    CMP.L !VWF_DMA_LO                       ; vs current LO
+    BCS .lo_keep                            ; LO already <= current → keep
+    STA.L !VWF_DMA_LO                       ; new LO
+.lo_keep:
+    LDA.B $0A                               ; reload start
+    CLC : ADC.W #$0020                      ; +32 bytes (top+bot tile pair end)
+    CMP.L !VWF_DMA_HI                       ; vs current HI
+    BCC .hi_keep                            ; HI already >= end → keep
+    STA.L !VWF_DMA_HI                       ; new HI
+.hi_keep:
+    SEP #$20                                ; 8-bit for flag write
+    LDA.B #$A5                              ; dirty sentinel
+    STA.L !VWF_DIRTY                        ; arm NMI upload
+    REP #$20                                ; restore 16-bit for tilemap write below
 
 .skipRender:
     ; --- Tilemap entry write -----------------------------------------------
@@ -403,7 +422,14 @@ VWFPreRender:
 
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5 : STA.W !VWF_FLAG            ; arm VWF (handler now takes VWF path)
-    REP #$20                                ; back to 16-bit for clear math
+    REP #$20                                ; back to 16-bit
+
+    ; Reset dirty-range bounds for this emit. NMI will upload nothing if
+    ; no char gets rendered between now and next vblank.
+    LDA.W #$FFFF
+    STA.L !VWF_DMA_LO                       ; sentinel "no range yet"
+    LDA.W #$0000
+    STA.L !VWF_DMA_HI
 
     ; -----------------------------------------------------------------------
     ; Partial canvas clear: zero bytes from current pen position to end of
@@ -452,31 +478,14 @@ VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
     LDA.W !VWF_FLAG                         ; was this emit a VWF emit?
     CMP.B #$A5                              ; sentinel match?
-    BEQ .doUpload                           ; yes → bulk-upload canvas
-    JMP .done                               ; no → skip upload, run displaced cleanup
+    BNE .done                               ; no → skip dirty mark
 
-.doUpload:
-    SEI                                     ; mask IRQs during DMA setup
-    LDA.B #$00 : STA.W $4200                ; disable NMI
-    LDA.B #$80 : STA.W $2100                ; forced blank (VRAM writes legal)
-    LDA.B #$80 : STA.W $2115                ; VMAIN: word inc on $2119 high write
-
-    REP #$20                                ; 16-bit for VRAM addr
-    LDA.W #$6100 : STA.W $2116              ; VMADDL/H = tile $20 word base
-    SEP #$20                                ; back to 8-bit for upload loop
-
-    LDX.W #$0000                            ; X = canvas read index
-    LDY.W #$0800                            ; Y = 2048 word writes (= 4096 bytes)
-.bulkLoop:
-    LDA.L !TILE_BUF,X : STA.W $2118 : INX   ; bp0 byte → VMDATAL, advance
-    LDA.L !TILE_BUF,X : STA.W $2119 : INX   ; bp1 byte → VMDATAH, advance
-    DEY : BNE .bulkLoop                     ; loop full canvas
-
-    LDA.B #$00 : STA.W !VWF_FLAG            ; disarm VWF (handler now passes through)
-
-    LDA.B $58 : STA.W $2100                 ; restore brightness from shadow
-    LDA.B #$81 : STA.W $4200                ; re-enable NMI + auto-joypad
-    CLI                                     ; unmask IRQs
+    ; Defer the final canvas upload to next vblank. Per-char renders may
+    ; have already set DIRTY, but mark again so an emit ending without
+    ; per-char rendering still flushes.
+    LDA.B #$A5
+    STA.L !VWF_DIRTY                        ; ensure NMI does the upload
+    LDA.B #$00 : STA.W !VWF_FLAG            ; disarm VWF (handler passes through)
 
 .done:
     REP #$20                                ; displaced: 16-bit mode
@@ -541,16 +550,113 @@ VWFClsHook:
     LDA.W #$FFFF                            ; sentinel value
     STA.W !VWF_ROW                          ; force per-row reinit on next char
 
+    ; Reset dirty-range bounds — entire VRAM region was just zero-blasted,
+    ; no leftover dirty range from prior page is meaningful.
+    LDA.W #$FFFF
+    STA.L !VWF_DMA_LO
+    LDA.W #$0000
+    STA.L !VWF_DMA_HI
+    SEP #$20
+    LDA.B #$00
+    STA.L !VWF_DIRTY                        ; nothing to upload at next NMI
+    REP #$20
+
 .done:
     RTL                                     ; long-return to game caller
 
-warnpc $E09100                              ; VWFClsHook must end before data table
+warnpc $E09200                              ; VWFClsHook (~$120 B w/ VRAM clear) must end before VWFNMI
 
 ; ============================================================================
-; Data — placed at $E0:9100, safely past VWFClsHook (~39 B from $E0:9000)
-; ($E09100 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A111)
+; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
+; Replicates the displaced ops, performs deferred DMA of the canvas to
+; VRAM via channel 7 if !VWF_DIRTY is set, then JMLs back to $00:D46D so
+; the original NMI handler resumes at PHX.
+;
+; Channel choice: game uses DMA channels 0 (OAM), 1+2 (VRAM), 5 (palette).
+; Channel 7 is unused — its config persists across frames harmlessly.
+; Vblank is naturally a safe time for VRAM writes — no forced blank → no
+; scanline flicker.
+;
+; $2115/$2116 leftover is harmless: game's NMI body re-writes them at
+; $D4F0+ before triggering its own VRAM DMA on channels 1/2.
 ; ============================================================================
-org $E09100
+org $E09200
+
+VWFNMI:
+    PHP                                     ; displaced from $D469
+    REP #$30                                ; displaced from $D46A — M=16, X=16
+    PHA                                     ; displaced from $D46C
+    PHX                                     ; preserve interrupted X for restoration
+    PHY                                     ; preserve interrupted Y
+
+    SEP #$20                                ; 8-bit for flag check
+    LDA.L !VWF_DIRTY                        ; was canvas modified?
+    CMP.B #$A5                              ; sentinel match?
+    BNE .skipDMA                            ; no → straight to return
+
+    ; Validate range: HI must be > LO (otherwise sentinel state)
+    REP #$20                                ; 16-bit for compare
+    LDA.L !VWF_DMA_HI
+    CMP.L !VWF_DMA_LO
+    BCC .clearAndExit                       ; HI < LO → invalid, just clear flag
+    BEQ .clearAndExit                       ; HI == LO → empty range
+    SEP #$20
+
+    ; --- Compute count = HI - LO and DMA channel 7 setup ---
+    REP #$20
+    LDA.L !VWF_DMA_HI
+    SEC : SBC.L !VWF_DMA_LO                 ; count in bytes
+    STA.W $4375                             ; DAS7L/H
+
+    ; Source = $7F:B000 + LO
+    LDA.L !VWF_DMA_LO
+    CLC : ADC.W #$B000                      ; canvas base
+    STA.W $4372                             ; A1T7L/H
+    SEP #$20
+    LDA.B #$7F
+    STA.W $4374                             ; A1B7 = source bank
+
+    ; VRAM word addr = $6100 + LO/2
+    REP #$20
+    LDA.L !VWF_DMA_LO
+    LSR A                                   ; byte offset → word offset
+    CLC : ADC.W #$6100                      ; tile $20 word base
+    STA.W $2116                             ; VMADDL/H
+    SEP #$20
+
+    LDA.B #$80                              ; VMAIN: word inc on $2119 high write
+    STA.W $2115
+    LDA.B #$01                              ; DMAP7: mode 1 (2-byte alternating)
+    STA.W $4370
+    LDA.B #$18                              ; BBAD7: low byte of $2118 (VMDATAL)
+    STA.W $4371
+
+    LDA.B #$80                              ; MDMAEN: trigger channel 7 (bit 7)
+    STA.W $420B
+
+.clearAndExit:
+    REP #$20
+    LDA.W #$FFFF                            ; reset dirty-range bounds
+    STA.L !VWF_DMA_LO
+    LDA.W #$0000
+    STA.L !VWF_DMA_HI
+    SEP #$20
+    LDA.B #$00                              ; clear dirty flag (next render re-arms)
+    STA.L !VWF_DIRTY
+
+.skipDMA:
+    REP #$30                                ; restore M=16, X=16 for downstream NMI flow
+    PLY                                     ; restore interrupted Y
+    PLX                                     ; restore interrupted X
+    JML $00D46D                             ; resume original NMI handler at PHX
+
+warnpc $E09400                              ; VWFNMI must end before data table
+
+; ============================================================================
+; Data — placed at $E0:9400, safely past VWFNMI
+; ($E09400 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A411)
+; ============================================================================
+org $E09400
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
