@@ -130,6 +130,22 @@ org $00D469
     JML VWFNMI                              ; 4 bytes — exact replacement of PHP/REP/PHA
 
 ; ============================================================================
+; Hook 5 — line-width check  ($00:BE92, 9 bytes overwritten)
+; Original: LDA $09FC / DEC / CMP $09F8 / BCC textStreamLoop
+;   (compares (game_col - 1) to char-count limit at $09F8 — wraps when col
+;   exceeds the per-line CHARACTER count)
+; Replacement: JSL VWFLineEndCheck / BCC textStreamLoop / NOPx3
+;   (helper compares VWF_PX to (line-char-limit * 8) = pixel limit, sets
+;   carry the same way as the original CMP — caller's BCC works unchanged)
+; This converts the engine's char-based wrap into a pixel-based wrap so
+; VWF can fully utilize the dialog-box width.
+; ============================================================================
+org $00BE92
+    JSL VWFLineEndCheck                     ; 4 — pen-vs-pixel-limit, sets carry
+    db $90, $B7                             ; BCC -73 → $00:BE4F (textStreamLoop)
+    NOP : NOP : NOP                         ; pad to 9 (original instr length)
+
+; ============================================================================
 ; VWF body — bank $E0 (avoids $C0 collision with title_chunks @ PC 0x200000)
 ; ============================================================================
 org $E08000
@@ -692,7 +708,24 @@ VWFNMI:
     PLX                                     ; restore interrupted X
     JML $00D46D                             ; resume original NMI handler at PHX
 
-warnpc $E09400                              ; VWFNMI must end before data table
+; ----------------------------------------------------------------------------
+; VWFLineEndCheck — called from $00:BE92 hook in place of the engine's
+; char-count comparison. Sets carry as if the original CMP ran:
+;   carry CLEAR if VWF_PX < (line_char_limit * 8) → caller's BCC continues loop
+;   carry SET   otherwise → caller falls through to wrap path
+; Caller is in M=16 mode (text engine convention at this hook site).
+; ----------------------------------------------------------------------------
+VWFLineEndCheck:
+    PHA                                     ; reserve stack slot (2 bytes, M=16)
+    LDA.W $09F8                             ; line-width limit IN CHARACTERS
+    ASL A : ASL A : ASL A                   ; * 8 → pixel limit
+    STA $01,S                               ; overwrite our PHA'd word with pixel limit
+    LDA.W !VWF_PX                           ; current VWF pen pixel x
+    CMP $01,S                               ; compare pen vs pixel limit
+    PLA                                     ; pop scratch (CMP-set carry survives PLA)
+    RTL                                     ; return — caller's BCC reads carry
+
+warnpc $E09400                              ; VWFNMI + helpers must end before data table
 
 ; ============================================================================
 ; Data — placed at $E0:9400, safely past VWFNMI
