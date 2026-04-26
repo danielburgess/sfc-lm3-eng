@@ -188,8 +188,41 @@ VWFCharHandler:
     BRA .doRender                           ; survived filters → render as VWF glyph
 
 .doOrig:
-    LDX.W !VWF_SAVX                         ; restore tilemap offset that origPath expects in X
-    JMP .origPath                           ; tail-call original write (RTL there exits us)
+    ; Special-char path while VWF active: $1B "!!", $1C "...", and other
+    ; chars below $20 / above $EF / icons. These reference base-font tiles
+    ; the game preloaded into VRAM (not our VWF canvas). The tile DATA is
+    ; correct as-is — the bug is POSITION: game's tilemap col = $09FC*8 px,
+    ; but VWF pen is usually further LEFT (chars narrower than 8 px each).
+    ;
+    ; Fix: override tilemap-write X to point at the current VWF pen tile
+    ; col (snap pen up to next 8-px boundary first), then advance VWF_PX
+    ; by 8 so subsequent VWF chars resume after the special tile.
+    REP #$20                                ; 16-bit for word math
+    LDA.W !VWF_PX                           ; current pen pixel x
+    CLC : ADC.W #$0007                      ; +7 ...
+    AND.W #$FFF8                            ; ...AND $FFF8 = ceil to next 8-px boundary
+    STA.W !VWF_PX                           ; store snapped pen
+    LSR A : LSR A : LSR A                   ; / 8 → VWF tile col
+    SEC : SBC.W $09FC                       ; delta = VWF_col - game_col (signed)
+    ASL A                                   ; * 2 (tilemap byte stride)
+    CLC : ADC.W !VWF_SAVX                   ; X' = game_X + delta = tilemap byte offset @ VWF col
+    TAX                                     ; X register now points at VWF tile col
+
+    LDA.W $0A38                             ; reload char value
+    AND.W #$00FF                            ; mask to byte (clear any stale high bits)
+    CLC : ADC.W $0A02                       ; + palette/priority
+    PHA                                     ; save composed top word
+    STA.L $7E9000,X                         ; top tilemap entry at VWF col
+    PLA                                     ; restore
+    CLC : ADC.W #$0400                      ; + palette-row offset for bot
+    STA.L $7E9040,X                         ; bot tilemap entry at VWF col
+
+    ; Advance VWF_PX by 8 (special tiles are tile-sized = 8 px)
+    LDA.W !VWF_PX
+    CLC : ADC.W #$0008
+    STA.W !VWF_PX
+
+    RTL                                     ; long-return — done with this special char
 
 .doRender:
     ; Width lookup — TAX uses 16-bit char as table index into width table.

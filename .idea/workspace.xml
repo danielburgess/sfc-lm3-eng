@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Current State has flicker fixes, but there is still garbage being drawn and portions of the previous screen are often seen during &quot;typewriter effect&quot;">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/eng.tbl" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/eng.tbl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,15 +105,7 @@
       <workItem from="1776104523517" duration="79044000" />
       <workItem from="1776361368085" duration="118388000" />
       <workItem from="1776648745697" duration="79641000" />
-      <workItem from="1777186530812" duration="16068000" />
-    </task>
-    <task id="LOCAL-00014" summary="More fixes for round-trip verification. Identified interleaved data in between text sections related to menus. Going to need to trace and document this before relocation can be functional.">
-      <option name="closed" value="true" />
-      <created>1775630113855</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1775630113855</updated>
+      <workItem from="1777186530812" duration="19352000" />
     </task>
     <task id="LOCAL-00015" summary="New text blocks have been identified for translation.">
       <option name="closed" value="true" />
@@ -496,7 +491,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777229181808</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs.">
+      <option name="closed" value="true" />
+      <created>1777231020765</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1777231020765</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -547,7 +550,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Added windowed script file caching. some script fixes." />
     <MESSAGE value="Removed garbage from script_ext and reformatted to use the window format." />
     <MESSAGE value="more changes to script. need debugged" />
     <MESSAGE value="updated annotations and exported updated disassembly" />
@@ -572,7 +574,8 @@
     <MESSAGE value="Before major changes. 3" />
     <MESSAGE value="Before major changes. 4" />
     <MESSAGE value="Current State has flicker fixes, but there is still garbage being drawn and portions of the previous screen are often seen during &quot;typewriter effect&quot;" />
-    <option name="LAST_COMMIT_MESSAGE" value="Current State has flicker fixes, but there is still garbage being drawn and portions of the previous screen are often seen during &quot;typewriter effect&quot;" />
+    <MESSAGE value="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs." />
+    <option name="LAST_COMMIT_MESSAGE" value="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776577341313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
