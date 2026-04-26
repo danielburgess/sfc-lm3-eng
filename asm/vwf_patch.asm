@@ -380,6 +380,8 @@ VWFCharHandler:
     LDX.W !VWF_SAVX                         ; restore X for caller
     RTL                                     ; long-return to balance JSL.L
 
+warnpc $E08F00                              ; VWFCharHandler must end before VWFPreRender
+
 ; ----------------------------------------------------------------------------
 ; VWFPreRender — called before processText
 ; Carries displaced bytes from $80:BC75 (LDA #$0400 / STA $14 / STZ $16),
@@ -410,6 +412,8 @@ VWFPreRender:
     CPX.W #$1000 : BCC -                    ; loop until 4096 bytes cleared
 
     RTL                                     ; long-return — wrapper continues with JSR processText
+
+warnpc $E08F80                              ; VWFPreRender must end before VWFPostRender
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
@@ -454,6 +458,8 @@ VWFPostRender:
     LDA.W $0A16                             ; displaced: load text-engine state word
     RTL                                     ; long-return — caller's NOPs follow harmlessly
 
+warnpc $E09000                              ; VWFPostRender must end before VWFClsHook
+
 ; ----------------------------------------------------------------------------
 ; VWFClsHook — called from $80:C022 in place of JSL initTilemapAndSync_Long.
 ; Runs the original clear+sync, then resets canvas + sentinels so the next
@@ -461,8 +467,10 @@ VWFPostRender:
 ; The VRAM tile range itself does NOT need clearing: initTilemapAndSync_Long
 ; rewrites the tilemap to point at blank tiles, so any tilemap entry not
 ; touched by the new page references blanks rather than stale VWF tiles.
+; Moved to $E0:9000 (was $E0:8FC0) — PostRender body extends to ~$E0:8FD4,
+; old placement caused fall-through into this hook every emit (silent crash).
 ; ----------------------------------------------------------------------------
-org $E08FC0
+org $E09000
 
 VWFClsHook:
     JSL.L $81ECE1                           ; run displaced original (initTilemapAndSync_Long)
@@ -485,11 +493,13 @@ VWFClsHook:
 .done:
     RTL                                     ; long-return to game caller
 
+warnpc $E09100                              ; VWFClsHook must end before data table
+
 ; ============================================================================
-; Data — placed at $E0:9000, safely past VWFPostRender + VWFClsHook
-; ($E09000 + 256 widths + 16-byte zero glyph + ~3840 font bytes < $E0A000)
+; Data — placed at $E0:9100, safely past VWFClsHook (~39 B from $E0:9000)
+; ($E09100 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A111)
 ; ============================================================================
-org $E09000
+org $E09100
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
