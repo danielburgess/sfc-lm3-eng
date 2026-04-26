@@ -342,20 +342,29 @@ VWFCharHandler:
 .doneRows:
     ; --- Defer VRAM upload to next vblank, track dirty byte range ----------
     ; $0A = canvas byte offset of the just-rendered tile pair (top+bot, 32 B).
-    ; Update LO = min(LO, $0A) and HI = max(HI, $0A + $20). NMI uploads
-    ; only that range — keeps vblank budget healthy when only a few chars
-    ; rendered this frame.
+    ; LO = min(LO, $0A) and HI = max(HI, end_of_current_row).
+    ;
+    ; CRITICAL: HI is extended to the END of the current canvas row, not just
+    ; this char's tile end. The bytes between the pen and the row end are
+    ; ALREADY ZERO in canvas (PreRender partial-cleared them). DMAing the
+    ; zero tail zeros out the VRAM tile slots that the game's tilemap entries
+    ; (advancing 1 per char regardless of glyph width) reference past where
+    ; VWF actually drew pixels. Without this, those trailing tile slots show
+    ; leftover glyphs from prior emits = the visible "garbage after text"
+    ; the user saw in the "Momoa" / "we get to ░░░" screenshots.
     REP #$20                                ; 16-bit for word compares
     LDA.B $0A                               ; current tile-pair start
     CMP.L !VWF_DMA_LO                       ; vs current LO
     BCS .lo_keep                            ; LO already <= current → keep
     STA.L !VWF_DMA_LO                       ; new LO
 .lo_keep:
-    LDA.B $0A                               ; reload start
-    CLC : ADC.W #$0020                      ; +32 bytes (top+bot tile pair end)
+    LDA.B $04                               ; canvas row index (0..3)
+    INC A                                   ; (row+1)
+    XBA                                     ; (row+1) << 8
+    ASL A : ASL A                           ; (row+1) * 1024 = end-of-row byte
     CMP.L !VWF_DMA_HI                       ; vs current HI
-    BCC .hi_keep                            ; HI already >= end → keep
-    STA.L !VWF_DMA_HI                       ; new HI
+    BCC .hi_keep                            ; HI already >= end-of-row → keep
+    STA.L !VWF_DMA_HI                       ; new HI = end of current row
 .hi_keep:
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5                              ; dirty sentinel
