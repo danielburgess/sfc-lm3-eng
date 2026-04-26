@@ -403,14 +403,39 @@ VWFPreRender:
 
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5 : STA.W !VWF_FLAG            ; arm VWF (handler now takes VWF path)
-    REP #$20                                ; back to 16-bit for clear loop
+    REP #$20                                ; back to 16-bit for clear math
 
-    LDX.W #$0000                            ; canvas index (byte offset)
+    ; -----------------------------------------------------------------------
+    ; Partial canvas clear: zero bytes from current pen position to end of
+    ; canvas. Tiles BEHIND the pen hold previously-rendered chars in this
+    ; page (their tilemap entries are still on screen, so their tile bytes
+    ; must persist across the per-frame PreRender→processText→PostRender
+    ; cycle that drives typewriter rendering). Tiles AT or AFTER the pen
+    ; are about to be (re)written by this emit, so they need a fresh start.
+    ; ClsHook does the full-canvas wipe at [cls] page transitions.
+    ;
+    ; offset = row * 1024 + col * 32   (matches VWFCharHandler's $0A calc)
+    ;   row = ($09FE >> 1) & 3
+    ;   col = $09FC
+    ; -----------------------------------------------------------------------
+    LDA.W $09FE                             ; text row source word
+    LSR A : AND.W #$0003                    ; row index 0..3
+    XBA                                     ; row << 8
+    ASL A : ASL A                           ; row << 10 = * 1024
+    STA.B $0A                               ; partial: row * 1024 (zero-page scratch)
+    LDA.W $09FC                             ; col index
+    AND.W #$001F                            ; clamp 0..31 defensively
+    ASL A : ASL A : ASL A : ASL A : ASL A   ; col * 32
+    CLC : ADC.B $0A                         ; + row * 1024
+    TAX                                     ; X = canvas byte offset to start clearing
+
     LDA.W #$0000                            ; word zero pattern
--   STA.L !TILE_BUF,X                       ; clear two canvas bytes
+-   CPX.W #$1000                            ; reached canvas end?
+    BCS +                                   ; yes → done
+    STA.L !TILE_BUF,X                       ; zero two canvas bytes
     INX : INX                               ; advance by 2
-    CPX.W #$1000 : BCC -                    ; loop until 4096 bytes cleared
-
+    BRA -                                   ; loop
++
     RTL                                     ; long-return — wrapper continues with JSR processText
 
 warnpc $E08F80                              ; VWFPreRender must end before VWFPostRender
@@ -481,11 +506,37 @@ VWFClsHook:
     REP #$20                                ; back to 16-bit
     BNE .done                               ; no → nothing to reset
 
+    ; --- Wipe canvas (4 KB, $7F:B000..$BFFF) ---
     LDX.W #$0000                            ; canvas index
     LDA.W #$0000                            ; zero word
 -   STA.L !TILE_BUF,X                       ; clear two canvas bytes
     INX : INX                               ; advance by 2
     CPX.W #$1000 : BCC -                    ; loop full canvas (4096 bytes)
+
+    ; --- Wipe VRAM tile region $20..$11F (4 KB at word $6100..$6900) ---
+    ; Without this, glyph tiles from the prior page persist in VRAM and
+    ; bleed through to the new page via tilemap entries the engine writes
+    ; before the new typewriter has rendered into those slots.
+    SEP #$20                                ; 8-bit for register writes
+    SEI                                     ; mask IRQs during VRAM access
+    LDA.B #$00 : STA.W $4200                ; disable NMI
+    LDA.B #$80 : STA.W $2100                ; INIDISP forced blank (legal VRAM writes)
+    LDA.B #$80 : STA.W $2115                ; VMAIN: word inc on $2119 high write
+
+    REP #$20                                ; 16-bit for VRAM addr
+    LDA.W #$6100 : STA.W $2116              ; VMADDL/H = tile $20 word base
+    SEP #$20                                ; back to 8-bit
+
+    LDY.W #$0800                            ; 2048 word writes = 4096 bytes
+.zeroLoop:
+    STZ.W $2118                             ; bp0 byte = 0 → VMDATAL
+    STZ.W $2119                             ; bp1 byte = 0 → VMDATAH (triggers VRAM word inc)
+    DEY : BNE .zeroLoop                     ; loop until 2048 words written
+
+    LDA.B $58 : STA.W $2100                 ; restore brightness from shadow
+    LDA.B #$81 : STA.W $4200                ; re-enable NMI + auto-joypad
+    CLI                                     ; unmask IRQs
+    REP #$20                                ; back to 16-bit
 
     LDA.W #$FFFF                            ; sentinel value
     STA.W !VWF_ROW                          ; force per-row reinit on next char
