@@ -1,10 +1,16 @@
-"""Build step: PNG -> (title_dir_streams.bin + title_chunks.bin).
+"""Build step: PNG -> (title_palette.bin + title_dir_streams.bin + title_chunks.bin).
 
 Invoked by retrotool via a pre-build hook (or project.toml build handler). Emits
-two blobs that `project.toml` inserts at fixed ROM offsets:
+three blobs that `project.toml` inserts at fixed ROM offsets:
 
+  0x11F80E  title_palette.bin       (256 colors x 2 bytes = 512 B BGR555 palette)
   0x118000  title_dir_streams.bin   (skip header + 7x8B records + packed streams)
   0x119000  title_chunks.bin        (flat chunk store, 16 B per chunk)
+
+Palette extraction uses the SuperFamiconv binary bundled with retrotool —
+re-derives the 256-color BGR555 palette from the current PNG and writes it to
+both the ROM-injection bin AND the encoder's cgram_live.bin so the two stay
+in lockstep (encoder maps PNG indices using the same palette the game loads).
 
 Round-trip gate:
   png_to_vram(png) -> encode_vram -> synth ROM -> decode_all -> byte-equal to vram
@@ -13,7 +19,7 @@ Constraint: len(title_dir_streams.bin) <= 0x1000. If breached, decoder's chunk
 base ($23:9000) needs relocation and $01:F060 must be patched.
 """
 from __future__ import annotations
-import sys, os, struct
+import sys, os, struct, subprocess, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from compose import png_to_vram
 from encoder import encode_vram
@@ -26,6 +32,48 @@ CGRAM_PATH = '/mnt/crucial/projects/sfc-lm3-eng/en_data/gfx/raw/title/cgram_live
 OUT_DIR = '/mnt/crucial/projects/sfc-lm3-eng/en_data/bin/gfx'
 DIR_STREAMS_BIN = os.path.join(OUT_DIR, 'title_dir_streams.bin')
 CHUNKS_BIN = os.path.join(OUT_DIR, 'title_chunks.bin')
+PALETTE_BIN = os.path.join(OUT_DIR, 'title_palette.bin')
+
+# SuperFamiconv binary — bundled in retrotool's libsfx vendor tree
+def _resolve_sfc_binary():
+    """Find SuperFamiconv binary from the retrotool venv."""
+    candidates = glob.glob(
+        '/mnt/crucial/projects/retrotool/.venv/lib/python*/site-packages/'
+        'retrotool_superfamiconv/bin/superfamiconv'
+    )
+    if not candidates:
+        candidates = glob.glob(
+            '/mnt/crucial/projects/retrotool/packages/retrotool-libsfx/'
+            'vendor/libSFX/tools/superfamiconv'
+        )
+    if not candidates:
+        raise FileNotFoundError('superfamiconv binary not found in retrotool tree')
+    return candidates[0]
+
+
+def extract_palette_from_png(png_path: str, out_path: str) -> bytes:
+    """Run SuperFamiconv to extract a 256-color BGR555 palette from the PNG.
+    Writes to out_path and returns the bytes. Always 512 bytes (256x2).
+
+    -R (no-remap) is critical: without it, SF optimizes the palette by usage
+    frequency and reorders entries, so the output palette has different colors
+    at each index than the PNG's source palette. The encoder uses PNG indices
+    directly to look up colors — any reordering breaks that mapping.
+    """
+    sfc = _resolve_sfc_binary()
+    subprocess.run(
+        [sfc, 'palette',
+         '-i', png_path,
+         '-d', out_path,
+         '-M', 'snes',
+         '-P', '1',
+         '-C', '256',
+         '-R'],                              # no-remap: preserve PNG palette order
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    return open(out_path, 'rb').read()
 
 STREAM_START = 0x0200
 VRAM_ADV = 0x0200
@@ -101,8 +149,42 @@ def verify_synth_roundtrip(
     print('✓ synth round-trip: decoded VRAM == expected VRAM')
 
 
+def _is_up_to_date() -> bool:
+    """Skip rebuild if all three output bins exist and are newer than every
+    input. The PNG drives palette extraction now too — when it changes, the
+    palette is re-derived and injected into both the ROM and the encoder's
+    cgram_live source.
+
+    Inputs: source PNG, source ROM, and every .py in this folder.
+    (cgram_live.bin is now an OUTPUT we generate, not an input.)
+    """
+    outputs = [DIR_STREAMS_BIN, CHUNKS_BIN, PALETTE_BIN]
+    if not all(os.path.exists(p) for p in outputs):
+        return False
+    out_mtime = min(os.path.getmtime(p) for p in outputs)
+    here = os.path.dirname(os.path.abspath(__file__))
+    py_files = [os.path.join(here, f) for f in os.listdir(here) if f.endswith('.py')]
+    inputs = [PNG_PATH, ROM_PATH] + py_files
+    in_mtime = max(os.path.getmtime(p) for p in inputs if os.path.exists(p))
+    return in_mtime <= out_mtime
+
+
 def main():
+    if _is_up_to_date():
+        print('title gfx up-to-date, skipping rebuild')
+        return
+
     print(f'source PNG: {PNG_PATH}')
+
+    # 1. Extract palette from PNG via SuperFamiconv. Write to ROM-injection
+    #    bin AND overwrite cgram_live.bin so the encoder maps PNG indices
+    #    using the same palette the game will load at runtime.
+    os.makedirs(OUT_DIR, exist_ok=True)
+    palette = extract_palette_from_png(PNG_PATH, PALETTE_BIN)
+    print(f'title_palette.bin:     {len(palette)} B (256 colors BGR555)')
+    open(CGRAM_PATH, 'wb').write(palette)
+    print(f'wrote {CGRAM_PATH} (= same palette for encoder)')
+
     vram = png_to_vram(PNG_PATH, CGRAM_PATH)
     print(f'composed VRAM: {len(vram)} B ({len(vram)//64} tiles)')
 
@@ -119,7 +201,6 @@ def main():
 
     verify_synth_roundtrip(dir_streams, chunks, vram)
 
-    os.makedirs(OUT_DIR, exist_ok=True)
     open(DIR_STREAMS_BIN, 'wb').write(dir_streams)
     open(CHUNKS_BIN, 'wb').write(chunks)
     print(f'wrote {DIR_STREAMS_BIN}')

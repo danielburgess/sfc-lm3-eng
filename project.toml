@@ -125,6 +125,18 @@ kind = "bin"
 offset = 0x200000
 file = "en_data/bin/gfx/title_chunks.bin"
 
+# Title palette (256 colors x 2 bytes BGR555 = 512 B). Slot is exactly 512 B
+# at SNES $23:F80E (PC 0x11F80E); $23:F800-$23:F80D is a small dispatch table
+# that references this offset (untouched by this section). Auto-extracted by
+# tools/title_gfx/build_title.py via SuperFamiconv when the PNG changes,
+# kept in lockstep with cgram_live.bin so the encoder's color mapping
+# matches what the game loads into CGRAM at runtime.
+[[rom.build.sections]]
+alias = "title"
+kind = "bin"
+offset = 0x11F80E
+file = "en_data/bin/gfx/title_palette.bin"
+
 [[rom.build.sections]]
 alias = "title"
 kind = "asar"
