@@ -4,8 +4,49 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Mostly fixed. snapshot">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/battle-anim-ext.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2-windowed.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2-windowed.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode-2.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/combat-bytecode.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-2.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-2.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-3.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-3.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-4.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-4.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-5.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/dialog-5.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/info-panels.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/info-panels.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/interaction-text.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/interaction-text.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts-windowed.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts-windowed.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/menu-prompts.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/quiz-questions.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/quiz-questions.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/recruit-lines.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/recruit-lines.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/scene-messages.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/scene-messages.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-attacks.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-attacks.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-classes.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-classes.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-equipment.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-equipment.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-items.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-items.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-names.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/scripts/unit-names.checksum" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,15 +143,7 @@
       <workItem from="1776104523517" duration="79044000" />
       <workItem from="1776361368085" duration="118388000" />
       <workItem from="1776648745697" duration="79641000" />
-      <workItem from="1777186530812" duration="20594000" />
-    </task>
-    <task id="LOCAL-00016" summary="146 unit name translations (16-byte expanded)&#10;36 unit class translations (12 bytes)&#10;128 item translations (9 bytes)&#10;expansion plan for equipment/item names&#10;Added FIXED_TABLES config, insert_fixed_table(), insert_all_fixed(), extract configs for 3 new tables, fill-byte trimming fix, build pipeline integration&#10;Unit name expansion ASM patch: relocated table to bank $C4 (16 bytes/entry), redirect functions via JSL to expanded code with 4×ASL">
-      <option name="closed" value="true" />
-      <created>1775676717572</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1775676717572</updated>
+      <workItem from="1777186530812" duration="35450000" />
     </task>
     <task id="LOCAL-00017" summary="Script intro patch. The org $80B923 directive was 2 bytes too early. $B923 is the BRA instruction at the end of copyUnitFirstName, not the start of copyUnitSurname. The actual surname function starts at $B925, which is what the game's JSR $B925 (at $80:B8FE) targets. After patching, $B925 contained the bank byte of the JSL target ($80), which the CPU interpreted as&#10;   a BRA $04 — sliding into the NOPped-out shared loop and crashing. Changed org $80B923 → org $80B925, extended the first patch to cover the 2 extra BRA bytes, and adjusted NOP padding.">
       <option name="closed" value="true" />
@@ -496,7 +529,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777234249504</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis.">
+      <option name="closed" value="true" />
+      <created>1777235902726</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1777235902726</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -547,7 +588,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="more changes to script. need debugged" />
     <MESSAGE value="updated annotations and exported updated disassembly" />
     <MESSAGE value="more updated annotations and exported updated disassembly. Added cdl export." />
     <MESSAGE value="Entire project is refactored. Now using retrotool. (local only for now)" />
@@ -572,7 +612,8 @@
     <MESSAGE value="Current State has flicker fixes, but there is still garbage being drawn and portions of the previous screen are often seen during &quot;typewriter effect&quot;" />
     <MESSAGE value="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs." />
     <MESSAGE value="Mostly fixed. snapshot" />
-    <option name="LAST_COMMIT_MESSAGE" value="Mostly fixed. snapshot" />
+    <MESSAGE value="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776577341313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
