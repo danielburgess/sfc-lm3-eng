@@ -429,23 +429,19 @@ VWFCharHandler:
     LDX.W !VWF_SAVX                         ; restore tilemap byte offset
 
     ; Row-overflow guard: when the game's $09FC has crept past 31, the engine's
-    ; INX/INX has already advanced X into the NEXT tilemap row's bytes. The
-    ; formula tile-id $20 + R*64 + col*2 with col >= 32 produces tile IDs
-    ; >= $120 — past our canvas range — which display as base-font garbage on
-    ; the screen line below. Pixel-based wrap stays primary; this just makes
-    ; the overflowed entries point at the blank tile ($0) so they show as
-    ; nothing instead of garbage glyphs while pen continues toward pixel limit.
+    ; INX/INX has already advanced X into the NEXT tilemap row's bytes — that
+    ; row holds the BOTTOM tiles of the CURRENT text line (each line uses
+    ; rows N+N+1 paired). The +$40 offset for our bot-tile write goes one
+    ; row further into the NEXT text line's TOP row. Either write at the
+    ; overflowed X clobbers neighboring lines' valid tilemap entries.
+    ;
+    ; SKIP all tilemap writes when overflowed. Pen still advances per glyph
+    ; width below; char's canvas pixels still combine into earlier tile via
+    ; the OR-rendering. Visually the char joins the previous tile's contents
+    ; instead of scribbling on adjacent lines.
     LDA.W $09FC
     CMP.W #$0020                            ; 32 = tilemap row width
-    BCC .normalTilemap                      ; col < 32 → write formula tile id
-
-    ; Overflow path — write blank entry (palette only, tile $0) at the
-    ; overflowed X. Game's INX/INX still advances X normally for next char.
-    LDA.W $0A02                             ; palette/priority bits + tile $0
-    STA.L $7E9000,X                         ; blank top entry at overflowed X
-    CLC : ADC.W #$0400                      ; + bot palette-row offset
-    STA.L $7E9040,X                         ; blank bot entry at overflowed X
-    BRA .penAdvance                         ; skip formula write, advance pen below
+    BCS .penAdvance                         ; >= 32 → skip writes, just advance pen
 
 .normalTilemap:
     LDA.B $04                               ; canvas row
