@@ -4,14 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="title color fixes.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/gfx/title_chunks.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/gfx/title_chunks.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/bin/gfx/title_dir_streams.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/gfx/title_dir_streams.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/raw/title/cgram_live.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/gfx/raw/title/cgram_live.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles.png" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/gfx/title_bg1_tiles.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project.toml" beforeDir="false" afterPath="$PROJECT_DIR$/project.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/title_gfx/build_title.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/title_gfx/build_title.py" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Title screen build process locked down.">
+      <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,15 +102,7 @@
       <workItem from="1776104523517" duration="79044000" />
       <workItem from="1776361368085" duration="118388000" />
       <workItem from="1776648745697" duration="79641000" />
-      <workItem from="1777186530812" duration="47488000" />
-    </task>
-    <task id="LOCAL-00021" summary="Fixed a bunch of stuff, but now the rom wont load, so...">
-      <option name="closed" value="true" />
-      <created>1775761242800</created>
-      <option name="number" value="00021" />
-      <option name="presentableId" value="LOCAL-00021" />
-      <option name="project" value="LOCAL" />
-      <updated>1775761242800</updated>
+      <workItem from="1777186530812" duration="58925000" />
     </task>
     <task id="LOCAL-00022" summary="Implemented DTE. DTE uses control code FF Instead of old method. Needs testing. Worked toward extraction/insertion 1:1.">
       <option name="closed" value="true" />
@@ -502,7 +488,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777261712375</updated>
     </task>
-    <option name="localTasksCounter" value="70" />
+    <task id="LOCAL-00070" summary="Title screen build process locked down.">
+      <option name="closed" value="true" />
+      <created>1777297733599</created>
+      <option name="number" value="00070" />
+      <option name="presentableId" value="LOCAL-00070" />
+      <option name="project" value="LOCAL" />
+      <updated>1777297733599</updated>
+    </task>
+    <option name="localTasksCounter" value="71" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -553,7 +547,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Updates for the current retrotool state." />
     <MESSAGE value="Lots of work done to integrate the project with retrotool." />
     <MESSAGE value="Lots of work on script files." />
     <MESSAGE value="Fixes and tweaks from last night." />
@@ -578,7 +571,8 @@
     <MESSAGE value="Getting much closer to a perfect vwf in dialog." />
     <MESSAGE value="Dialog changes to prevent overflow." />
     <MESSAGE value="title color fixes." />
-    <option name="LAST_COMMIT_MESSAGE" value="title color fixes." />
+    <MESSAGE value="Title screen build process locked down." />
+    <option name="LAST_COMMIT_MESSAGE" value="Title screen build process locked down." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$window_def.coverage" NAME="window_def Coverage Results" MODIFIED="1776577341313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
