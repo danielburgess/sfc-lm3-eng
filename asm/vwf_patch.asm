@@ -78,6 +78,11 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_ROW      = $7F5D0E
 !VWF_CHAR     = $7F5D10
 
+; Polarity selector — set in PreRender from DP $70 hi-bit. Non-zero = inverted
+; (white-bg scenes: menus + event-text). Cached so the per-glyph render path
+; branches without reloading $70 every row.
+!VWF_INVERT   = $7F5D12
+
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
 ; task-state dispatcher at $01:B7F0..$B807 reads DP $10 to decide whether to
@@ -377,13 +382,29 @@ VWFCharHandler:
     TAX                                     ; X = canvas write index
     SEP #$20                                ; 8-bit for byte writes
 
-    ; OR shifted byte into both bitplanes of the left tile (only if non-0)
-    LDA.L !VWF_TMP_SHFT                               ; shifted byte
+    ; Polarity-aware combine: OR for normal (BB), AND-NOT for inverted (WB).
+    ; (BEQ skip works for both modes — shifted=0 means no pen pixels in this
+    ;  row regardless of polarity.)
+    LDA.L !VWF_TMP_SHFT                     ; shifted byte
     BEQ .skipWrite                          ; nothing set → skip write
+    LDA.L !VWF_INVERT                       ; polarity flag
+    BNE .invRowWrite
+    ; BB: OR shifted into canvas (light pen pixels onto dark canvas)
+    LDA.L !VWF_TMP_SHFT
     ORA.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp0 = bp0 | shifted
     INX                                     ; advance to bp1 byte (interleaved 2bpp)
-    LDA.L !VWF_TMP_SHFT                               ; reload shifted byte
+    LDA.L !VWF_TMP_SHFT
     ORA.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp1 = bp1 | shifted
+    BRA .skipWrite
+.invRowWrite:
+    ; WB: AND ~shifted into canvas (punch black holes through white paper)
+    LDA.L !VWF_TMP_SHFT
+    EOR.B #$FF
+    AND.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp0 = bp0 & ~shifted
+    INX
+    LDA.L !VWF_TMP_SHFT
+    EOR.B #$FF
+    AND.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp1 = bp1 & ~shifted
 .skipWrite:
 
     ; --- Spillover into the next tile column when sub_x > 0 -----------------
@@ -417,11 +438,25 @@ VWFCharHandler:
     TAX                                     ; X = canvas spill write index
     SEP #$20                                ; back to 8-bit for byte writes
 
-    LDA.L !VWF_TMP_SHFT                               ; spill byte
+    ; Polarity-aware spillover combine — same OR vs AND-NOT split as the row write.
+    LDA.L !VWF_INVERT
+    BNE .invSpillWrite
+    ; BB: OR spill into canvas
+    LDA.L !VWF_TMP_SHFT                     ; spill byte
     ORA.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp0 OR spill
     INX                                     ; advance to bp1
-    LDA.L !VWF_TMP_SHFT                               ; reload spill byte
+    LDA.L !VWF_TMP_SHFT
     ORA.L !TILE_BUF,X : STA.L !TILE_BUF,X   ; bp1 OR spill
+    BRA .noSpill2
+.invSpillWrite:
+    ; WB: AND ~spill into canvas
+    LDA.L !VWF_TMP_SHFT
+    EOR.B #$FF
+    AND.L !TILE_BUF,X : STA.L !TILE_BUF,X
+    INX
+    LDA.L !VWF_TMP_SHFT
+    EOR.B #$FF
+    AND.L !TILE_BUF,X : STA.L !TILE_BUF,X
     BRA .noSpill2                           ; skip the SEP path below (already 8-bit)
 
 .noSpill:
@@ -535,6 +570,14 @@ VWFPreRender:
     LDA.W #$0400 : STA.B $14                ; displaced: text-buffer ptr low + len init
     STZ.B $16                               ; displaced: zero high byte of buffer ptr
 
+    ; Polarity selector (white-bg scenes set DP $70 hi-bit). Cached for the
+    ; per-glyph row + spill writes so they branch without reloading $70.
+    SEP #$20                                ; 8-bit for byte read
+    LDA.B $70                               ; scene-type indicator
+    AND.B #$80                              ; isolate hi-bit
+    STA.L !VWF_INVERT                       ; non-zero = inverted polarity
+    REP #$20                                ; back to 16-bit
+
     LDA.W $09FC                             ; current column
     ASL A : ASL A : ASL A                   ; * 8 → pixel x of column start
     STA.L !VWF_PX                           ; pen = column-aligned pixel x
@@ -577,10 +620,21 @@ VWFPreRender:
     CLC : ADC.L !VWF_TMP_BASE                         ; + row * 1024
     TAX                                     ; X = canvas byte offset to start clearing
 
-    LDA.W #$0000                            ; word zero pattern
+    ; Polarity-aware fill: $FFFF for inverted (WB) so AND-NOT render punches
+    ; black holes through a white paper; $0000 for normal (BB) so OR-render
+    ; lights white pixels on a dark canvas.
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .preFillBlack
+    LDA.W #$FFFF
+    BRA .preFillReady
+.preFillBlack:
+    LDA.W #$0000
+.preFillReady:
 -   CPX.W #!CANVAS_SIZE                     ; reached canvas end?
     BCS +                                   ; yes → done
-    STA.L !TILE_BUF,X                       ; zero two canvas bytes
+    STA.L !TILE_BUF,X                       ; fill two canvas bytes
     INX : INX                               ; advance by 2
     BRA -                                   ; loop
 +
@@ -637,12 +691,20 @@ VWFClsHook:
     REP #$20                                ; back to 16-bit
     BNE .done                               ; no → nothing to reset
 
-    ; --- Wipe canvas (4 KB, $7F:B000..$BFFF) ---
+    ; --- Wipe canvas (4 KB, $7F:B000..$BFFF) — polarity-aware fill ---
     LDX.W #$0000                            ; canvas index
-    LDA.W #$0000                            ; zero word
--   STA.L !TILE_BUF,X                       ; clear two canvas bytes
+    SEP #$20                                ; 8-bit for byte read
+    LDA.B $70                               ; scene-type indicator
+    REP #$20                                ; back to 16-bit (preserves N flag)
+    BPL .clsFillBlack                       ; $70 hi-bit clear → BB → fill $0000
+    LDA.W #$FFFF                            ; WB: fill $FFFF (white paper)
+    BRA .clsFillReady
+.clsFillBlack:
+    LDA.W #$0000                            ; BB: fill $0000 (black canvas)
+.clsFillReady:
+-   STA.L !TILE_BUF,X                       ; fill two canvas bytes
     INX : INX                               ; advance by 2
-    CPX.W #!CANVAS_SIZE : BCC -             ; loop full canvas (3072 bytes)
+    CPX.W #!CANVAS_SIZE : BCC -             ; loop full canvas
 
     ; VRAM zero-blast removed: forced-blank + NMI-off for ~4 KB of STZ pairs
     ; (~hundreds of µs) blocked OAM/palette DMA on the affected frame and
