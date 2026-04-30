@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Fix for inverted white-bg text.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -107,6 +106,7 @@
       <workItem from="1777186530812" duration="68759000" />
       <workItem from="1777324346475" duration="46950000" />
       <workItem from="1777479562781" duration="775000" />
+      <workItem from="1777568721028" duration="4764000" />
     </task>
     <task id="LOCAL-00024" summary="Now using AI to help quickly iterate fixes. Added IPC connection to the custom Mesen debugger. Fixed some issues with the mattle-msg script">
       <option name="closed" value="true" />

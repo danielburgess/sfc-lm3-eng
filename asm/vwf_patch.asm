@@ -140,6 +140,33 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; ----------------------------------------------------------------------------
 !VWF_BLINK    = $7F5D1A
 
+; ----------------------------------------------------------------------------
+; Per-emit chrome-tile preserve range ($7F:5D1C..5D1F, two 16-bit words).
+;
+; Some scenes use the same BG char-data window for both VWF text glyphs AND
+; chrome border tiles (file information menu uses BG3 char data byte $C000+
+; for both). The engine compose `tile = $20 + col*2 + row*64` puts long-text
+; canvas-row-3 cells at tiles $100+, where the chrome separator rows place
+; their `$3101 $3102 ... $310F` entries. Without selectivity, vwfDoDmaForCell
+; overwrites those chrome tile slots whenever EN-length text reaches them.
+;
+; CHROME_LO and CHROME_HI define an inclusive tile-index range that
+; vwfDoDmaForCell must NOT overwrite. The cell occupies tiles
+; (top = $20 + 2*cell, bot = top + 1); a cell is skipped if
+; `bot >= CHROME_LO AND top <= CHROME_HI`. Sentinel for "no skip" is
+; CHROME_LO > CHROME_HI (default $FFFF / $0000 set at gate-decision entry).
+;
+; Staged glyphs in those skipped cells stay in canvas (not DMAed to VRAM),
+; so on screen the chrome tile data the engine pre-loaded survives. Net
+; effect: the rightmost few characters of long text lines are clipped
+; rather than stomping the box border.
+;
+;   $7F:5D1C  VWF_CHROME_LO  (16-bit word) — inclusive lower tile bound
+;   $7F:5D1E  VWF_CHROME_HI  (16-bit word) — inclusive upper tile bound
+; ----------------------------------------------------------------------------
+!VWF_CHROME_LO = $7F5D1C
+!VWF_CHROME_HI = $7F5D1E
+
 ; Sentinel counter — VWFCaptureSource increments this once per call.
 ; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
 ; needing a breakpoint. Wraps at 256.
@@ -1088,6 +1115,33 @@ vwfDoDmaForCell:
     REP #$20                                ; 16-bit for offset math
     LDA.L !VWF_BMP_CELL                     ; cell index in low byte
     AND.W #$00FF                            ; clean high
+    PHA                                     ; save cell index for chrome check
+
+    ; --- Chrome-tile preserve filter --------------------------------------
+    ; Cell N occupies BG3 char tiles top=($20+2N), bot=top+1. Skip the DMA
+    ; if those overlap [VWF_CHROME_LO, VWF_CHROME_HI]. Default sentinel
+    ; CHROME_LO=$FFFF, CHROME_HI=$0000 means LO>HI → no cell ever overlaps,
+    ; so every cell DMAs (legacy behavior). Allow-list rows can populate
+    ; tighter bounds for scenes that share BG char data with chrome tiles.
+    ASL A                                   ; A = cell * 2
+    CLC : ADC.W #$0020                      ; A = top_tile = $20 + 2*cell
+    ; Overlap test:
+    ;   (top + 1) >= CHROME_LO  AND  top <= CHROME_HI
+    ; If both true, cell is in the preserve range → skip DMA.
+    INC A                                   ; A = top + 1 = bot_tile
+    CMP.L !VWF_CHROME_LO                    ; bot_tile vs CHROME_LO
+    BCC .doDma_restore                      ; bot_tile < LO → no overlap, DMA
+    DEC A                                   ; A = top_tile again
+    CMP.L !VWF_CHROME_HI
+    BEQ .skipChrome                         ; top_tile == HI → in range, skip
+    BCS .doDma_restore                      ; top_tile > HI → no overlap, DMA
+.skipChrome:
+    PLA                                     ; pop cell index (clean stack)
+    SEP #$20                                ; restore M=8 for caller convention
+    PLY : PLX : PLA                         ; restore loop state
+    RTS                                     ; cell preserved — no $420B trigger
+.doDma_restore:
+    PLA                                     ; restore cell index
     ASL A : ASL A : ASL A : ASL A : ASL A   ; * 32 = canvas byte offset
     PHA                                     ; save offset for VRAM calc
 
@@ -1235,6 +1289,13 @@ VWFGateDecision:
     LDA.W #$6100
     STA.L !VWF_VRAM_BASE
 
+    ; Default chrome preserve range = "no skip" sentinel (LO > HI).
+    ; Only allow-list rows with explicit chrome bounds populate these.
+    LDA.W #$FFFF
+    STA.L !VWF_CHROME_LO
+    LDA.W #$0000
+    STA.L !VWF_CHROME_HI
+
     SEP #$20                                ; M=8 for byte ops
 
     ; Default-derive gate from polarity
@@ -1251,12 +1312,12 @@ VWFGateDecision:
     ;   db <count>                          ; 1 byte: number of rows
     ;   per row: db <LO>, <HI>, <BNK>       ; 3 bytes — text source pointer
     ;            dw <VRAM_word_base>        ; 2 bytes — canvas DMA dest override
-    ;                                       ;   (= word addr where tile $20 lives)
-    ; → 5 bytes per row total.
+    ;            dw <chrome_lo>             ; 2 bytes — chrome preserve range LO
+    ;            dw <chrome_hi>             ; 2 bytes — chrome preserve range HI
+    ; → 9 bytes per row total. (chrome_lo>chrome_hi disables the skip.)
     ;
     ; Match: all three (LO, HI, BNK) bytes must equal captured ($14, $15, $16).
-    ; On match: gate flips ON and !VWF_VRAM_BASE is overwritten with the row's
-    ; VRAM_word_base, retargeting NMI DMA to the scene's free VRAM tiles.
+    ; On match: gate flips ON, VRAM_BASE/CHROME_LO/CHROME_HI overwritten.
     LDA.L VWFGateAllowList                  ; A.low = row count (M=8)
     REP #$20                                ; widen for clean Y init
     AND.W #$00FF
@@ -1276,15 +1337,22 @@ VWFGateDecision:
     CMP.L !VWF_TEXT_BNK                     ; BNK match?
     BNE .next
 
-    ; Full match — flip gate ON and load the row's VRAM_word_base override
+    ; Full match — flip gate ON and load the row's overrides
     LDA.B #$A5 : STA.L !VWF_GATE
-    REP #$20                                ; M=16 to read word
+    REP #$20                                ; M=16 for word reads
     LDA.L VWFGateAllowList+3,X              ; row +3: dw VRAM_word_base
     STA.L !VWF_VRAM_BASE
+    LDA.L VWFGateAllowList+5,X              ; row +5: dw chrome_lo
+    STA.L !VWF_CHROME_LO
+    LDA.L VWFGateAllowList+7,X              ; row +7: dw chrome_hi
+    STA.L !VWF_CHROME_HI
     SEP #$20
     BRA .done
 .next:
-    INX : INX : INX : INX : INX             ; advance one 5-byte row
+    REP #$20                                ; M=16 so ADC works on full word
+    TXA : CLC : ADC.W #$0009                ; advance one 9-byte row
+    TAX
+    SEP #$20
     DEY                                     ; counter--
     BNE .scan
 .done:
@@ -1317,8 +1385,15 @@ VWFGateDecision:
 VWFGateAllowList:
     db 1                                    ; row count
     ; row 0: $02:DF72 — file information save-data text
-    ;        VRAM word $1100 = byte $2200 (BG char base $1, free range
-    ;        $2000-$27F0 byte; tile $20 of that base lands at $2200).
-    db $72, $DF, $02 : dw $1100
+    ;        File info BG3 runs with charBase = WORD $6000 (= BYTE $C000).
+    ;        VRAM word base $6100 = BYTE $C200 = tile $20 of BG3 char data.
+    ;        Chrome separators on this scene reuse BG3 tiles $101..$10F
+    ;        (entries like $3101, $3102, $310F in the F800 tilemap). Without
+    ;        the chrome preserve range, EN-length text reaches canvas row 3
+    ;        col 16+ and stomps those tile slots. Range $0101..$010F skips
+    ;        cells 112..119 (= canvas row 3 cols 16..23) so the box border
+    ;        and column separator survive at the cost of clipping the
+    ;        rightmost glyphs of long save-slot lines.
+    db $72, $DF, $02 : dw $6100 : dw $0101, $010F
 
 print "VWF recovery build end: $", pc
