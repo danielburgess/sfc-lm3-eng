@@ -104,10 +104,59 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_TEXT_BNK = $7F5D16
 !VWF_GATE     = $7F5D17
 
+; ----------------------------------------------------------------------------
+; Per-emit VRAM destination override (Phase C of WB-scene gating)
+;
+; 16-bit VRAM WORD address where canvas cell 0 (= tile $20 under the canvas-
+; position formula) should land on this emit. Default is $6100 (BB dialog —
+; BG3 char base $6, tile $20 = byte $C200 = word $6100). VWFGateAllowList
+; rows can override per scene to retarget VWF DMA away from tile slots that
+; the scene's chrome occupies.
+;
+; Set by VWFGateDecision: cleared to $6100 default at entry, overwritten
+; from the matched allow-list row's `dw <VRAM_word_base>` field.
+;
+; Consumed by NMI single-DMA path and vwfDoDmaForCell helper.
+;   $7F:5D18  VWF_VRAM_BASE  (16-bit word)
+; ----------------------------------------------------------------------------
+!VWF_VRAM_BASE = $7F5D18
+
+; ----------------------------------------------------------------------------
+; Per-emit cursor-blink one-shot ($7F:5D1A, 1 byte)
+;
+; pollInputFlashCursor ($80:C2A9) runs INSIDE processText (via the $FC
+; choice/menu handler) and JSR's writeTextCharacter every frame to redraw the
+; blinking arrow at $003E. Because VWF_FLAG is still $A5 mid-emit, those
+; redraws would otherwise fall into the VWF render path: each blink advances
+; VWF_PX by the glyph width and rasterizes a `>` glyph at the new pen
+; position, leaving a trail of cursor tiles across the row.
+;
+; readTextCursorState ($80:C219) is the perfect marker — it is called only
+; by pollInputFlashCursor and runs immediately before every cursor write.
+; The hook sets BLINK=$A5; CharHandler honors it for the very next char by
+; routing to .origPath (the byte-equal replacement of writeTilemapEntry) and
+; immediately clears the flag so subsequent in-stream text still renders via
+; VWF. Single-shot semantics keep the gate scoped to the cursor write only.
+; ----------------------------------------------------------------------------
+!VWF_BLINK    = $7F5D1A
+
 ; Sentinel counter — VWFCaptureSource increments this once per call.
 ; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
 ; needing a breakpoint. Wraps at 256.
 !VWF_DBG_CAPCOUNT = $7F5D60
+
+; ----------------------------------------------------------------------------
+; Per-tile rendered bitmap (16 bytes, 1 bit per canvas cell).
+; 4 rows × 32 cols = 128 cells, packed MSB-first within each byte.
+; .doneRows sets the bit for every cell VWF actually rendered to.
+; NMI's bitmap-walk path uses this to DMA ONLY rendered cells, leaving
+; engine-loaded tiles (chrome, borders, icons) intact in the canvas-range
+; VRAM. This is what makes VWF rendering safe on WB scenes that share the
+; canvas VRAM range with engine font.
+; ----------------------------------------------------------------------------
+!VWF_BITMAP   = $7F5D40    ; 16 bytes ($5D40..$5D4F)
+!VWF_BMP_TMP  = $7F5D50    ; 1 byte — current byte being walked in NMI DMA
+!VWF_BMP_CELL = $7F5D52    ; 1 byte — current cell index 0..127 in NMI DMA
 
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
@@ -132,7 +181,16 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_TMP_POS   = $7F5D30    ; was DP $10 — saved canvas write pos for spill calc
 
 ; Canvas (the offscreen 2bpp tile RAM that DMAs to VRAM)
-!TILE_BUF    = $7FB000                       ; 4 KB buffer = 4 rows x 32 cols x 32 B/col
+; Located at $7F:7000 (an 8 KB hole in WRAM). Was $7F:B000 in earlier builds
+; but the engine uses that same address as its tilemap shadow buffer for WB
+; scenes (the source for dmaTilemapToVRAM at $00:D927) — VWF was stomping
+; the engine's shadow with bitplane bytes, producing scrambled tilemaps when
+; gate-on activates VWF on a WB scene. $7F:7000 is reserved-blank per
+; disassembly grep; no engine code touches it.
+;
+; Hardcoded #$B000 literals in NMI single-DMA + per-cell DMA helper now use
+; #$7000 to match.
+!TILE_BUF    = $7F7000                       ; 4 KB buffer = 4 rows x 32 cols x 32 B/col
 !CANVAS_SIZE = $1000                         ; 4096 bytes
 
 ; Saturation guard — when computed tile column >= this value, fall back to
@@ -224,6 +282,19 @@ org $00BE92
     NOP : NOP : NOP                         ; pad to 9 (original instr length)
 
 ; ============================================================================
+; Hook 7 — cursor-blink marker  ($00:C219, 5 bytes overwritten)
+; readTextCursorState is the unique entry path used by pollInputFlashCursor
+; immediately before every cursor redraw. Hook it to arm !VWF_BLINK so the
+; very next CharHandler invocation routes to .origPath, suppressing VWF
+; rendering of the blinking arrow. The trampoline replicates the displaced
+; REP #$20 / LDX.W $09FC so the rest of readTextCursorState resumes byte-
+; identically at $00:C21E (LDA.W $09FE).
+; ============================================================================
+org $00C219
+    JSL.L VWFFlashMark                      ; 4 bytes — arms BLINK + runs displaced setup
+    NOP                                     ; 1 byte — pad to 5 (REP + LDX.W)
+
+; ============================================================================
 ; VWF body — bank $E0 (avoids $C0 collision with title_chunks @ PC 0x200000)
 ; ============================================================================
 org $E08000
@@ -255,6 +326,22 @@ VWFCharHandler:
 
 ; --- VWF path ---------------------------------------------------------------
 .vwf:
+    ; Cursor-blink suppression: pollInputFlashCursor's per-frame writeTextChar
+    ; calls happen with VWF_FLAG=$A5 (we're still mid-emit inside processText's
+    ; $FC choice handler). Without this gate, each blink would render `>` at
+    ; the advancing pen and drag a trail across the row. !VWF_BLINK is armed
+    ; by the readTextCursorState hook ($00:C219) immediately before each
+    ; cursor write, then cleared here so the next text char still renders.
+    SEP #$20                                ; 8-bit for flag byte
+    LDA.L !VWF_BLINK                        ; cursor-blink one-shot flag
+    CMP.B #$A5
+    BNE .vwfNotBlink                        ; not a blink redraw → normal VWF
+    LDA.B #$00 : STA.L !VWF_BLINK           ; one-shot: consume the flag
+    REP #$20                                ; restore 16-bit before branching
+    JMP .origPath                           ; route cursor write through orig tile path
+.vwfNotBlink:
+    REP #$20                                ; restore 16-bit for the rest of the path
+
     TXA                                     ; X→A (LDX.L doesn't exist; round-trip via A)
     STA.L !VWF_SAVX                         ; preserve tilemap byte offset for later writes
 
@@ -512,25 +599,50 @@ VWFCharHandler:
     JMP .rowLoop                            ; continue with next row
 
 .doneRows:
-    ; --- Defer VRAM upload to next vblank, track dirty byte range ----------
-    ; $0A = canvas byte offset of the just-rendered tile pair (top+bot, 32 B).
-    ; LO = min(LO, $0A) and HI = max(HI, end_of_current_row).
-    ;
-    ; CRITICAL: HI is extended to the END of the current canvas row, not just
-    ; this char's tile end. The bytes between the pen and the row end are
-    ; ALREADY ZERO in canvas (PreRender partial-cleared them). DMAing the
-    ; zero tail zeros out the VRAM tile slots that the game's tilemap entries
-    ; (advancing 1 per char regardless of glyph width) reference past where
-    ; VWF actually drew pixels. Without this, those trailing tile slots show
-    ; leftover glyphs from prior emits = the visible "garbage after text"
-    ; the user saw in the "Momoa" / "we get to ░░░" screenshots.
+    ; --- Track the rendered cell in BOTH the per-tile bitmap (used by the
+    ;     NMI bitmap-walk path on WB scenes to preserve engine UI tiles) AND
+    ;     in DMA_LO/HI (used by NMI single-DMA path on BB scenes). The strategy
+    ;     selector in NMI picks the right path per polarity.
+    ; CRITICAL: bitmap math runs in M=16. With M=8 + X=16, TAX transfers 16
+    ; bits using the stale "B" byte into X.high — bogus offset.
+    REP #$20                                ; M=16 for clean A-high
+    LDA.L !VWF_TMP_ROW
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
+    CLC : ADC.L !VWF_TMP_COL                ; + col → cell_index 0..127
+    AND.W #$00FF
+    PHA                                     ; save cell_index
+    LSR A : LSR A : LSR A                   ; byte_offset 0..15
+    TAX
+    PLA
+    AND.W #$0007                            ; bit_index 0..7
+    TAY
+    SEP #$20
+    LDA.B #$80
+.bitMaskShift:
+    DEY
+    BMI .bitMaskDone
+    LSR A
+    BRA .bitMaskShift
+.bitMaskDone:
+    ORA.L !VWF_BITMAP,X
+    STA.L !VWF_BITMAP,X
+
+    ; --- Update DMA_LO/HI (BB single-DMA path uses these) -------------------
+    ; HI is extended to the END of the current canvas row, not just this
+    ; char's tile end. The bytes between the pen and the row end are ALREADY
+    ; ZERO in canvas (PreRender partial-cleared them). DMAing the zero tail
+    ; zeros out trailing VRAM tile slots that game tilemap entries (advancing
+    ; 1 per char regardless of glyph width) reference past where VWF actually
+    ; drew pixels. Without this, those trailing tile slots show leftover
+    ; glyphs from prior emits.
     REP #$20                                ; 16-bit for word compares
-    LDA.L !VWF_TMP_BASE                               ; current tile-pair start
+    LDA.L !VWF_TMP_BASE                     ; current tile-pair start
     CMP.L !VWF_DMA_LO                       ; vs current LO
     BCS .lo_keep                            ; LO already <= current → keep
     STA.L !VWF_DMA_LO                       ; new LO
 .lo_keep:
-    LDA.L !VWF_TMP_ROW                               ; canvas row index (0..3)
+    LDA.L !VWF_TMP_ROW                      ; canvas row index (0..3)
     INC A                                   ; (row+1)
     XBA                                     ; (row+1) << 8
     ASL A : ASL A                           ; (row+1) * 1024 = end-of-row byte
@@ -621,6 +733,13 @@ VWFPreRender:
     AND.B #$80                              ; isolate hi-bit
     STA.L !VWF_INVERT                       ; non-zero = inverted polarity
 
+    ; Cross-emit cursor-blink leak guard. The OFF frame of a cursor blink
+    ; writes $0100 directly inside writeTextCharacter and never reaches our
+    ; hook, so a !VWF_BLINK arm from the prior frame's readTextCursorState
+    ; can persist into the next emit. Clearing it at PreRender ensures the
+    ; first char of this emit takes the .vwf path, not .origPath.
+    LDA.B #$00 : STA.L !VWF_BLINK
+
     ; --- Phase B: gate decision ------------------------------------------
     ; VWFGateDecision sets !VWF_GATE = $A5 (active) or $00 (engine fallback)
     ; based on !VWF_INVERT (default policy) + VWFGateAllowList overrides.
@@ -700,6 +819,17 @@ VWFPreRender:
     INX : INX                               ; advance by 2
     BRA -                                   ; loop
 +
+    ; Clear the per-tile rendered bitmap (16 bytes). Each new emit starts
+    ; with no cells flagged; CharHandler.doneRows sets bits as it renders.
+    LDX.W #$000F
+    SEP #$20
+    LDA.B #$00
+.preBitmapClear:
+    STA.L !VWF_BITMAP,X
+    DEX
+    BPL .preBitmapClear
+    REP #$20
+
     RTL                                     ; long-return — wrapper continues with JSR processText
 
 warnpc $E08FC0                              ; VWFPreRender must end before VWFPostRender
@@ -753,7 +883,7 @@ VWFClsHook:
     REP #$20                                ; back to 16-bit
     BNE .done                               ; no → nothing to reset
 
-    ; --- Wipe canvas (4 KB, $7F:B000..$BFFF) — polarity-aware fill ---
+    ; --- Wipe canvas (4 KB at !TILE_BUF) — polarity-aware fill ---
     LDX.W #$0000                            ; canvas index
     SEP #$20                                ; 8-bit for byte read
     LDA.B $70                               ; scene-type indicator
@@ -767,6 +897,16 @@ VWFClsHook:
 -   STA.L !TILE_BUF,X                       ; fill two canvas bytes
     INX : INX                               ; advance by 2
     CPX.W #!CANVAS_SIZE : BCC -             ; loop full canvas
+
+    ; Clear the per-tile rendered bitmap on page transition too.
+    LDX.W #$000F
+    SEP #$20
+    LDA.B #$00
+.clsBitmapClear:
+    STA.L !VWF_BITMAP,X
+    DEX
+    BPL .clsBitmapClear
+    REP #$20
 
     ; VRAM zero-blast removed: forced-blank + NMI-off for ~4 KB of STZ pairs
     ; (~hundreds of µs) blocked OAM/palette DMA on the affected frame and
@@ -822,47 +962,93 @@ VWFNMI:
     SEP #$20                                ; 8-bit for flag check
     LDA.L !VWF_DIRTY                        ; was canvas modified?
     CMP.B #$A5                              ; sentinel match?
-    BNE .skipDMA                            ; no → straight to return
+    BEQ +                                   ; A=A5 → continue
+    JMP .skipDMA                            ; otherwise → straight to return
++
 
-    ; Validate range: HI must be > LO (otherwise sentinel state)
-    REP #$20                                ; 16-bit for compare
-    LDA.L !VWF_DMA_HI
-    CMP.L !VWF_DMA_LO
-    BCC .clearAndExit                       ; HI < LO → invalid, just clear flag
-    BEQ .clearAndExit                       ; HI == LO → empty range
-    SEP #$20
-
-    ; --- Compute count = HI - LO and DMA channel 7 setup ---
-    REP #$20
-    LDA.L !VWF_DMA_HI
-    SEC : SBC.L !VWF_DMA_LO                 ; count in bytes
-    STA.W $4375                             ; DAS7L/H
-
-    ; Source = $7F:B000 + LO
-    LDA.L !VWF_DMA_LO
-    CLC : ADC.W #$B000                      ; canvas base
-    STA.W $4372                             ; A1T7L/H
-    SEP #$20
-    LDA.B #$7F
-    STA.W $4374                             ; A1B7 = source bank
-
-    ; VRAM word addr = $6100 + LO/2
-    REP #$20
-    LDA.L !VWF_DMA_LO
-    LSR A                                   ; byte offset → word offset
-    CLC : ADC.W #$6100                      ; tile $20 word base
-    STA.W $2116                             ; VMADDL/H
-    SEP #$20
-
+    ; --- DMA channel 7 common setup (used by both strategies) ---------------
+    ; All channel-7 control regs except A1T7/$2116/$4375 are constant for
+    ; both paths, so we set them once before the selector.
     LDA.B #$80                              ; VMAIN: word inc on $2119 high write
     STA.W $2115
     LDA.B #$01                              ; DMAP7: mode 1 (2-byte alternating)
     STA.W $4370
     LDA.B #$18                              ; BBAD7: low byte of $2118 (VMDATAL)
     STA.W $4371
+    LDA.B #$7F
+    STA.W $4374                             ; A1B7 = source bank ($7F)
+
+    ; --- Strategy selector --------------------------------------------------
+    ; BB scenes (INVERT=$00) → single contiguous DMA from DMA_LO..DMA_HI.
+    ; WB scenes (INVERT=$80) → bitmap-walk per-cell DMA, leaving engine UI
+    ; tiles in the canvas-range VRAM intact.
+    LDA.L !VWF_INVERT
+    BNE .nmiBitmapWalk
+
+; --- BB single-DMA path -----------------------------------------------------
+.nmiSingleDMA:
+    ; Validate range: HI must be > LO (otherwise sentinel state)
+    REP #$20                                ; 16-bit for compare
+    LDA.L !VWF_DMA_HI
+    CMP.L !VWF_DMA_LO
+    BCC .clearAndExit                       ; HI < LO → invalid, just clear flag
+    BEQ .clearAndExit                       ; HI == LO → empty range
+    SEC : SBC.L !VWF_DMA_LO                 ; count in bytes
+    STA.W $4375                             ; DAS7L/H
+
+    ; Source = $7F:7000 + LO  (canvas relocated)
+    LDA.L !VWF_DMA_LO
+    CLC : ADC.W #$7000
+    STA.W $4372                             ; A1T7L/H
+
+    ; VRAM word addr = !VWF_VRAM_BASE + LO/2
+    LDA.L !VWF_DMA_LO
+    LSR A                                   ; byte offset → word offset
+    CLC : ADC.L !VWF_VRAM_BASE              ; per-emit tile $20 word base
+    STA.W $2116                             ; VMADDL/H
+    SEP #$20
 
     LDA.B #$80                              ; MDMAEN: trigger channel 7 (bit 7)
     STA.W $420B
+    BRA .clearAndExit
+
+; --- WB bitmap-walk path ----------------------------------------------------
+; X/Y are 16-bit at NMI entry (REP #$30). Loop is byte-based on
+; !VWF_BMP_CELL and 1-byte LDA.L !VWF_BITMAP,X reads, so we stay M=8.
+.nmiBitmapWalk:
+    LDX.W #$0000                            ; byte index 0..15
+    LDA.B #$00
+    STA.L !VWF_BMP_CELL                     ; cell index 0..127
+
+.bmpWalkByte:
+    LDA.L !VWF_BITMAP,X
+    BEQ .bmpSkipByte                        ; whole byte zero → skip 8 cells
+    STA.L !VWF_BMP_TMP                      ; save byte for shift-walk
+    LDY.W #$0008                            ; 8 bits per byte
+.bmpWalkBit:
+    LDA.L !VWF_BMP_TMP                      ; reload byte (ASL.L unsupported on memory)
+    ASL A                                   ; shift in register
+    STA.L !VWF_BMP_TMP                      ; store back
+    BCC .bmpSkipBit
+    JSR.W vwfDoDmaForCell                   ; bit set → DMA this cell
+.bmpSkipBit:
+    LDA.L !VWF_BMP_CELL                     ; cell_index++
+    INC A
+    STA.L !VWF_BMP_CELL
+    DEY
+    BNE .bmpWalkBit
+    BRA .bmpNextByte
+
+.bmpSkipByte:
+    LDA.L !VWF_BMP_CELL                     ; cell_index += 8 (whole byte skipped)
+    CLC : ADC.B #$08
+    STA.L !VWF_BMP_CELL
+
+.bmpNextByte:
+    INX
+    CPX.W #$0010
+    BCC .bmpWalkByte
+    ; fall into .clearAndExit
 
 .clearAndExit:
     REP #$20
@@ -870,15 +1056,58 @@ VWFNMI:
     STA.L !VWF_DMA_LO
     LDA.W #$0000
     STA.L !VWF_DMA_HI
+
+    ; Clear the per-tile rendered bitmap so next emit starts fresh.
     SEP #$20
-    LDA.B #$00                              ; clear dirty flag (next render re-arms)
-    STA.L !VWF_DIRTY
+    LDX.W #$000F
+    LDA.B #$00
+.bmpReset:
+    STA.L !VWF_BITMAP,X
+    DEX
+    BPL .bmpReset
+
+    STA.L !VWF_DIRTY                        ; A=0; clear dirty flag
 
 .skipDMA:
     REP #$30                                ; restore M=16, X=16 for downstream NMI flow
     PLY                                     ; restore interrupted Y
     PLX                                     ; restore interrupted X
     JML $00D46D                             ; resume original NMI handler at PHX
+
+; ----------------------------------------------------------------------------
+; vwfDoDmaForCell — DMAs one canvas cell to its corresponding VRAM tile pair.
+; Entry: !VWF_BMP_CELL = cell index 0..127, X = byte loop counter (16-bit),
+;        Y = bit loop counter (16-bit), M=8.
+; Exit:  channel 7 DMA fires; A/X/Y preserved on stack, M=8.
+; Per cell: source = $7F:7000 + cell*32, dest VRAM byte = $C200 + cell*32
+;           (= word $6100 + cell*16), 32 bytes (top tile + bot tile).
+; ----------------------------------------------------------------------------
+vwfDoDmaForCell:
+    PHA : PHX : PHY                         ; preserve loop state
+
+    REP #$20                                ; 16-bit for offset math
+    LDA.L !VWF_BMP_CELL                     ; cell index in low byte
+    AND.W #$00FF                            ; clean high
+    ASL A : ASL A : ASL A : ASL A : ASL A   ; * 32 = canvas byte offset
+    PHA                                     ; save offset for VRAM calc
+
+    CLC : ADC.W #$7000                      ; A1T7 = $7F:7000 + offset
+    STA.W $4372
+
+    PLA                                     ; offset back
+    LSR A                                   ; offset / 2
+    CLC : ADC.L !VWF_VRAM_BASE              ; VMADDR = !VWF_VRAM_BASE + offset/2
+    STA.W $2116
+
+    LDA.W #$0020                            ; 32 bytes per DMA (one 8x16 tile pair)
+    STA.W $4375
+
+    SEP #$20
+    LDA.B #$80                              ; trigger ch7
+    STA.W $420B
+
+    PLY : PLX : PLA                         ; restore loop state (M=8 preserved)
+    RTS
 
 ; ----------------------------------------------------------------------------
 ; VWFLineEndCheck — called from $00:BE92 hook in place of the engine's
@@ -896,6 +1125,27 @@ VWFLineEndCheck:
     CMP $01,S                               ; compare pen vs pixel limit
     PLA                                     ; pop scratch (CMP-set carry survives PLA)
     RTL                                     ; return — caller's BCC reads carry
+
+; ----------------------------------------------------------------------------
+; VWFFlashMark — runs at readTextCursorState entry (Hook 7, $00:C219).
+; readTextCursorState is reached only via pollInputFlashCursor's two call
+; sites (loop top and post-input clear), so every invocation is followed by
+; a writeTextCharacter for the cursor cell. Arming !VWF_BLINK here flips
+; CharHandler's .vwf path into .origPath for that single next char. The
+; trampoline replicates the displaced REP #$20 / LDX.W $09FC so the rest of
+; readTextCursorState resumes at $C21E byte-identically.
+;
+; Caller convention at $00:C219: M=8 from the JSR's caller (no guarantee),
+; so we explicitly SEP/REP around the byte write and finish in M=16 to
+; match the displaced REP #$20.
+; ----------------------------------------------------------------------------
+VWFFlashMark:
+    SEP #$20                                ; 8-bit for flag byte
+    LDA.B #$A5
+    STA.L !VWF_BLINK                        ; one-shot: cursor write incoming
+    REP #$20                                ; displaced: REP #$20 (M=16)
+    LDX.W $09FC                             ; displaced: LDX.W $09FC
+    RTL
 
 warnpc $E09400                              ; VWFNMI + helpers must end before data table
 
@@ -978,6 +1228,13 @@ VWFCaptureSource:
 VWFGateDecision:
     PHP
     REP #$30                                ; M=16, X=16 inside helper
+
+    ; Default VRAM word base = $6100 (BB dialog target). Allow-list match
+    ; can override on a per-source basis. Always reset here so a stale value
+    ; from a prior emit can't leak into a later default-path emit.
+    LDA.W #$6100
+    STA.L !VWF_VRAM_BASE
+
     SEP #$20                                ; M=8 for byte ops
 
     ; Default-derive gate from polarity
@@ -992,16 +1249,18 @@ VWFGateDecision:
     ; --- Allow-list scan -------------------------------------------------
     ; Table layout:
     ;   db <count>                          ; 1 byte: number of rows
-    ;   db <LO>, <HI>, <BNK>  x count       ; 3 bytes per row (full ptr)
+    ;   per row: db <LO>, <HI>, <BNK>       ; 3 bytes — text source pointer
+    ;            dw <VRAM_word_base>        ; 2 bytes — canvas DMA dest override
+    ;                                       ;   (= word addr where tile $20 lives)
+    ; → 5 bytes per row total.
     ;
-    ; Each row identifies one ROM source pointer to opt INTO VWF. All three
-    ; bytes must match the captured ($14, $15, $16) for the gate to flip ON.
-    ; Count-based rather than sentinel-terminated so user-typed rows can't
-    ; produce out-of-table walks (the regression we just hit).
+    ; Match: all three (LO, HI, BNK) bytes must equal captured ($14, $15, $16).
+    ; On match: gate flips ON and !VWF_VRAM_BASE is overwritten with the row's
+    ; VRAM_word_base, retargeting NMI DMA to the scene's free VRAM tiles.
     LDA.L VWFGateAllowList                  ; A.low = row count (M=8)
     REP #$20                                ; widen for clean Y init
     AND.W #$00FF
-    BEQ .done                               ; zero rows → use default gate
+    BEQ .done                               ; zero rows → use defaults
     TAY                                     ; Y = loop counter (16-bit)
     SEP #$20                                ; back to M=8
 
@@ -1016,10 +1275,16 @@ VWFGateDecision:
     LDA.L VWFGateAllowList+2,X
     CMP.L !VWF_TEXT_BNK                     ; BNK match?
     BNE .next
-    LDA.B #$A5 : STA.L !VWF_GATE            ; full match → gate ON
+
+    ; Full match — flip gate ON and load the row's VRAM_word_base override
+    LDA.B #$A5 : STA.L !VWF_GATE
+    REP #$20                                ; M=16 to read word
+    LDA.L VWFGateAllowList+3,X              ; row +3: dw VRAM_word_base
+    STA.L !VWF_VRAM_BASE
+    SEP #$20
     BRA .done
 .next:
-    INX : INX : INX                         ; advance one 3-byte row
+    INX : INX : INX : INX : INX             ; advance one 5-byte row
     DEY                                     ; counter--
     BNE .scan
 .done:
@@ -1031,19 +1296,29 @@ VWFGateDecision:
 ;
 ; Layout:
 ;   db <count>                              ; first byte: number of rows
-;   db <LO>, <HI>, <BNK>                    ; one row per source, in capture order
-;     ...                                   ; (matches the byte order of $7F:5D14..5D16)
+;   ; per row (5 bytes):
+;   db <LO>, <HI>, <BNK>                    ; capture-order text source ptr
+;   dw <VRAM_word_base>                     ; canvas DMA dest override
+;       ;                                   ;   = WORD addr where tile $20 lands
+;       ;                                   ;   for the BG layer rendering this text
 ;
 ; To add a row:
-;   1. Load the target scene in Mesen (so VWFCaptureSource has captured the
-;      source pointer) and read $7F:5D14..5D16 — gives you (LO, HI, BNK).
-;   2. Append `db <LO>, <HI>, <BNK>` and increment the count byte.
-;   3. ./build.sh --no-cache (the section cache must be busted).
+;   1. Load the scene in Mesen so VWFCaptureSource has captured the source
+;      ptr; read $7F:5D14..5D16 → (LO, HI, BNK).
+;   2. Identify a free VRAM tile range on that scene at the BG char base
+;      that displays the text. VRAM_word_base = WORD address of tile $20
+;      in that BG (= char_base * $1000 + $0100).
+;   3. Append the 5-byte row, increment the count byte.
+;   4. ./build.sh --no-cache (section cache must be busted).
 ;
-; Empty count (db 0) = default policy stays in effect (BB on, WB off).
+; VRAM_word_base = $6100 is the BB default (BG3 char base $6, tile $20 at
+; byte $C200 = word $6100). Use this for any BB row.
 ; ----------------------------------------------------------------------------
 VWFGateAllowList:
     db 1                                    ; row count
-    db $72, $DF, $02                        ; row 0: $02:DF72 — file information screen
+    ; row 0: $02:DF72 — file information save-data text
+    ;        VRAM word $1100 = byte $2200 (BG char base $1, free range
+    ;        $2000-$27F0 byte; tile $20 of that base lands at $2200).
+    db $72, $DF, $02 : dw $1100
 
 print "VWF recovery build end: $", pc
