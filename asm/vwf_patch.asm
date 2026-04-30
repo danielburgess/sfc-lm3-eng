@@ -83,6 +83,32 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; branches without reloading $70 every row.
 !VWF_INVERT   = $7F5D12
 
+; ----------------------------------------------------------------------------
+; Per-emit text-source capture (Phase A of WB-scene gating)
+; Set by VWFCaptureSource hook at fillTextBuffer entry $80:B67C. Holds the
+; resolved 24-bit ROM ptr the engine is about to stream into the $0400
+; buffer, so future gate decisions can key on (BNK, HI, LO).
+;
+; PHASE A NOTE: these slots are populated but NOT YET CONSUMED by any gate
+; logic — Phase A only proves the capture hook runs without regression.
+; Phase B will add VWFGateDecision; Phase C will substitute INVERT reads
+; with GATE reads at the 5 known sites.
+;
+;   $7F:5D14  VWF_TEXT_LO  (1 B) — $14 low byte at Phase 1 entry
+;   $7F:5D15  VWF_TEXT_HI  (1 B) — $14 high byte ($15)
+;   $7F:5D16  VWF_TEXT_BNK (1 B) — $16 (bank)
+;   $7F:5D17  VWF_GATE     (1 B) — $A5 = VWF active for this emit, $00 = engine fallback
+; ----------------------------------------------------------------------------
+!VWF_TEXT_LO  = $7F5D14
+!VWF_TEXT_HI  = $7F5D15
+!VWF_TEXT_BNK = $7F5D16
+!VWF_GATE     = $7F5D17
+
+; Sentinel counter — VWFCaptureSource increments this once per call.
+; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
+; needing a breakpoint. Wraps at 256.
+!VWF_DBG_CAPCOUNT = $7F5D60
+
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
 ; task-state dispatcher at $01:B7F0..$B807 reads DP $10 to decide whether to
@@ -113,6 +139,24 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; the original tile path so we never write a tilemap entry pointing at an
 ; un-rendered slot.
 !VWF_MAX_COL = $0020                        ; 32 columns per canvas row
+
+; ============================================================================
+; Hook 6 — fillTextBuffer_Phase1 entry  ($80:B67C, 9 bytes overwritten)
+;
+; PHASE A of WB-scene gating: capture the resolved 24-bit text source pointer
+; ($14/$15/$16) into !VWF_TEXT_LO/HI/BNK so future gate logic (Phase B) can
+; key on it. Both JSL fillTextBuffer_Phase1 call sites (loadTextFromPtr at
+; $81:EE6D and the post-redirect path at $81:EE91) funnel through this entry,
+; so capture is universal — covers textMetaLookup-driven dialog/menus AND
+; evtCmd10_InlineText event-script [P] text AND sceneTextDispatch redirects.
+;
+; Original 9 bytes were 3 STZ.W ($0A08, $0A16, $0A18) executed at M=16 from
+; the caller's REP #$20. VWFCaptureSource replicates them inline so the
+; patched fillTextBuffer body runs bit-identically.
+; ============================================================================
+org $80B67C
+    JSL.L VWFCaptureSource                  ; 4 bytes
+    NOP : NOP : NOP : NOP : NOP             ; 5 bytes — pad to 9 (3 displaced STZ.W)
 
 ; ============================================================================
 ; Hook 1 — per-character entry  ($80:C17B, 20 bytes overwritten)
@@ -576,7 +620,25 @@ VWFPreRender:
     LDA.B $70                               ; scene-type indicator
     AND.B #$80                              ; isolate hi-bit
     STA.L !VWF_INVERT                       ; non-zero = inverted polarity
-    REP #$20                                ; back to 16-bit
+
+    ; --- Phase B: gate decision ------------------------------------------
+    ; VWFGateDecision sets !VWF_GATE = $A5 (active) or $00 (engine fallback)
+    ; based on !VWF_INVERT (default policy) + VWFGateAllowList overrides.
+    ; If gate is OFF, arm CharHandler for engine pass-through and skip the
+    ; rest of PreRender. The displaced LDA #$0400 / STA $14 / STZ $16 above
+    ; must run regardless (Phase 2 reads from $0400 either way).
+    REP #$20                                ; back to 16-bit before JSL
+    JSL.L VWFGateDecision
+
+    SEP #$20                                ; 8-bit for flag check + write
+    LDA.L !VWF_GATE
+    CMP.B #$A5
+    BEQ .gateOn
+    LDA.B #$00 : STA.L !VWF_FLAG            ; FLAG≠$A5 → CharHandler → .origPath
+    REP #$20
+    RTL                                     ; gate off → done; no canvas setup
+.gateOn:
+    REP #$20                                ; back to 16-bit for setup below
 
     LDA.W $09FC                             ; current column
     ASL A : ASL A : ASL A                   ; * 8 → pixel x of column start
@@ -640,7 +702,7 @@ VWFPreRender:
 +
     RTL                                     ; long-return — wrapper continues with JSR processText
 
-warnpc $E08F80                              ; VWFPreRender must end before VWFPostRender
+warnpc $E08FC0                              ; VWFPreRender must end before VWFPostRender
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
@@ -648,7 +710,7 @@ warnpc $E08F80                              ; VWFPreRender must end before VWFPo
 ; VWF flag, then carries the displaced bytes (REP #$20 / LDA $0A16) so the
 ; original code resumes byte-identically.
 ; ----------------------------------------------------------------------------
-org $E08F80
+org $E08FC0
 
 VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
@@ -850,5 +912,138 @@ VWFFontData:
     db $00,$00,$00,$00,$00,$00,$00,$00      ; reserved zero glyph (top half)
     db $00,$00,$00,$00,$00,$00,$00,$00      ; reserved zero glyph (bottom half)
     incbin "en_data/bin/fonts/font_accented_1bpp.bin"
+
+; ============================================================================
+; Phase A capture helper — placed at $E0:A800 to clear the font-data extent.
+; ============================================================================
+org $E0A800
+
+; ----------------------------------------------------------------------------
+; VWFCaptureSource — runs at fillTextBuffer_Phase1 entry (Hook 6, $80:B67C).
+;
+; Captures the resolved 24-bit text source pointer ($14/$15/$16) into VWF
+; state slots, replicates the 3 displaced STZ.W instructions inline, and
+; returns. M-state is preserved across the helper via PHP/PLP so the
+; patched fillTextBuffer body sees exactly the M state it would have seen
+; without the hook.
+;
+; Caller convention at $80:B67C is M=16 (set by REP #$20 in loadTextFromPtr
+; just before the JSL).
+;
+; Phase A: the captured slots are ONLY read by debug tooling. No render
+; code consults them yet, so the only observable effect of this helper is
+; the sentinel counter increment at !VWF_DBG_CAPCOUNT.
+; ----------------------------------------------------------------------------
+VWFCaptureSource:
+    PHP                                     ; preserve caller's M/X
+    SEP #$20                                ; M=8 for byte ops
+
+    ; Capture pointer (3 byte-sized stores keep the read width unambiguous).
+    LDA.B $14 : STA.L !VWF_TEXT_LO
+    LDA.B $15 : STA.L !VWF_TEXT_HI
+    LDA.B $16 : STA.L !VWF_TEXT_BNK
+
+    ; Sentinel — increment counter so live debugging can confirm the hook
+    ; fires. Wraps at 256; any non-zero value after a text emit means we
+    ; ran. INC has no long-addressing form, so do it through A (M=8).
+    LDA.L !VWF_DBG_CAPCOUNT
+    INC A
+    STA.L !VWF_DBG_CAPCOUNT
+
+    REP #$20                                ; M=16 for the displaced STZ.W
+    STZ.W $0A08                             ; displaced from $80:B67C+0
+    STZ.W $0A16                             ; displaced from $80:B67C+3
+    STZ.W $0A18                             ; displaced from $80:B67C+6
+
+    PLP                                     ; restore caller's M/X
+    RTL
+
+; ----------------------------------------------------------------------------
+; VWFGateDecision — central policy for "should VWF render this emit?"
+;
+; Default policy: gate = NOT INVERT
+;   - BB scenes (INVERT=0) → gate=$A5 (VWF active)
+;   - WB scenes (INVERT=1) → gate=$00 (engine fallback)
+; This generalizes the previous hand-disable-VWF-on-WB-screens behavior.
+;
+; Override: VWFGateAllowList rows of (bank, addr_high) flip the gate ON for
+; matching captured text sources, so individual WB scenes can opt INTO VWF.
+;
+; Phase B: empty allow-list (single $FF terminator). Once the data structure
+; is verified working, add rows in Phase C as scenes are tuned.
+;
+; Sets !VWF_GATE = $A5 (active) or $00 (fallback). M/X preserved via PHP/PLP.
+; Caller convention: M=16 from VWFPreRender's REP #$20.
+; ----------------------------------------------------------------------------
+VWFGateDecision:
+    PHP
+    REP #$30                                ; M=16, X=16 inside helper
+    SEP #$20                                ; M=8 for byte ops
+
+    ; Default-derive gate from polarity
+    LDA.L !VWF_INVERT
+    BEQ .defaultOn                          ; INVERT=0 (BB) → gate on
+    LDA.B #$00 : BRA .storeAndScan          ; INVERT=1 (WB) → gate off (default)
+.defaultOn:
+    LDA.B #$A5
+.storeAndScan:
+    STA.L !VWF_GATE
+
+    ; --- Allow-list scan -------------------------------------------------
+    ; Table layout:
+    ;   db <count>                          ; 1 byte: number of rows
+    ;   db <LO>, <HI>, <BNK>  x count       ; 3 bytes per row (full ptr)
+    ;
+    ; Each row identifies one ROM source pointer to opt INTO VWF. All three
+    ; bytes must match the captured ($14, $15, $16) for the gate to flip ON.
+    ; Count-based rather than sentinel-terminated so user-typed rows can't
+    ; produce out-of-table walks (the regression we just hit).
+    LDA.L VWFGateAllowList                  ; A.low = row count (M=8)
+    REP #$20                                ; widen for clean Y init
+    AND.W #$00FF
+    BEQ .done                               ; zero rows → use default gate
+    TAY                                     ; Y = loop counter (16-bit)
+    SEP #$20                                ; back to M=8
+
+    LDX.W #$0001                            ; X = byte offset, skip count byte
+.scan:
+    LDA.L VWFGateAllowList,X
+    CMP.L !VWF_TEXT_LO                      ; LO match?
+    BNE .next
+    LDA.L VWFGateAllowList+1,X
+    CMP.L !VWF_TEXT_HI                      ; HI match?
+    BNE .next
+    LDA.L VWFGateAllowList+2,X
+    CMP.L !VWF_TEXT_BNK                     ; BNK match?
+    BNE .next
+    LDA.B #$A5 : STA.L !VWF_GATE            ; full match → gate ON
+    BRA .done
+.next:
+    INX : INX : INX                         ; advance one 3-byte row
+    DEY                                     ; counter--
+    BNE .scan
+.done:
+    PLP
+    RTL
+
+; ----------------------------------------------------------------------------
+; VWFGateAllowList — opt-in table for sources we WANT VWF to run on.
+;
+; Layout:
+;   db <count>                              ; first byte: number of rows
+;   db <LO>, <HI>, <BNK>                    ; one row per source, in capture order
+;     ...                                   ; (matches the byte order of $7F:5D14..5D16)
+;
+; To add a row:
+;   1. Load the target scene in Mesen (so VWFCaptureSource has captured the
+;      source pointer) and read $7F:5D14..5D16 — gives you (LO, HI, BNK).
+;   2. Append `db <LO>, <HI>, <BNK>` and increment the count byte.
+;   3. ./build.sh --no-cache (the section cache must be busted).
+;
+; Empty count (db 0) = default policy stays in effect (BB on, WB off).
+; ----------------------------------------------------------------------------
+VWFGateAllowList:
+    db 1                                    ; row count
+    db $72, $DF, $02                        ; row 0: $02:DF72 — file information screen
 
 print "VWF recovery build end: $", pc
