@@ -141,31 +141,35 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_BLINK    = $7F5D1A
 
 ; ----------------------------------------------------------------------------
-; Per-emit chrome-tile preserve range ($7F:5D1C..5D1F, two 16-bit words).
+; Per-emit per-cell ownership bitmap ($7F:5D60..$7F:5D7F, 32 bytes).
 ;
-; Some scenes use the same BG char-data window for both VWF text glyphs AND
-; chrome border tiles (file information menu uses BG3 char data byte $C000+
-; for both). The engine compose `tile = $20 + col*2 + row*64` puts long-text
-; canvas-row-3 cells at tiles $100+, where the chrome separator rows place
-; their `$3101 $3102 ... $310F` entries. Without selectivity, vwfDoDmaForCell
-; overwrites those chrome tile slots whenever EN-length text reaches them.
+; Replaces the older single-range CHROME_LO/HI mechanism. WB scenes have many
+; layout arrangements: chrome borders, engine-rendered labels (Lv/Ex/scenario
+; etc.), engine-rendered numeric values, info-window header, and so on — all
+; sharing the same BG char-data window VWF DMAs into. Each cell needs its own
+; "VWF owns / engine owns" decision that a single contiguous tile range can't
+; express.
 ;
-; CHROME_LO and CHROME_HI define an inclusive tile-index range that
-; vwfDoDmaForCell must NOT overwrite. The cell occupies tiles
-; (top = $20 + 2*cell, bot = top + 1); a cell is skipped if
-; `bot >= CHROME_LO AND top <= CHROME_HI`. Sentinel for "no skip" is
-; CHROME_LO > CHROME_HI (default $FFFF / $0000 set at gate-decision entry).
+; Layout: 32 bytes = 256 bits, one bit per canvas cell across the 8×32 grid.
+; Row-major, 4 bytes per canvas row, MSB-first within each byte (matches the
+; existing !VWF_BITMAP packing).
+;   bit value 1 → VWF owns this cell, DMA to VRAM is allowed
+;   bit value 0 → engine owns this cell, VWF must NOT DMA over it
 ;
-; Staged glyphs in those skipped cells stay in canvas (not DMAed to VRAM),
-; so on screen the chrome tile data the engine pre-loaded survives. Net
-; effect: the rightmost few characters of long text lines are clipped
-; rather than stomping the box border.
+; Consumed by the WB bitmap-walk path in VWFNMI: each byte of the dirty
+; bitmap is ANDed with the corresponding ownership byte before walking bits.
+; Cells whose ownership bit is 0 are skipped even if VWF composited a glyph
+; into the canvas there. The composited bytes stay in canvas RAM (harmless),
+; the engine's pre-loaded VRAM tile content stays untouched.
 ;
-;   $7F:5D1C  VWF_CHROME_LO  (16-bit word) — inclusive lower tile bound
-;   $7F:5D1E  VWF_CHROME_HI  (16-bit word) — inclusive upper tile bound
+; Set by VWFGateDecision: cleared to all-$00 (no-DMA default) at entry, then
+; copied 1:1 from the matched allow-list row's 32-byte ownership field. BB
+; scenes and WB-default-off scenes don't consume this slot (single-DMA path /
+; gate-off path), so default-zero is safe for them.
+;
+;   $7F:5D60..$7F:5D7F  VWF_OWNERSHIP  (32 bytes)
 ; ----------------------------------------------------------------------------
-!VWF_CHROME_LO = $7F5D1C
-!VWF_CHROME_HI = $7F5D1E
+!VWF_OWNERSHIP = $7F5D60
 
 ; ----------------------------------------------------------------------------
 ; Per-emit previous engine col ($7F:5D06, 16-bit)
@@ -192,9 +196,10 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_PREV_COL = $7F5D06
 
 ; Sentinel counter — VWFCaptureSource increments this once per call.
-; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
-; needing a breakpoint. Wraps at 256.
-!VWF_DBG_CAPCOUNT = $7F5D60
+; Lets us confirm in Mesen IPC ($7F:5D1C) that the hook is firing without
+; needing a breakpoint. Wraps at 256. Moved from $5D60 → $5D1C when
+; CHROME_LO/HI was retired in favor of the 32-byte VWF_OWNERSHIP block.
+!VWF_DBG_CAPCOUNT = $7F5D1C
 
 ; ----------------------------------------------------------------------------
 ; Per-tile rendered bitmap (32 bytes, 1 bit per canvas cell).
@@ -817,6 +822,43 @@ VWFCharHandler:
     CMP.W #$0020                            ; 32 = tilemap row width
     BCS .penAdvance                         ; >= 32 → skip writes, just advance pen
 
+    ; --- Ownership-bitmap gate on tilemap writes ---------------------------
+    ; The bitmap-walk DMA path filters char-data writes by !VWF_OWNERSHIP, but
+    ; without gating tilemap writes here, VWF's position-based formula
+    ; (cell N → tile $20 + 2N) would still rewrite engine tilemap slots, then
+    ; expose engine font residue at tile slots the engine's own tilemap would
+    ; have left blank. Suppress tilemap writes for any cell whose ownership
+    ; bit is 0 — engine's prior tilemap entries survive untouched.
+    ;
+    ; Cell index = row*32 + col. M=16, X=tilemap-byte-offset on entry. We
+    ; stash X on the stack so we can repurpose it for ownership-byte indexing
+    ; (only X-indexed long addressing exists for LDA.L, not Y).
+    LDA.L !VWF_TMP_ROW                      ; row
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
+    CLC : ADC.W $09FC                       ; + col = cell index 0..255
+
+    PHX                                     ; save tilemap-byte-offset X
+    PHA                                     ; save cell index
+
+    LSR A : LSR A : LSR A                   ; cell / 8 = ownership byte index
+    TAX                                     ; X = byte index for LDA.L,X
+
+    PLA                                     ; cell back
+    AND.W #$0007                            ; cell mod 8 = bit position 0..7
+    TAY                                     ; Y = MSB-first shift count
+
+    SEP #$20                                ; M=8 for ASL-shift-out
+    LDA.L !VWF_OWNERSHIP,X                  ; ownership byte (long-X is legal)
+.ownerShift:
+    ASL A                                   ; bit 7 → carry
+    DEY
+    BPL .ownerShift                         ; loop (Y+1) times → carry = bit(7-Y_init)
+    REP #$20                                ; restore M=16 (carry preserved)
+
+    PLX                                     ; restore tilemap-byte-offset X (carry preserved)
+    BCC .penAdvance                         ; bit 0 → engine owns cell → skip writes
+
 .normalTilemap:
     LDA.L !VWF_TMP_ROW                               ; canvas row
     ASL A : ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 64
@@ -1174,7 +1216,8 @@ VWFNMI:
 
 .bmpWalkByte:
     LDA.L !VWF_BITMAP,X
-    BEQ .bmpSkipByte                        ; whole byte zero → skip 8 cells
+    AND.L !VWF_OWNERSHIP,X                  ; mask dirty cells to VWF-owned only
+    BEQ .bmpSkipByte                        ; effective-empty → skip 8 cells
     STA.L !VWF_BMP_TMP                      ; save byte for shift-walk
     LDY.W #$0008                            ; 8 bits per byte
 .bmpWalkBit:
@@ -1240,36 +1283,26 @@ vwfDoDmaForCell:
     REP #$20                                ; 16-bit for offset math
     LDA.L !VWF_BMP_CELL                     ; cell index in low byte
     AND.W #$00FF                            ; clean high
-    PHA                                     ; save cell index for chrome check
+    PHA                                     ; save cell index for VRAM-bound check
 
-    ; --- VRAM bound skip + chrome-tile preserve filter --------------------
-    ; Cell N occupies BG3 char tiles top=($20+2N), bot=top+1. Two skips:
+    ; --- VRAM bound skip --------------------------------------------------
+    ; Cell N occupies BG3 char tiles top=($20+2N), bot=top+1. BG3 char data
+    ; ends at byte $E000 (= tile $200). Cells whose top tile >= $200 land in
+    ; BG2 tilemap territory and would stomp it; skip them. (For 8-row canvas
+    ; that's cells 240..255 = canvas row 7 cols 16..31.)
     ;
-    ; (1) VRAM bound: BG3 char data ends at byte $E000 (= tile $200). Cells
-    ;     whose top tile >= $200 land in BG2 tilemap territory (byte $E000+).
-    ;     For 8-row canvas, cells 240..255 (canvas row 7 cols 16..31) hit
-    ;     this. Skip them to keep BG2 tilemap intact.
-    ;
-    ; (2) Chrome preserve: skip if [top, top+1] overlaps
-    ;     [VWF_CHROME_LO, VWF_CHROME_HI] from the matched allow-list row.
-    ;     Sentinel CHROME_LO=$FFFF, HI=$0000 (LO>HI) disables the check.
+    ; Per-cell engine-ownership filtering is now handled upstream in
+    ; .bmpWalkByte (AND of !VWF_BITMAP with !VWF_OWNERSHIP), so this helper
+    ; only enforces the hardware bound — no chrome-range test needed.
     ASL A                                   ; A = cell * 2
     CLC : ADC.W #$0020                      ; A = top_tile = $20 + 2*cell
 
     CMP.W #$0200                            ; top_tile >= $200 (BG3 end)?
-    BCS .skipChrome                         ; yes → skip, would stomp BG2
+    BCS .skipCell                           ; yes → skip, would stomp BG2
 
-    ; Chrome overlap test:
-    ;   (top + 1) >= CHROME_LO  AND  top <= CHROME_HI
-    ; If both true, cell is in the preserve range → skip DMA.
-    INC A                                   ; A = top + 1 = bot_tile
-    CMP.L !VWF_CHROME_LO                    ; bot_tile vs CHROME_LO
-    BCC .doDma_restore                      ; bot_tile < LO → no overlap, DMA
-    DEC A                                   ; A = top_tile again
-    CMP.L !VWF_CHROME_HI
-    BEQ .skipChrome                         ; top_tile == HI → in range, skip
-    BCS .doDma_restore                      ; top_tile > HI → no overlap, DMA
-.skipChrome:
+    ; In bounds — fall through to DMA path.
+    BRA .doDma_restore
+.skipCell:
     PLA                                     ; pop cell index (clean stack)
     SEP #$20                                ; restore M=8 for caller convention
     PLY : PLX : PLA                         ; restore loop state
@@ -1423,14 +1456,17 @@ VWFGateDecision:
     LDA.W #$6100
     STA.L !VWF_VRAM_BASE
 
-    ; Default chrome preserve range = "no skip" sentinel (LO > HI).
-    ; Only allow-list rows with explicit chrome bounds populate these.
-    LDA.W #$FFFF
-    STA.L !VWF_CHROME_LO
-    LDA.W #$0000
-    STA.L !VWF_CHROME_HI
-
-    SEP #$20                                ; M=8 for byte ops
+    ; Default ownership = all-zero (no DMAs). For BB default-on scenes this
+    ; doesn't matter (single-DMA path doesn't read ownership). For WB
+    ; default-off scenes the gate falls through and VWF doesn't run anyway.
+    ; Only allow-list-matched rows populate ownership with real data.
+    SEP #$20
+    LDX.W #$001F
+    LDA.B #$00
+.clearOwn:
+    STA.L !VWF_OWNERSHIP,X
+    DEX
+    BPL .clearOwn
 
     ; Default-derive gate from polarity
     LDA.L !VWF_INVERT
@@ -1444,14 +1480,13 @@ VWFGateDecision:
     ; --- Allow-list scan -------------------------------------------------
     ; Table layout:
     ;   db <count>                          ; 1 byte: number of rows
-    ;   per row: db <LO>, <HI>, <BNK>       ; 3 bytes — text source pointer
-    ;            dw <VRAM_word_base>        ; 2 bytes — canvas DMA dest override
-    ;            dw <chrome_lo>             ; 2 bytes — chrome preserve range LO
-    ;            dw <chrome_hi>             ; 2 bytes — chrome preserve range HI
-    ; → 9 bytes per row total. (chrome_lo>chrome_hi disables the skip.)
+    ;   per row (37 bytes):
+    ;     db <LO>, <HI>, <BNK>              ; 3 bytes — text source pointer
+    ;     dw <VRAM_word_base>               ; 2 bytes — canvas DMA dest override
+    ;     ds 32                             ; 32 bytes — per-cell ownership bitmap
     ;
     ; Match: all three (LO, HI, BNK) bytes must equal captured ($14, $15, $16).
-    ; On match: gate flips ON, VRAM_BASE/CHROME_LO/CHROME_HI overwritten.
+    ; On match: gate flips ON, VRAM_BASE overwritten, OWNERSHIP copied 1:1.
     LDA.L VWFGateAllowList                  ; A.low = row count (M=8)
     REP #$20                                ; widen for clean Y init
     AND.W #$00FF
@@ -1471,20 +1506,38 @@ VWFGateDecision:
     CMP.L !VWF_TEXT_BNK                     ; BNK match?
     BNE .next
 
-    ; Full match — flip gate ON and load the row's overrides
+    ; Full match — flip gate ON, load VRAM base, copy ownership bitmap.
     LDA.B #$A5 : STA.L !VWF_GATE
-    REP #$20                                ; M=16 for word reads
+    REP #$20                                ; M=16 for word read
     LDA.L VWFGateAllowList+3,X              ; row +3: dw VRAM_word_base
     STA.L !VWF_VRAM_BASE
-    LDA.L VWFGateAllowList+5,X              ; row +5: dw chrome_lo
-    STA.L !VWF_CHROME_LO
-    LDA.L VWFGateAllowList+7,X              ; row +7: dw chrome_hi
-    STA.L !VWF_CHROME_HI
+
+    ; Copy 32 bytes from row+5 into !VWF_OWNERSHIP. The 65816 has no long-Y
+    ; STA, so we use long-X STA for the destination and switch DBR to $E0
+    ; (this patch's bank) so 16-bit absolute-Y reads of VWFGateAllowList
+    ; resolve correctly. Y indexes the source, X indexes the destination.
+    PHB                                     ; save caller's DBR
     SEP #$20
+    LDA.B #$E0 : PHA : PLB                  ; DBR = $E0 (patch bank)
+
+    REP #$20
+    TXA : CLC : ADC.W #$0005                ; A = row_offset + 5 (source base)
+    TAY                                     ; Y = source byte offset (16-bit)
+    LDX.W #$0000                            ; X = destination byte offset (16-bit)
+    SEP #$20
+.copyOwn:
+    LDA.W VWFGateAllowList,Y                ; DBR=$E0 → bank $E0 absolute,Y
+    STA.L !VWF_OWNERSHIP,X                  ; long,X — legal addressing mode
+    INX
+    INY
+    CPX.W #$0020                            ; 32 bytes (X is 16-bit per X flag)
+    BCC .copyOwn
+
+    PLB                                     ; restore caller's DBR
     BRA .done
 .next:
     REP #$20                                ; M=16 so ADC works on full word
-    TXA : CLC : ADC.W #$0009                ; advance one 9-byte row
+    TXA : CLC : ADC.W #$0025                ; advance one 37-byte row ($25)
     TAX
     SEP #$20
     DEY                                     ; counter--
@@ -1498,11 +1551,22 @@ VWFGateDecision:
 ;
 ; Layout:
 ;   db <count>                              ; first byte: number of rows
-;   ; per row (5 bytes):
-;   db <LO>, <HI>, <BNK>                    ; capture-order text source ptr
-;   dw <VRAM_word_base>                     ; canvas DMA dest override
-;       ;                                   ;   = WORD addr where tile $20 lands
-;       ;                                   ;   for the BG layer rendering this text
+;   per row (37 bytes):
+;     db <LO>, <HI>, <BNK>                  ; 3 — captured 24-bit text src ptr
+;     dw <VRAM_word_base>                   ; 2 — canvas DMA dest override
+;     ds 32                                 ; 32 — per-cell ownership bitmap
+;
+; The ownership bitmap is the per-cell mask the WB bitmap-walk path ANDs
+; with the dirty bitmap. 256 bits, one per canvas cell, packed row-major:
+;   byte 0  bits 7..0 = canvas row 0, cells 0..7
+;   byte 1                              cells 8..15
+;   byte 2                              cells 16..23
+;   byte 3                              cells 24..31  ← end of row 0
+;   byte 4..7                           row 1, cells 32..63
+;   ...
+;   byte 28..31                         row 7, cells 224..255
+;   bit value 1 = VWF owns this cell, DMA OK
+;   bit value 0 = engine owns this cell, preserve (no DMA)
 ;
 ; To add a row:
 ;   1. Load the scene in Mesen so VWFCaptureSource has captured the source
@@ -1510,8 +1574,12 @@ VWFGateDecision:
 ;   2. Identify a free VRAM tile range on that scene at the BG char base
 ;      that displays the text. VRAM_word_base = WORD address of tile $20
 ;      in that BG (= char_base * $1000 + $0100).
-;   3. Append the 5-byte row, increment the count byte.
-;   4. ./build.sh --no-cache (section cache must be busted).
+;   3. Author the 32-byte ownership bitmap. Start all-zero (no DMAs from
+;      VWF, equivalent to engine fallback) and progressively flip bits ON
+;      for cells where VWF text should render. Verify in Mesen between
+;      steps that engine-owned chrome/labels/numbers stay intact.
+;   4. Append the 37-byte row, increment the count byte.
+;   5. ./build.sh --no-cache (section cache must be busted).
 ;
 ; VRAM_word_base = $6100 is the BB default (BG3 char base $6, tile $20 at
 ; byte $C200 = word $6100). Use this for any BB row.
@@ -1521,13 +1589,21 @@ VWFGateAllowList:
     ; row 0: $02:DF72 — file information save-data text
     ;        File info BG3 runs with charBase = WORD $6000 (= BYTE $C000).
     ;        VRAM word base $6100 = BYTE $C200 = tile $20 of BG3 char data.
-    ;        Chrome separators on this scene reuse BG3 tiles $101..$10F
-    ;        (entries like $3101, $3102, $310F in the F800 tilemap). Without
-    ;        the chrome preserve range, EN-length text reaches canvas row 3
-    ;        col 16+ and stomps those tile slots. Range $0101..$010F skips
-    ;        cells 112..119 (= canvas row 3 cols 16..23) so the box border
-    ;        and column separator survive at the cost of clipping the
-    ;        rightmost glyphs of long save-slot lines.
-    db $72, $DF, $02 : dw $6100 : dw $0101, $010F
+    ;
+    ;        Ownership bitmap: ALL-ZERO baseline. This makes the gate match
+    ;        on this source so VWF state-tracking still runs (allow-list
+    ;        VRAM-base override, capture sentinel, etc.) but no canvas cell
+    ;        DMAs out. Engine retains exclusive control of every BG3 tile
+    ;        slot for now. Tune bits ON cell-by-cell once we know which
+    ;        cells should display VWF-rendered save-data names.
+    db $72, $DF, $02 : dw $6100
+    db $00, $00, $00, $00      ; row 0: cells 0..31
+    db $00, $00, $00, $00      ; row 1: cells 32..63
+    db $00, $00, $00, $00      ; row 2: cells 64..95
+    db $00, $00, $00, $00      ; row 3: cells 96..127
+    db $00, $00, $00, $00      ; row 4: cells 128..159
+    db $00, $00, $00, $00      ; row 5: cells 160..191
+    db $00, $00, $00, $00      ; row 6: cells 192..223
+    db $00, $00, $00, $00      ; row 7: cells 224..255
 
 print "VWF recovery build end: $", pc

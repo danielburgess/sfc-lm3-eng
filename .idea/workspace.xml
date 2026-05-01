@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="getting even closer with the menu render.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Still getting garbage, but... DIFFERENT garbage">
+      <change afterPath="$PROJECT_DIR$/tools/vwf_trace_diff.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,23 +107,7 @@
       <workItem from="1777186530812" duration="68759000" />
       <workItem from="1777324346475" duration="46950000" />
       <workItem from="1777479562781" duration="775000" />
-      <workItem from="1777568721028" duration="21853000" />
-    </task>
-    <task id="LOCAL-00026" summary="Improved/fixed translations.">
-      <option name="closed" value="true" />
-      <created>1775883207413</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1775883207413</updated>
-    </task>
-    <task id="LOCAL-00027" summary="committing inconsistent state as a backup">
-      <option name="closed" value="true" />
-      <created>1775892892379</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1775892892379</updated>
+      <workItem from="1777568721028" duration="32634000" />
     </task>
     <task id="LOCAL-00028" summary="removed a bunch of asm patches now that the FFC0 control code is understood. it's like a built in relocation code. I can relocate text willy-nilly anytime.">
       <option name="closed" value="true" />
@@ -501,7 +485,23 @@
       <option name="project" value="LOCAL" />
       <updated>1777586388630</updated>
     </task>
-    <option name="localTasksCounter" value="75" />
+    <task id="LOCAL-00075" summary="Now half the screen is rendering properly">
+      <option name="closed" value="true" />
+      <created>1777603116875</created>
+      <option name="number" value="00075" />
+      <option name="presentableId" value="LOCAL-00075" />
+      <option name="project" value="LOCAL" />
+      <updated>1777603116875</updated>
+    </task>
+    <task id="LOCAL-00076" summary="Still getting garbage, but... DIFFERENT garbage">
+      <option name="closed" value="true" />
+      <created>1777606882400</created>
+      <option name="number" value="00076" />
+      <option name="presentableId" value="LOCAL-00076" />
+      <option name="project" value="LOCAL" />
+      <updated>1777606882400</updated>
+    </task>
+    <option name="localTasksCounter" value="77" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -552,8 +552,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Title screen now has a replacement in. (not final, probably)" />
-    <MESSAGE value="windows fixes in place for cutscene-bytecode-2" />
     <MESSAGE value="some script changes" />
     <MESSAGE value="unit info bug fixes" />
     <MESSAGE value="Various changes and fixes appplied." />
@@ -577,7 +575,9 @@
     <MESSAGE value="Fix for inverted white-bg text." />
     <MESSAGE value="Cursor fix. chrome perfect for menus." />
     <MESSAGE value="getting even closer with the menu render." />
-    <option name="LAST_COMMIT_MESSAGE" value="getting even closer with the menu render." />
+    <MESSAGE value="Now half the screen is rendering properly" />
+    <MESSAGE value="Still getting garbage, but... DIFFERENT garbage" />
+    <option name="LAST_COMMIT_MESSAGE" value="Still getting garbage, but... DIFFERENT garbage" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$debug_vwf_probe.coverage" NAME="debug_vwf_probe Coverage Results" MODIFIED="1777439065577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />
