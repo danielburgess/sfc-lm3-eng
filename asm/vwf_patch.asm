@@ -167,6 +167,30 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_CHROME_LO = $7F5D1C
 !VWF_CHROME_HI = $7F5D1E
 
+; ----------------------------------------------------------------------------
+; Per-emit previous engine col ($7F:5D06, 16-bit)
+;
+; The text engine's $09FC ($09FC = engine col) advances by INC after each
+; text char and can JUMP via FF nn control codes (e.g. button-2 of a
+; multi-button row sets $09FC to a new col after the chrome separator).
+;
+; VWF tracks its own pen VWF_PX in pixels. For typewriter chars, VWF_PX
+; advances by glyph width (variable, < 8 px) — so VWF_PX/8 naturally lags
+; behind $09FC. That's correct.
+;
+; For col jumps (FF nn-driven), the engine sets $09FC to a new value but
+; VWF has no idea — VWF_PX keeps advancing from where it left off. Result:
+; the new char's tilemap entry uses the new $09FC (large col), but the
+; canvas write/cell uses the lagged VWF_PX/8 (still in the prior segment).
+; The two halves of "what the engine writes" land in different cells.
+;
+; Detection: track the previous $09FC value seen at each CharHandler char.
+; If new $09FC != prev + 1, it's a jump → reset VWF_PX to $09FC * 8 to
+; re-anchor the pen. Initialized to $09FC - 1 in PreRender so the first
+; char's $09FC matches "prev + 1" naturally (no spurious reset).
+; ----------------------------------------------------------------------------
+!VWF_PREV_COL = $7F5D06
+
 ; Sentinel counter — VWFCaptureSource increments this once per call.
 ; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
 ; needing a breakpoint. Wraps at 256.
@@ -419,6 +443,31 @@ VWFCharHandler:
     DEY
     BNE .rowFillLoop
 
+    ; Force-DMA every cell in this row by setting all 32 bits in the row's
+    ; bitmap window. Without this, NMI's bitmap-walk only DMAs cells that
+    ; CharHandler.doneRows touched (= cells with actual glyphs); the
+    ; trailing cells stay at the row-fill polarity ($FFFF / $0000) in
+    ; canvas but their VRAM tiles keep the prior emit's stale data —
+    ; visible as "trailing garbage" past the rendered text. By dirtying
+    ; the whole row, NMI also DMAs the blank cells so VRAM tiles past the
+    ; text get cleared to the polarity fill (= blank tile in WB).
+    ;
+    ; Bitmap layout: 32 cells/row × 8 rows = 256 bits, packed MSB-first
+    ; (bit7 = cell 0). 4 bytes per row at !VWF_BITMAP+row*4.
+    LDA.W $09FE                             ; reload row id
+    LSR A : AND.W #$0007                    ; canvas row 0..7
+    ASL A : ASL A                           ; row * 4 = byte offset in bitmap
+    TAX
+    SEP #$20
+    LDA.B #$FF
+    STA.L !VWF_BITMAP,X
+    STA.L !VWF_BITMAP+1,X
+    STA.L !VWF_BITMAP+2,X
+    STA.L !VWF_BITMAP+3,X
+    LDA.B #$A5                              ; arm NMI upload
+    STA.L !VWF_DIRTY
+    REP #$20
+
     PLA                                     ; restore $09FE word
     PLX                                     ; restore caller's tilemap-byte X
 
@@ -428,7 +477,24 @@ VWFCharHandler:
     STA.L !VWF_PX                           ; reset pen
     LDA.W $09FE
     STA.L !VWF_ROW                          ; remember new row for next compare
+    BRA .updatePrevCol                      ; row-change reset already aligned pen
 .sameLine:
+    ; Same row — check for engine col-jump (FF nn set new $09FC mid-emit).
+    ; If $09FC != VWF_PREV_COL + 1, it's a jump (not a typewriter advance);
+    ; re-anchor VWF pen to $09FC * 8 so subsequent rendering lands in the
+    ; cell the engine's tilemap entry will reference. Without this, new
+    ; segments after FF nn render INTO the prior segment's cells.
+    REP #$20
+    LDA.W $09FC
+    SEC : SBC.L !VWF_PREV_COL               ; A = $09FC - prev
+    CMP.W #$0001                             ; expected = +1 typewriter
+    BEQ .updatePrevCol                       ; matches → no reset
+    LDA.W $09FC
+    ASL A : ASL A : ASL A                    ; * 8 = pen pixel x
+    STA.L !VWF_PX                            ; re-anchor pen
+.updatePrevCol:
+    LDA.W $09FC
+    STA.L !VWF_PREV_COL                      ; track for next-char compare
 
     ; Character filtering — restrict VWF to printable font range.
     REP #$20                                ; 16-bit for word compare
@@ -843,6 +909,13 @@ VWFPreRender:
     ; Subsequent FF nn jumps to other canvas rows trigger row-change clear.
     LDA.W $09FE
     STA.L !VWF_ROW
+
+    ; Initialize VWF_PREV_COL to $09FC - 1 so the first char's
+    ; ($09FC == prev + 1) check passes naturally — no spurious col-jump
+    ; pen reset on the first text char of the emit.
+    LDA.W $09FC
+    DEC A
+    STA.L !VWF_PREV_COL
 
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5 : STA.L !VWF_FLAG            ; arm VWF (handler now takes VWF path)
