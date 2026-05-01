@@ -173,17 +173,23 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_DBG_CAPCOUNT = $7F5D60
 
 ; ----------------------------------------------------------------------------
-; Per-tile rendered bitmap (16 bytes, 1 bit per canvas cell).
-; 4 rows × 32 cols = 128 cells, packed MSB-first within each byte.
+; Per-tile rendered bitmap (32 bytes, 1 bit per canvas cell).
+; 8 rows × 32 cols = 256 cells, packed MSB-first within each byte.
 ; .doneRows sets the bit for every cell VWF actually rendered to.
 ; NMI's bitmap-walk path uses this to DMA ONLY rendered cells, leaving
 ; engine-loaded tiles (chrome, borders, icons) intact in the canvas-range
 ; VRAM. This is what makes VWF rendering safe on WB scenes that share the
 ; canvas VRAM range with engine font.
+;
+; Expanded from 4-row (128 cell) to 8-row (256 cell) layout to fix file-info
+; menu canvas aliasing. Original 4-row mapping `($09FE>>1) & 3` collided
+; whenever the menu had >4 simultaneous text lines: header/file2 both fell
+; on canvas row 3, file1/file3 both on row 1, with the second emit of each
+; pair stomping the first. 8 rows covers up to 8 distinct lines.
 ; ----------------------------------------------------------------------------
-!VWF_BITMAP   = $7F5D40    ; 16 bytes ($5D40..$5D4F)
-!VWF_BMP_TMP  = $7F5D50    ; 1 byte — current byte being walked in NMI DMA
-!VWF_BMP_CELL = $7F5D52    ; 1 byte — current cell index 0..127 in NMI DMA
+!VWF_BITMAP   = $7F5D40    ; 32 bytes ($5D40..$5D5F)
+!VWF_BMP_TMP  = $7F5D32    ; 1 byte — moved from $5D50 (now inside bitmap range)
+!VWF_BMP_CELL = $7F5D34    ; 1 byte — moved from $5D52 (now inside bitmap range)
 
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
@@ -208,17 +214,16 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_TMP_POS   = $7F5D30    ; was DP $10 — saved canvas write pos for spill calc
 
 ; Canvas (the offscreen 2bpp tile RAM that DMAs to VRAM)
-; Located at $7F:7000 (an 8 KB hole in WRAM). Was $7F:B000 in earlier builds
-; but the engine uses that same address as its tilemap shadow buffer for WB
-; scenes (the source for dmaTilemapToVRAM at $00:D927) — VWF was stomping
-; the engine's shadow with bitplane bytes, producing scrambled tilemaps when
-; gate-on activates VWF on a WB scene. $7F:7000 is reserved-blank per
-; disassembly grep; no engine code touches it.
+; Located at $7F:7000..$7F:8FFF (8 KB hole in WRAM, verified zero across
+; entire $7F:7000..$7F:BFFF range — no engine code touches it). Original
+; 4 KB layout @ $7F:7000..$7FFF held 4 rows × 32 cols. Doubled to 8 KB to
+; fix canvas aliasing on menus with >4 simultaneous text lines (file info
+; was the trigger: 5 visible rows collapsed to 4 canvas slots, with later
+; emits stomping earlier ones in the shared slot).
 ;
-; Hardcoded #$B000 literals in NMI single-DMA + per-cell DMA helper now use
-; #$7000 to match.
-!TILE_BUF    = $7F7000                       ; 4 KB buffer = 4 rows x 32 cols x 32 B/col
-!CANVAS_SIZE = $1000                         ; 4096 bytes
+; Hardcoded #$7000 literals in NMI single-DMA + per-cell DMA helper match.
+!TILE_BUF    = $7F7000                       ; 8 KB buffer = 8 rows x 32 cols x 32 B/col
+!CANVAS_SIZE = $2000                         ; 8192 bytes
 
 ; Saturation guard — when computed tile column >= this value, fall back to
 ; the original tile path so we never write a tilemap entry pointing at an
@@ -372,18 +377,57 @@ VWFCharHandler:
     TXA                                     ; X→A (LDX.L doesn't exist; round-trip via A)
     STA.L !VWF_SAVX                         ; preserve tilemap byte offset for later writes
 
-    ; Newline detection: $09FE is the game's text row id. If it changed (or
-    ; this is the first char of the page), reset VWF_PX to align with the
-    ; current column so the new line starts at the correct pixel x.
+    ; Newline detection: $09FE is the game's text row id. If it changed
+    ; mid-emit (engine FF nn codes can jump $09FE between chars):
+    ;   1. Clear the new canvas row to the polarity fill value, since
+    ;      PreRender only cleared from its own pen forward — rows the
+    ;      emit jumps to LATER may still hold stale data from prior
+    ;      sessions and cause unpaired bp0/bp1 (visible as garbage).
+    ;   2. Reset VWF_PX so the new row's pen aligns to the engine's col.
+    ; Single-row emits (typewriter dialog) never hit this branch — first
+    ; char's $09FE matches PreRender's STA $09FE→VWF_ROW init, so no
+    ; redundant clear of pre-pen typewriter content.
     REP #$20                                ; ensure 16-bit for word compare
     LDA.W $09FE                             ; current text row id
     CMP.L !VWF_ROW                          ; compare against our saved row
     BEQ .sameLine                           ; same row → keep current pen
+
+    ; --- New canvas row: clear it before render ---------------------------
+    PHX                                     ; preserve caller's tilemap-byte X
+    PHA                                     ; preserve current $09FE (16-bit)
+
+    LDA.W $09FE
+    LSR A : AND.W #$0007                    ; canvas row 0..7
+    XBA                                     ; row << 8
+    ASL A : ASL A                           ; row << 10 = row*1024 byte offset
+    TAX                                     ; X = canvas byte start of new row
+
+    LDY.W #$0200                            ; 512 iterations × 2 = 1024 bytes
+
+    SEP #$20                                ; 8-bit polarity peek
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .rowFillBlack
+    LDA.W #$FFFF                            ; WB → fill white
+    BRA .rowFillReady
+.rowFillBlack:
+    LDA.W #$0000                            ; BB → fill black
+.rowFillReady:
+.rowFillLoop:
+    STA.L !TILE_BUF,X
+    INX : INX
+    DEY
+    BNE .rowFillLoop
+
+    PLA                                     ; restore $09FE word
+    PLX                                     ; restore caller's tilemap-byte X
+
+    ; Continue with pen reset
     LDA.W $09FC                             ; col index for the new row
-    ASL A : ASL A : ASL A                   ; *8 → pixel x position (8 px per tile)
-    STA.L !VWF_PX                           ; reset pen to start of new column
-    LDA.W $09FE                             ; reload current row
-    STA.L !VWF_ROW                          ; remember it for next compare
+    ASL A : ASL A : ASL A                   ; *8 → pixel x
+    STA.L !VWF_PX                           ; reset pen
+    LDA.W $09FE
+    STA.L !VWF_ROW                          ; remember new row for next compare
 .sameLine:
 
     ; Character filtering — restrict VWF to printable font range.
@@ -454,11 +498,12 @@ VWFCharHandler:
     RTL                                     ; done with this char
 
 .hasWidth:
-    ; Row index = ($09FE >> 1) & 3  → 4 row slots support 3+ text lines
-    ; without colliding into the same canvas rows.
+    ; Row index = ($09FE >> 1) & 7  → 8 row slots support up to 8 text
+    ; lines without colliding (file info menu has 4 lines that previously
+    ; collapsed to 2 canvas rows under the old &3 mask).
     LDA.W $09FE                             ; text row id
-    LSR A : AND.W #$0003                    ; halve, mask to 0..3
-    STA.L !VWF_TMP_ROW                      ; canvas row index 0..3
+    LSR A : AND.W #$0007                    ; halve, mask to 0..7
+    STA.L !VWF_TMP_ROW                      ; canvas row index 0..7
 
     ; Tile column = VWF_PX >> 3  (each tile is 8 px wide).
     LDA.L !VWF_PX                           ; pen pixel x
@@ -790,8 +835,14 @@ VWFPreRender:
     ASL A : ASL A : ASL A                   ; * 8 → pixel x of column start
     STA.L !VWF_PX                           ; pen = column-aligned pixel x
 
-    LDA.W #$FFFF                            ; sentinel for "first char this emit"
-    STA.L !VWF_ROW                          ; ensures row-change branch fires on first char
+    ; Initialize VWF_ROW to PreRender's $09FE so the first char doesn't
+    ; trigger CharHandler's row-change clear (which would wipe pre-pen
+    ; typewriter content). PreRender's partial canvas clear has already
+    ; reset the trailing portion of this row + all subsequent canvas-bytes
+    ; up to canvas end — so the first row is clean from pen forward.
+    ; Subsequent FF nn jumps to other canvas rows trigger row-change clear.
+    LDA.W $09FE
+    STA.L !VWF_ROW
 
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5 : STA.L !VWF_FLAG            ; arm VWF (handler now takes VWF path)
@@ -814,18 +865,18 @@ VWFPreRender:
     ; ClsHook does the full-canvas wipe at [cls] page transitions.
     ;
     ; offset = row * 1024 + col * 32   (matches VWFCharHandler's $0A calc)
-    ;   row = ($09FE >> 1) & 3
+    ;   row = ($09FE >> 1) & 7
     ;   col = $09FC
     ; -----------------------------------------------------------------------
     LDA.W $09FE                             ; text row source word
-    LSR A : AND.W #$0003                    ; row index 0..3
+    LSR A : AND.W #$0007                    ; row index 0..7
     XBA                                     ; row << 8
-    ASL A : ASL A                           ; row << 10 = * 1024
-    STA.L !VWF_TMP_BASE                               ; partial: row * 1024 (zero-page scratch)
+    ASL A : ASL A                           ; row << 10 = * 1024 (max 7*1024=$1C00)
+    STA.L !VWF_TMP_BASE                     ; partial: row * 1024 (zero-page scratch)
     LDA.W $09FC                             ; col index
     AND.W #$001F                            ; clamp 0..31 defensively
     ASL A : ASL A : ASL A : ASL A : ASL A   ; col * 32
-    CLC : ADC.L !VWF_TMP_BASE                         ; + row * 1024
+    CLC : ADC.L !VWF_TMP_BASE               ; + row * 1024
     TAX                                     ; X = canvas byte offset to start clearing
 
     ; Polarity-aware fill: $FFFF for inverted (WB) so AND-NOT render punches
@@ -846,9 +897,10 @@ VWFPreRender:
     INX : INX                               ; advance by 2
     BRA -                                   ; loop
 +
-    ; Clear the per-tile rendered bitmap (16 bytes). Each new emit starts
-    ; with no cells flagged; CharHandler.doneRows sets bits as it renders.
-    LDX.W #$000F
+    ; Clear the per-tile rendered bitmap (32 bytes for 8-row canvas). Each
+    ; new emit starts with no cells flagged; CharHandler.doneRows sets bits
+    ; as it renders.
+    LDX.W #$001F
     SEP #$20
     LDA.B #$00
 .preBitmapClear:
@@ -925,8 +977,8 @@ VWFClsHook:
     INX : INX                               ; advance by 2
     CPX.W #!CANVAS_SIZE : BCC -             ; loop full canvas
 
-    ; Clear the per-tile rendered bitmap on page transition too.
-    LDX.W #$000F
+    ; Clear the per-tile rendered bitmap on page transition too (32 bytes).
+    LDX.W #$001F
     SEP #$20
     LDA.B #$00
 .clsBitmapClear:
@@ -1073,7 +1125,7 @@ VWFNMI:
 
 .bmpNextByte:
     INX
-    CPX.W #$0010
+    CPX.W #$0020                            ; 32 bytes for 8-row bitmap
     BCC .bmpWalkByte
     ; fall into .clearAndExit
 
@@ -1084,9 +1136,9 @@ VWFNMI:
     LDA.W #$0000
     STA.L !VWF_DMA_HI
 
-    ; Clear the per-tile rendered bitmap so next emit starts fresh.
+    ; Clear the per-tile rendered bitmap so next emit starts fresh (32 B).
     SEP #$20
-    LDX.W #$000F
+    LDX.W #$001F
     LDA.B #$00
 .bmpReset:
     STA.L !VWF_BITMAP,X
@@ -1117,15 +1169,24 @@ vwfDoDmaForCell:
     AND.W #$00FF                            ; clean high
     PHA                                     ; save cell index for chrome check
 
-    ; --- Chrome-tile preserve filter --------------------------------------
-    ; Cell N occupies BG3 char tiles top=($20+2N), bot=top+1. Skip the DMA
-    ; if those overlap [VWF_CHROME_LO, VWF_CHROME_HI]. Default sentinel
-    ; CHROME_LO=$FFFF, CHROME_HI=$0000 means LO>HI → no cell ever overlaps,
-    ; so every cell DMAs (legacy behavior). Allow-list rows can populate
-    ; tighter bounds for scenes that share BG char data with chrome tiles.
+    ; --- VRAM bound skip + chrome-tile preserve filter --------------------
+    ; Cell N occupies BG3 char tiles top=($20+2N), bot=top+1. Two skips:
+    ;
+    ; (1) VRAM bound: BG3 char data ends at byte $E000 (= tile $200). Cells
+    ;     whose top tile >= $200 land in BG2 tilemap territory (byte $E000+).
+    ;     For 8-row canvas, cells 240..255 (canvas row 7 cols 16..31) hit
+    ;     this. Skip them to keep BG2 tilemap intact.
+    ;
+    ; (2) Chrome preserve: skip if [top, top+1] overlaps
+    ;     [VWF_CHROME_LO, VWF_CHROME_HI] from the matched allow-list row.
+    ;     Sentinel CHROME_LO=$FFFF, HI=$0000 (LO>HI) disables the check.
     ASL A                                   ; A = cell * 2
     CLC : ADC.W #$0020                      ; A = top_tile = $20 + 2*cell
-    ; Overlap test:
+
+    CMP.W #$0200                            ; top_tile >= $200 (BG3 end)?
+    BCS .skipChrome                         ; yes → skip, would stomp BG2
+
+    ; Chrome overlap test:
     ;   (top + 1) >= CHROME_LO  AND  top <= CHROME_HI
     ; If both true, cell is in the preserve range → skip DMA.
     INC A                                   ; A = top + 1 = bot_tile
