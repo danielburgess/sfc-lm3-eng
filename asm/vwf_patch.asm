@@ -198,6 +198,13 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_TMP_ORIG  = $7F5D2E    ; was DP $0E — original (un-shifted) font byte
 !VWF_TMP_SHFT  = $7F5D2F    ; was DP $0F — shifted byte to OR into tile (8-bit)
 !VWF_TMP_POS   = $7F5D30    ; was DP $10 — saved canvas write pos for spill calc
+!VWF_TMP_TILE_ID = $7F5D34  ; 2 B — PRIMARY pen-tile alloc tile_id (Variant F).
+                            ; Saved by .hasWidth WB allocator: equals LEFTMOST
+                            ; alloc when sub_shift+width <= 8 (no spill), else
+                            ; equals PRIMARY=LEFTMOST+1 alloc. Consumed by
+                            ; .normalTilemap WB path as the tilemap entry's
+                            ; tile_id, so each engine col references the
+                            ; canvas tile holding the char's primary body.
 
 ; ============================================================================
 ; VWF VRAM-owned tile ranges — polarity-dependent.
@@ -645,45 +652,96 @@ VWFCharHandler:
 .wbAllocStart:
     REP #$20
 
-    ; Cell index = (row & 7) * 32 + $09FC (engine col, NOT TMP_COL).
-    ; CRITICAL: this MUST match .normalTilemap's cell-index expression.
+    ; Variant F: kerning-aware allocator with LEFTMOST + PRIMARY slots.
+    ; Two pen-tile-keyed allocations per emit:
+    ;   LEFTMOST = TMP_COL                       (pen tile holding leftmost px)
+    ;   PRIMARY  = LEFTMOST + 1   if spill else  LEFTMOST
+    ;     spill iff (TMP_SHIFT + TMP_W > 8)
+    ; LEFTMOST drives the canvas write position (override TMP_BASE), so
+    ; chars sharing a pen tile collapse into the same canvas slot (kerning
+    ; preserved). PRIMARY drives the tilemap entry, so each engine col
+    ; references the canvas tile that holds its char's primary body.
+    ; CELL_TILE is keyed by row*32 + pen_tile, so adjacent chars sharing
+    ; a pen tile re-use the same alloc; pool advances once per fresh
+    ; pen tile (≤ 32 per row), bounded well under the $100 cap.
+
+    ; --- LEFTMOST cell: row*32 + TMP_COL → CELL_TILE byte offset in X ---
     LDA.L !VWF_TMP_ROW
     AND.W #$0007
     ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
-    CLC : ADC.W $09FC                       ; + engine col
-    AND.W #$00FF                            ; cell 0..255
+    CLC : ADC.L !VWF_TMP_COL                ; + LEFTMOST pen tile
+    AND.W #$00FF
     ASL A                                   ; cell * 2 (16-bit table offset)
-    TAX                                     ; X = byte offset into CELL_TILE
+    TAX
 
     LDA.L !VWF_CELL_TILE,X
     CMP.W #$FFFF
-    BNE .wbHaveTile                         ; reuse stored tile_id
+    BNE .wbLeftHave                         ; reuse
 
-    ; Allocate from pool. If POOL_NEXT == $3E (cursor), bump to $3F.
+    ; Bump POOL_NEXT for LEFTMOST. Skip cursor tile $3E.
     LDA.L !VWF_POOL_NEXT
     CMP.W #$003E
-    BNE .wbSkipCursorBump
+    BNE .wbBumpL_NotCursor
     LDA.W #$003F
     STA.L !VWF_POOL_NEXT
-.wbSkipCursorBump:
+.wbBumpL_NotCursor:
     LDA.L !VWF_POOL_NEXT
-    CMP.W #!VWF_WB_TILE_LIMIT               ; >= $0100?
+    CMP.W #!VWF_WB_TILE_LIMIT
     BCS .wbExhausted
-    PHA                                     ; save tile_id (16-bit)
-    INC A                                   ; bump cursor
+    PHA
+    INC A
     STA.L !VWF_POOL_NEXT
-    PLA                                     ; A = allocated tile_id
-    STA.L !VWF_CELL_TILE,X                  ; remember for tilemap write
+    PLA
+    STA.L !VWF_CELL_TILE,X                  ; remember for next emit at this pen tile
 
-.wbHaveTile:
-    ; A = allocated tile_id. Override TMP_BASE = (tile_id - $20) * 16.
-    ; This makes canvas writes alloc-aligned so the contiguous DMA
-    ; correctly maps each char's content to its allocated VRAM tile.
-    ; Suspected source of WB variable-width kerning gap — user is tracing.
-    SEC : SBC.W #!VWF_TILE_BASE             ; A -= $20  (range 1..$DF)
-    AND.W #$00FF                            ; safety mask
-    ASL A : ASL A : ASL A : ASL A           ; * 16 → canvas byte offset
-    STA.L !VWF_TMP_BASE                     ; OVERRIDE: canvas pos = allocated slot
+.wbLeftHave:
+    ; A = LEFTMOST tile_id. Default PRIMARY = LEFTMOST (overwritten below
+    ; if spill detected). Save into TMP_TILE_ID so .normalTilemap can read
+    ; without recomputing the cell index.
+    STA.L !VWF_TMP_TILE_ID
+
+    ; Override TMP_BASE = (LEFTMOST - $20) * 16 — canvas pos = LEFTMOST slot.
+    SEC : SBC.W #!VWF_TILE_BASE
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A
+    STA.L !VWF_TMP_BASE
+
+    ; --- Spill check: TMP_SHIFT + TMP_W > 8 ? ---
+    ; M=16 here. TMP_SHIFT and TMP_W are stored as 16-bit (low byte holds
+    ; the value, high byte zero from earlier mask), so a 16-bit ADC of the
+    ; two values gives a clean sum. CMP #$0009 → BCC = no spill.
+    LDA.L !VWF_TMP_SHIFT
+    CLC : ADC.L !VWF_TMP_W
+    CMP.W #$0009
+    BCC .wbAllocDone                        ; no spill → done (TMP_TILE_ID = LEFTMOST)
+
+    ; --- Spilled. PRIMARY cell = LEFTMOST cell + 1 (next byte-offset = +2). ---
+    ; X currently holds LEFTMOST byte offset. Advance to PRIMARY cell.
+    INX : INX
+
+    LDA.L !VWF_CELL_TILE,X
+    CMP.W #$FFFF
+    BNE .wbPrimHave                         ; reuse
+
+    ; Bump POOL_NEXT for PRIMARY. Same cursor-skip + exhaustion handling.
+    LDA.L !VWF_POOL_NEXT
+    CMP.W #$003E
+    BNE .wbBumpP_NotCursor
+    LDA.W #$003F
+    STA.L !VWF_POOL_NEXT
+.wbBumpP_NotCursor:
+    LDA.L !VWF_POOL_NEXT
+    CMP.W #!VWF_WB_TILE_LIMIT
+    BCS .wbExhausted
+    PHA
+    INC A
+    STA.L !VWF_POOL_NEXT
+    PLA
+    STA.L !VWF_CELL_TILE,X
+
+.wbPrimHave:
+    ; A = PRIMARY tile_id. Overwrite saved TMP_TILE_ID (LEFTMOST default).
+    STA.L !VWF_TMP_TILE_ID
     BRA .wbAllocDone
 
 .wbExhausted:
@@ -943,16 +1001,12 @@ VWFCharHandler:
     LDA.L !VWF_INVERT
     BEQ .bbTileFormula                      ; BB → formula
 
-    ; WB: tile_id = CELL_TILE[cell] (allocated in .hasWidth)
+    ; WB: tile_id = !VWF_TMP_TILE_ID (PRIMARY pen-tile alloc, saved in
+    ; .hasWidth Variant F allocator). For non-spilling chars this equals
+    ; the LEFTMOST alloc; for spilling chars it points at the canvas tile
+    ; holding the char's primary body (LEFTMOST + 1).
     REP #$20
-    LDA.L !VWF_TMP_ROW
-    AND.W #$0007
-    ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
-    CLC : ADC.W $09FC                       ; + engine col
-    AND.W #$00FF
-    ASL A                                   ; cell * 2
-    TAX                                     ; X = byte offset into CELL_TILE
-    LDA.L !VWF_CELL_TILE,X                  ; A = allocated tile_id
+    LDA.L !VWF_TMP_TILE_ID
     BRA .haveTileId
 
 .bbTileFormula:
