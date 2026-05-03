@@ -517,6 +517,14 @@ VWFCharHandler:
     PLA                                     ; restore
     CLC : ADC.W #$0400                      ; + palette-row offset for bot
     STA.L $7E9040,X                         ; bot tilemap entry at VWF col
+    ; Update LAST_COL so subsequent VWF chars don't gap-fill over this
+    ; .doOrig-written tilemap entry. The .doOrig wrote engine's char
+    ; tile_id at the pen-snapped col; we want gap-fill to treat $09FC
+    ; (engine col) as "already written" so it skips this cell.
+    SEP #$20
+    LDA.W $09FC
+    STA.L !VWF_LAST_COL
+    REP #$20
 
     ; Advance VWF_PX by 8 (special tiles are tile-sized = 8 px)
     LDA.L !VWF_PX
@@ -535,14 +543,33 @@ VWFCharHandler:
     AND.W #$00FF                            ; isolate width byte
     BNE .hasWidth                           ; width > 0 → render glyph
 
-    ; Width 0 (e.g. space) — don't render, but still emit a blank tilemap
-    ; entry so the cursor cell gets a clean BG colour.
+    ; Width 0 (e.g. space, or width-0 control chars the engine emits
+    ; between visible chars for original Japanese spacing — these are
+    ; leftover JP kana that didn't get translated, like $D2=イ, $D5=オ,
+    ; $DC=シ, etc.). Don't render. Tilemap entry = tile $20 (canonical
+    ; blank, properly polarity-filled by SceneInit) + palette. This is
+    ; the "missing AND" — without pointing at tile $20, the cell would
+    ; reference tile $00 (engine default) which has no polarity wipe and
+    ; can show stale chrome content.
     LDA.L !VWF_SAVX                         ; load via A (LDX.L unsupported)
-    TAX                         ; restore tilemap byte offset
+    TAX                                     ; restore tilemap byte offset
     LDA.W $0A02                             ; current palette/priority bits
-    STA.L $7E9000,X                         ; blank top tilemap entry
-    CLC : ADC.W #$0400                      ; add palette-row offset for bottom
-    STA.L $7E9040,X                         ; blank bottom tilemap entry
+    CLC : ADC.W #!VWF_BLANK_TILE_ID         ; + tile $20 (canonical blank)
+    STA.L $7E9000,X                         ; top tilemap entry
+    CLC : ADC.W #$0400                      ; +palette-row offset for bot
+    STA.L $7E9040,X                         ; bot tilemap entry
+
+    ; Update LAST_COL so subsequent gap-fill doesn't think this cell is a
+    ; gap. Without this, width-0 control chars between visible chars
+    ; (engine-side spacing artifacts) cause gap-fill from the next visible
+    ; char to write tile $20 over THIS cell — same visual outcome as the
+    ; width-0 path would produce, but the issue is gap-fill ALSO fires
+    ; whenever sequential width-0+VWF char pairs occur, inserting an
+    ; extra blank cell mid-text.
+    SEP #$20
+    LDA.W $09FC
+    STA.L !VWF_LAST_COL
+    REP #$20
 
     ; Advance VWF_PX by 8 (= one full cell) so it tracks engine's $09FC
     ; INC. Without this, width-0 chars desync VWF pen from engine col,
@@ -620,14 +647,10 @@ VWFCharHandler:
 
     ; Cell index = (row & 7) * 32 + $09FC (engine col, NOT TMP_COL).
     ; CRITICAL: this MUST match .normalTilemap's cell-index expression.
-    ; Using TMP_COL here (pen-derived) diverges from $09FC (engine col)
-    ; for variable-width chars whose pen lags or leads the engine col,
-    ; causing .normalTilemap to read CELL_TILE[wrong_cell]=$FFFF and
-    ; write tile $3FF (= $FFFF tile_id field) to the tilemap.
     LDA.L !VWF_TMP_ROW
     AND.W #$0007
     ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
-    CLC : ADC.W $09FC                       ; + engine col (matches .normalTilemap)
+    CLC : ADC.W $09FC                       ; + engine col
     AND.W #$00FF                            ; cell 0..255
     ASL A                                   ; cell * 2 (16-bit table offset)
     TAX                                     ; X = byte offset into CELL_TILE
@@ -636,8 +659,7 @@ VWFCharHandler:
     CMP.W #$FFFF
     BNE .wbHaveTile                         ; reuse stored tile_id
 
-    ; --- Allocate from pool ---
-    ; If POOL_NEXT == $3E (cursor), bump to $3F before alloc (persist the bump).
+    ; Allocate from pool. If POOL_NEXT == $3E (cursor), bump to $3F.
     LDA.L !VWF_POOL_NEXT
     CMP.W #$003E
     BNE .wbSkipCursorBump
@@ -655,20 +677,13 @@ VWFCharHandler:
 
 .wbHaveTile:
     ; A = allocated tile_id. Override TMP_BASE = (tile_id - $20) * 16.
+    ; This makes canvas writes alloc-aligned so the contiguous DMA
+    ; correctly maps each char's content to its allocated VRAM tile.
+    ; Suspected source of WB variable-width kerning gap — user is tracing.
     SEC : SBC.W #!VWF_TILE_BASE             ; A -= $20  (range 1..$DF)
     AND.W #$00FF                            ; safety mask
     ASL A : ASL A : ASL A : ASL A           ; * 16 → canvas byte offset
     STA.L !VWF_TMP_BASE                     ; OVERRIDE: canvas pos = allocated slot
-
-    ; NO per-cell wipe here. Variable-width chars rely on prior char's
-    ; spillover landing in adjacent cell's canvas (via OR/AND-NOT bit
-    ; accumulation). Wiping erases that spillover → narrow chars lose
-    ; their right-side pixels in the next tile.
-    ;
-    ; PreRender's partial canvas wipe (from pen forward) handles fresh
-    ; emits. Static WB scenes get idempotent re-rasterization (same OR/
-    ; AND-NOT input → same output). Dynamic content with text changes is
-    ; deferred (would need different wipe strategy).
     BRA .wbAllocDone
 
 .wbExhausted:
@@ -813,14 +828,14 @@ VWFCharHandler:
     JMP .rowLoop                            ; continue with next row
 
 .doneRows:
-    ; --- Update DMA_LO/HI bounds for the canvas → VRAM upload --------------
+    ; --- Update DMA_LO/HI bounds for the canvas → VRAM upload ----------
     ; LO = min cell start (TMP_BASE).
     ; HI = polarity-dependent:
     ;   BB → end of canvas row ((row+1) * 512). DMAing the polarity-fill
     ;        tail clears trailing VRAM tile slots from prior emits.
     ;   WB → just this cell's end (TMP_BASE + 16). Pool allocator means
-    ;        canvas is sparse; row-end extension would DMA polarity-fill
-    ;        over engine cursor (tile $3E) and other unallocated slots.
+    ;        canvas is sparse; row-end extension would DMA over engine
+    ;        cursor (tile $3E) and unallocated slots.
     REP #$20                                ; M=16 for word compares
     LDA.L !VWF_TMP_BASE                     ; current cell canvas start
     CMP.L !VWF_DMA_LO
@@ -836,15 +851,14 @@ VWFCharHandler:
     CLC : ADC.W #$0010
     BRA .hiCheck
 .hiFromRow:
-    ; BB: HI candidate = (row+1) * 512 (full canvas row end)
     REP #$20
     LDA.L !VWF_TMP_ROW
-    INC A                                   ; M=16: 16-bit INC
+    INC A                                   ; (row+1)
     XBA                                     ; (row+1) << 8
     ASL A                                   ; (row+1) * 512
 .hiCheck:
     CMP.L !VWF_DMA_HI
-    BCC .hi_keep                            ; HI already >= candidate → keep
+    BCC .hi_keep
     STA.L !VWF_DMA_HI                       ; new HI
 .hi_keep:
     SEP #$20                                ; M=8 for flag write
@@ -925,17 +939,16 @@ VWFCharHandler:
     ; --- Step 2: tile_id source — polarity branch -----------------------
     ; BB: formula tile_id = $20 + row*32 + col (matches canvas DMA position)
     ; WB: pool-allocated tile_id from CELL_TILE[cell] (set in .hasWidth)
-    ;     Canvas position for WB also matches (TMP_BASE was overridden).
     SEP #$20
     LDA.L !VWF_INVERT
     BEQ .bbTileFormula                      ; BB → formula
 
-    ; --- WB: tile_id = CELL_TILE[cell] (allocated in .hasWidth) ----------
+    ; WB: tile_id = CELL_TILE[cell] (allocated in .hasWidth)
     REP #$20
     LDA.L !VWF_TMP_ROW
     AND.W #$0007
     ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
-    CLC : ADC.W $09FC                       ; + col
+    CLC : ADC.W $09FC                       ; + engine col
     AND.W #$00FF
     ASL A                                   ; cell * 2
     TAX                                     ; X = byte offset into CELL_TILE
@@ -943,10 +956,9 @@ VWFCharHandler:
     BRA .haveTileId
 
 .bbTileFormula:
-    ; --- BB: formula (unchanged from working baseline) ------------------
     REP #$20                                ; M=16 for tile_id math
     LDA.L !VWF_TMP_ROW
-    AND.W #$0007                            ; sanitize row 0..7
+    AND.W #$0007
     ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
     CLC : ADC.W $09FC                       ; + col
     CLC : ADC.W #!VWF_TILE_BASE             ; + $20 → formula tile_id
