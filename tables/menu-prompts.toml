@@ -18,3 +18,11 @@ count = 56
 size = 2
 
 [section]
+# Per-entry override for the windowed-script "preserve byte at $START"
+# behavior. Default = preserve (FFC0 stub at $START+1, byte at $START left
+# in ROM so leading control codes survive). Entries listed here flip to
+# clobber-mode (FFC0 stub at $START, byte there overwritten) — required
+# for entry 30 because the JP residual byte at each window's $START is
+# a non-zero JP char that would render as an extra leading glyph and
+# shift VWF text 1 column right of the intended position-set target.
+# clobber_lead_entries = [30]

@@ -47,6 +47,25 @@ def read_wram(sock, offset, length):
     """Read WRAM at offset."""
     return read_mem(sock, 'SnesWorkRam', offset, length)
 
+def write_mem(sock, mem_type, addr, data):
+    """Write bytes to memory. data may be a list[int] or bytes."""
+    hex_str = ''.join(f'{b:02X}' for b in data)
+    r = send_cmd(sock, 'writeMemory', memoryType=mem_type, address=hex(addr), hex=hex_str)
+    if not r.get('success'):
+        print(f"Write failed: {r}", file=sys.stderr)
+    return r
+
+def step_frames(sock, count):
+    """Step the SNES CPU by `count` PPU frames."""
+    return send_cmd(sock, 'step', cpuType='Snes', count=count, stepType='PpuFrame')
+
+def set_controller(sock, port=0, **buttons):
+    """Override controller input. Buttons: a, b, x, y, l, r, up, down, left, right, start, select."""
+    return send_cmd(sock, 'setControllerInput', port=port, buttons=buttons)
+
+def clear_controller(sock, port=0):
+    return send_cmd(sock, 'clearControllerInput', port=port)
+
 if __name__ == '__main__':
     sock = connect()
     print(json.dumps(send_cmd(sock, 'getStatus'), indent=2))

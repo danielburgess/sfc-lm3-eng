@@ -4,9 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Still getting garbage, but... DIFFERENT garbage">
-      <change afterPath="$PROJECT_DIR$/tools/vwf_trace_diff.py" afterDir="false" />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Took a new approach. Trying to mitigate by creating ownership map before vwf emit.">
+      <change afterPath="$PROJECT_DIR$/tools/ownership_editor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/fonts/font_accented.checksum" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/fonts/font_accented.checksum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/fonts/font_accented_1bpp.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/fonts/font_accented_1bpp.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/bin/fonts/font_accented_1bppil.bin" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/bin/fonts/font_accented_1bppil.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/fonts/font_accented.png" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/fonts/font_accented.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mesen_ipc.py" beforeDir="false" afterPath="$PROJECT_DIR$/mesen_ipc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tables/menu-prompts.toml" beforeDir="false" afterPath="$PROJECT_DIR$/tables/menu-prompts.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,11 +78,11 @@
       <recent name="$PROJECT_DIR$/en_ptr_data" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Plans/old" />
+      <recent name="$PROJECT_DIR$/Plans" />
       <recent name="$PROJECT_DIR$/out/archive" />
       <recent name="$PROJECT_DIR$/resolved bug reports" />
       <recent name="$PROJECT_DIR$" />
-      <recent name="$PROJECT_DIR$/DEBUGGER_FRAGMENTS" />
-      <recent name="$PROJECT_DIR$/gfx" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -107,15 +115,7 @@
       <workItem from="1777186530812" duration="68759000" />
       <workItem from="1777324346475" duration="46950000" />
       <workItem from="1777479562781" duration="775000" />
-      <workItem from="1777568721028" duration="32634000" />
-    </task>
-    <task id="LOCAL-00028" summary="removed a bunch of asm patches now that the FFC0 control code is understood. it's like a built in relocation code. I can relocate text willy-nilly anytime.">
-      <option name="closed" value="true" />
-      <created>1775898790099</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1775898790099</updated>
+      <workItem from="1777568721028" duration="92881000" />
     </task>
     <task id="LOCAL-00029" summary="current build success for script and scene desc">
       <option name="closed" value="true" />
@@ -501,7 +501,15 @@
       <option name="project" value="LOCAL" />
       <updated>1777606882400</updated>
     </task>
-    <option name="localTasksCounter" value="77" />
+    <task id="LOCAL-00077" summary="Took a new approach. Trying to mitigate by creating ownership map before vwf emit.">
+      <option name="closed" value="true" />
+      <created>1777619049132</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1777619049132</updated>
+    </task>
+    <option name="localTasksCounter" value="78" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -552,7 +560,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="some script changes" />
     <MESSAGE value="unit info bug fixes" />
     <MESSAGE value="Various changes and fixes appplied." />
     <MESSAGE value="Getting very close. Still flickery." />
@@ -577,7 +584,8 @@
     <MESSAGE value="getting even closer with the menu render." />
     <MESSAGE value="Now half the screen is rendering properly" />
     <MESSAGE value="Still getting garbage, but... DIFFERENT garbage" />
-    <option name="LAST_COMMIT_MESSAGE" value="Still getting garbage, but... DIFFERENT garbage" />
+    <MESSAGE value="Took a new approach. Trying to mitigate by creating ownership map before vwf emit." />
+    <option name="LAST_COMMIT_MESSAGE" value="Took a new approach. Trying to mitigate by creating ownership map before vwf emit." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$debug_vwf_probe.coverage" NAME="debug_vwf_probe Coverage Results" MODIFIED="1777439065577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />
