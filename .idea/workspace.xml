@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="VWF no longer converting tiles to 2bpp. No regressions, working smoothly.">
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Unified VWF closer than ever. Still visual issues on menus. *sigh*">
       <change afterPath="$PROJECT_DIR$/Plans/use-snes-reverse-engineering-greedy-badger.md" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/tools/vwf_gate_probe.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
@@ -42,29 +42,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.debug_vwf_probe.executor": "Run",
-    "Python.vwf_render.executor": "Run",
-    "Python.window_def.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "/mnt/crucial/projects/sfc-lm3-eng/asm",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.debug_vwf_probe.executor&quot;: &quot;Run&quot;,
+    &quot;Python.vwf_render.executor&quot;: &quot;Run&quot;,
+    &quot;Python.window_def.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/mnt/crucial/projects/sfc-lm3-eng/asm&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/asm" />
@@ -110,39 +110,8 @@
       <workItem from="1777186530812" duration="68759000" />
       <workItem from="1777324346475" duration="46950000" />
       <workItem from="1777479562781" duration="775000" />
-      <workItem from="1777568721028" duration="118891000" />
-    </task>
-    <task id="LOCAL-00032" summary="Translation formatting fixes.">
-      <option name="closed" value="true" />
-      <created>1775928974134</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1775928974134</updated>
-    </task>
-    <task id="LOCAL-00033" summary="committing a ton of event script changes, etc">
-      <option name="closed" value="true" />
-      <created>1775981258210</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1775981258210</updated>
-    </task>
-    <task id="LOCAL-00034" summary="fast">
-      <option name="closed" value="true" />
-      <created>1775982388084</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1775982388084</updated>
-    </task>
-    <task id="LOCAL-00035" summary="formatting fixes">
-      <option name="closed" value="true" />
-      <created>1775983087696</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
-      <option name="project" value="LOCAL" />
-      <updated>1775983087696</updated>
+      <workItem from="1777568721028" duration="141071000" />
+      <workItem from="1777864949972" duration="7048000" />
     </task>
     <task id="LOCAL-00036" summary="More changes and fixes.">
       <option name="closed" value="true" />
@@ -504,7 +473,39 @@
       <option name="project" value="LOCAL" />
       <updated>1777775649610</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="VWF is now conserving space for tiles, but we are getting strange spaces in the middle of words. We're completely refactored and now share 95% same code between dialog and menus for vwf gen.">
+      <option name="closed" value="true" />
+      <created>1777826611483</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1777826611483</updated>
+    </task>
+    <task id="LOCAL-00082" summary="VWF checkpoint">
+      <option name="closed" value="true" />
+      <created>1777841127588</created>
+      <option name="number" value="00082" />
+      <option name="presentableId" value="LOCAL-00082" />
+      <option name="project" value="LOCAL" />
+      <updated>1777841127588</updated>
+    </task>
+    <task id="LOCAL-00083" summary="VWF checkpoint">
+      <option name="closed" value="true" />
+      <created>1777843962815</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1777843962815</updated>
+    </task>
+    <task id="LOCAL-00084" summary="Unified VWF closer than ever. Still visual issues on menus. *sigh*">
+      <option name="closed" value="true" />
+      <created>1777863542755</created>
+      <option name="number" value="00084" />
+      <option name="presentableId" value="LOCAL-00084" />
+      <option name="project" value="LOCAL" />
+      <updated>1777863542756</updated>
+    </task>
+    <option name="localTasksCounter" value="85" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -555,9 +556,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="VWF restarted. Progressing step-by-step instead of trying to do it all at once." />
-    <MESSAGE value="Hopefully on the right path." />
-    <MESSAGE value="Before major changes." />
     <MESSAGE value="Before major changes. 2" />
     <MESSAGE value="Before major changes. 3" />
     <MESSAGE value="Before major changes. 4" />
@@ -580,7 +578,10 @@
     <MESSAGE value="getting super close to working vwf in the first menu screen!" />
     <MESSAGE value="VWF is essentially working in the file info menu." />
     <MESSAGE value="VWF no longer converting tiles to 2bpp. No regressions, working smoothly." />
-    <option name="LAST_COMMIT_MESSAGE" value="VWF no longer converting tiles to 2bpp. No regressions, working smoothly." />
+    <MESSAGE value="VWF is now conserving space for tiles, but we are getting strange spaces in the middle of words. We're completely refactored and now share 95% same code between dialog and menus for vwf gen." />
+    <MESSAGE value="VWF checkpoint" />
+    <MESSAGE value="Unified VWF closer than ever. Still visual issues on menus. *sigh*" />
+    <option name="LAST_COMMIT_MESSAGE" value="Unified VWF closer than ever. Still visual issues on menus. *sigh*" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$debug_vwf_probe.coverage" NAME="debug_vwf_probe Coverage Results" MODIFIED="1777439065577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />

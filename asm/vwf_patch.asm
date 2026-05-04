@@ -1328,14 +1328,34 @@ org $E09200
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
 ;        deferred work, then JML back to $00:D46D for the rest of NMI.
+;
+; DBR DISCIPLINE (R1.F-14):
+;   The interrupted code may have left DBR in any bank. Our STA.W $211x /
+;   $437x / $420B writes are DBR-relative — if DBR is $40-$7D or $7E/$7F,
+;   they hit RAM instead of PPU/DMA registers and silently corrupt WRAM.
+;   The original NMI body at $00:D46D+ shares this hazard (LDA.W $4210,
+;   STA.W $2100, etc.). We harden BOTH by pushing the interrupted DBR,
+;   forcing DBR=$00 for the duration of NMI, and restoring DBR before the
+;   JML so the original body inherits the safe state.
+;
+;   Stack on entry to VWFNMI body (after preserves):
+;       [P from displaced PHP] [A from displaced PHA] [X] [Y] [caller_DBR]
+;   Stack on exit (before JML to $D46D):
+;       [P from displaced PHP] [A from displaced PHA]
+;   (PLB/PLY/PLX in reverse-push order; original $D46D PHX/PHY then re-push.)
 VWFNMI:
     PHP                                     ; displaced from $D469
     REP #$30                                ; displaced from $D46A — M=16, X=16
     PHA                                     ; displaced from $D46C
     PHX                                     ; preserve interrupted X
     PHY                                     ; preserve interrupted Y
+    PHB                                     ; preserve interrupted DBR (R1.F-14)
+    SEP #$20                                ; M=8 for byte ops + DBR fixup
+    LDA.B #$00                              ; bank $00 = PPU/CPU register bank
+    PHA : PLB                               ; DBR = $00 → STA.W $21xx/$43xx safe
 
     ; --- Scene-init pending? Run polarity wipe DMA first (vblank-safe) ---
+    ; (M=8 already set above; the SEP #$20 here is retained for clarity.)
     SEP #$20                                ; M=8 for sentinel byte
     LDA.L !VWF_SCENE_INIT_PENDING
     CMP.B #$A5
@@ -1453,6 +1473,7 @@ VWFNMI:
 
 .skipDMA:
     REP #$30                                ; restore M=16, X=16 for downstream NMI
+    PLB                                     ; restore interrupted DBR (R1.F-14)
     PLY                                     ; restore interrupted Y
     PLX                                     ; restore interrupted X
     JML $00D46D                             ; resume original NMI handler at PHX
