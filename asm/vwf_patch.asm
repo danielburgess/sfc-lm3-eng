@@ -198,6 +198,15 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_TMP_ORIG  = $7F5D2E    ; was DP $0E — original (un-shifted) font byte
 !VWF_TMP_SHFT  = $7F5D2F    ; was DP $0F — shifted byte to OR into tile (8-bit)
 !VWF_TMP_POS   = $7F5D30    ; was DP $10 — saved canvas write pos for spill calc
+!VWF_TM_OFFSET = $7F5D33    ; 1 B — count of dedup-blank tilemap entries
+                            ; skipped on the current row. Each skip shifts
+                            ; subsequent tilemap byte offsets by -2 (one cell
+                            ; left), so the next char fills the slot the
+                            ; engine was about to write a phantom $20 into.
+                            ; The blank was an artifact of pen-tile sharing
+                            ; without spill (LEFTMOST reused, no PRIMARY) —
+                            ; it was never intended content. Reset on
+                            ; PreRender (per emit) and on row change.
 !VWF_TMP_TILE_ID = $7F5D34  ; 2 B — PRIMARY pen-tile alloc tile_id (Variant F).
                             ; Saved by .hasWidth WB allocator: equals LEFTMOST
                             ; alloc when sub_shift+width <= 8 (no spill), else
@@ -462,10 +471,13 @@ VWFCharHandler:
     STA.L !VWF_ROW                          ; remember new row for next compare
 
     ; New row → reset gap-fill last-col tracker so the first char on this
-    ; row doesn't gap-fill from the prior row's last col.
+    ; row doesn't gap-fill from the prior row's last col. Also reset the
+    ; dedup-blank shift counter so this row starts unshifted.
     SEP #$20
     LDA.B #$FF
     STA.L !VWF_LAST_COL
+    LDA.B #$00
+    STA.L !VWF_TM_OFFSET
     REP #$20
     BRA .updatePrevCol                      ; row-change pen reset already aligned
 .sameLine:
@@ -676,8 +688,9 @@ VWFCharHandler:
 
     LDA.L !VWF_CELL_TILE,X
     CMP.W #$FFFF
-    BNE .wbLeftHave                         ; reuse
+    BNE .wbLeftReuse                        ; reuse → default tilemap = $20 (blank)
 
+    ; --- LEFTMOST fresh alloc (this pen tile is new on this row) -----------
     ; Bump POOL_NEXT for LEFTMOST. Skip cursor tile $3E.
     LDA.L !VWF_POOL_NEXT
     CMP.W #$003E
@@ -694,12 +707,25 @@ VWFCharHandler:
     PLA
     STA.L !VWF_CELL_TILE,X                  ; remember for next emit at this pen tile
 
-.wbLeftHave:
-    ; A = LEFTMOST tile_id. Default PRIMARY = LEFTMOST (overwritten below
-    ; if spill detected). Save into TMP_TILE_ID so .normalTilemap can read
-    ; without recomputing the cell index.
+    ; A = fresh LEFTMOST tile_id. Default tilemap = LEFTMOST tile_id (this
+    ; engine col is the FIRST char to occupy this pen tile, so the tile_id
+    ; correctly references the new canvas slot).
     STA.L !VWF_TMP_TILE_ID
+    BRA .wbLeftDone
 
+.wbLeftReuse:
+    ; A = LEFTMOST tile_id (reused — a prior char on this row already
+    ; allocated this pen tile). The current char shares the canvas slot;
+    ; pointing tilemap at LEFTMOST would visually duplicate the prior
+    ; char's content. Default tilemap = $20 (canonical blank); will be
+    ; overwritten with PRIMARY tile_id below if the char spills.
+    PHA
+    LDA.W #!VWF_BLANK_TILE_ID               ; $20
+    STA.L !VWF_TMP_TILE_ID
+    PLA
+
+.wbLeftDone:
+    ; A = LEFTMOST tile_id (regardless of fresh/reuse).
     ; Override TMP_BASE = (LEFTMOST - $20) * 16 — canvas pos = LEFTMOST slot.
     SEC : SBC.W #!VWF_TILE_BASE
     AND.W #$00FF
@@ -707,12 +733,16 @@ VWFCharHandler:
     STA.L !VWF_TMP_BASE
 
     ; --- Spill check: TMP_SHIFT + TMP_W > 8 ? ---
-    ; M=16 here. TMP_SHIFT and TMP_W are stored as 16-bit (low byte holds
-    ; the value, high byte zero from earlier mask), so a 16-bit ADC of the
-    ; two values gives a clean sum. CMP #$0009 → BCC = no spill.
+    ; TMP_W is stored 8-bit-only (`STA.L !VWF_TMP_W` runs at SEP #$20 in
+    ; .doRender). Its high byte at $7F:5D23 is stale. Existing code at
+    ; .penAdvance loads 8-bit and AND-masks before any 16-bit math; do
+    ; the same here. TMP_SHIFT was AND'd to #$0007 before storage so its
+    ; high byte is zero, but treat both 8-bit for symmetry.
+    SEP #$20                                ; M=8 for byte add+compare
     LDA.L !VWF_TMP_SHIFT
     CLC : ADC.L !VWF_TMP_W
-    CMP.W #$0009
+    CMP.B #$09
+    REP #$20                                ; back to M=16 (carry preserved)
     BCC .wbAllocDone                        ; no spill → done (TMP_TILE_ID = LEFTMOST)
 
     ; --- Spilled. PRIMARY cell = LEFTMOST cell + 1 (next byte-offset = +2). ---
@@ -1017,8 +1047,63 @@ VWFCharHandler:
     CLC : ADC.W $09FC                       ; + col
     CLC : ADC.W #!VWF_TILE_BASE             ; + $20 → formula tile_id
 
-.haveTileId:                                ; ENTRY: M=16, A=tile_id
-    PLX                                     ; restore tilemap-byte-offset (balances .normalTilemap PHX)
+.haveTileId:                                ; ENTRY: M=16, A=tile_id, X-on-stack from .normalTilemap PHX
+    ; --- WB-only dedup-blank discard ----------------------------------
+    ; In WB, when the per-row pen-tile allocator decides this engine col's
+    ; content is already merged into a neighbor's tile (LEFTMOST reused,
+    ; no spill), TMP_TILE_ID was set to $20. That blank was never intended
+    ; data — discard it (no tilemap write) and bump VWF_TM_OFFSET so the
+    ; NEXT non-blank emit writes into the slot we just skipped, instead of
+    ; leaving a visible blank in the middle of the line.
+    ;
+    ; Pen advance still happens (we still consumed the engine col), so we
+    ; jump to .penAdvance after popping the saved X.
+    PHA                                     ; preserve A (tile_id) across SEP/REP M-flag flips
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .tmDoneCheck                        ; BB → no dedup discard, no shift
+    PLA                                     ; restore A = tile_id
+    PHA                                     ; re-save (16-bit M=16)
+    CMP.W #!VWF_BLANK_TILE_ID
+    BNE .tmShiftX                           ; non-blank: shift X and write
+    ; Dedup-blank: discard.
+    PLA                                     ; pop saved tile_id (unused)
+    PLX                                     ; pop saved X (unused — no write)
+    SEP #$20
+    LDA.L !VWF_TM_OFFSET
+    INC A
+    STA.L !VWF_TM_OFFSET
+    REP #$20
+    JMP .penAdvance                         ; skip tilemap write, still advance pen
+
+.tmDoneCheck:
+    PLA                                     ; restore A = tile_id (BB or non-WB)
+    PLX                                     ; restore SAVX (no shift)
+    BRA .tilemapWrite
+
+.tmShiftX:
+    ; WB non-blank: write at X' = SAVX - VWF_TM_OFFSET * 2.
+    ; Stack on entry: [savX (bottom), tile_id (top)] — TWO items.
+    ; PLX would pop the TOP (tile_id), so pop tile_id with PLA first,
+    ; THEN PLX to get savX. Save tile_id in scratch (TMP_FBI) so we
+    ; can use A for the offset*2 math below.
+    PLA                                     ; A = tile_id (top of stack)
+    STA.L !VWF_TMP_FBI                      ; stash tile_id in scratch
+    PLX                                     ; X = SAVX (now top)
+    SEP #$20
+    LDA.L !VWF_TM_OFFSET
+    REP #$20
+    AND.W #$00FF
+    ASL A                                   ; A = offset * 2
+    ; A = offset*2. Apply X -= A.
+    PHA                                     ; push offset*2 for stack-relative SBC
+    TXA
+    SEC : SBC $01,S                         ; A = SAVX - offset*2
+    TAX                                     ; X = adjusted tilemap byte offset
+    PLA                                     ; pop offset*2 (discard)
+    LDA.L !VWF_TMP_FBI                      ; restore A = tile_id
+    ; Fall through to .tilemapWrite (M=16, A=tile_id, X=SAVX-offset*2)
 
 .tilemapWrite:                              ; ENTRY: M=16, A=tile_id, X=tilemap byte off
     PHA                                     ; save tile_id for bot
@@ -1118,6 +1203,7 @@ VWFPreRender:
 
     SEP #$20                                ; 8-bit for flag write
     LDA.B #$A5 : STA.L !VWF_FLAG            ; arm VWF (handler now takes VWF path)
+    LDA.B #$00 : STA.L !VWF_TM_OFFSET       ; reset dedup-blank shift counter
     REP #$20                                ; back to 16-bit
 
     ; Reset dirty-range bounds for this emit. NMI uploads nothing if
