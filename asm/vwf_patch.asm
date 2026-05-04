@@ -493,6 +493,17 @@ VWFCharHandler:
     LDA.W $09FC
     ASL A : ASL A : ASL A                   ; * 8 = pen pixel x
     STA.L !VWF_PX                           ; re-anchor pen
+
+    ; R1.F-9: clear any pending dedup-blank shift before crossing the col-jump.
+    ; If the prior char on this row hit the WB dedup discard path,
+    ; VWF_TM_OFFSET is non-zero and would shift the NEXT tilemap write LEFT by
+    ; (offset * 2) bytes — but the col-jump just re-anchored us elsewhere on
+    ; the row, so the shift would land at a stale offset and clobber an
+    ; unrelated cell. The shift was scoped to the run between the discard
+    ; and the next emit at the same engine col; a col-jump invalidates it.
+    SEP #$20
+    LDA.B #$00 : STA.L !VWF_TM_OFFSET
+    REP #$20
 .updatePrevCol:
     LDA.W $09FC
     STA.L !VWF_PREV_COL                     ; track for next-char compare
