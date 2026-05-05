@@ -7,17 +7,56 @@
 ;
 ; DESIGN
 ;   - Per-char hook at $80:C17B replaces the game's per-character tilemap
-;     write with VWFCharHandler. Non-renderable chars and out-of-range
-;     codes pass through to the original tilemap-write path (.origPath).
+;     write (writeTilemapEntry) with VWFCharHandler. Non-renderable chars
+;     and out-of-range codes pass through via .origPath / .doOrig.
 ;   - Wrapper hook at $80:BC75 brackets the call to processText with
 ;     VWFPreRender (set up canvas + flag + sentinels) and VWFPostRender
-;     (synchronous bulk DMA of the canvas into VRAM, then clear flag).
-;     DMA is NEVER scheduled from NMI — it runs deterministically inside
-;     the text routine, eliminating the race that produced flicker.
+;     (mark canvas dirty + clear flag).  PreRender and PostRender run
+;     SYNCHRONOUSLY around processText — they touch only WRAM (canvas at
+;     $7F:7000 + state at $7F:5D00), no PPU access, no DMA trigger.
+;   - DMA is DEFERRED to NMI.  VWFNMI (Hook 4) checks VWF_DIRTY at vblank
+;     entry and uploads the dirty canvas range to VRAM tiles $20+ on DMA
+;     channel 7 (engine never uses ch7).  The deferral is intentional:
+;     vblank is the only safe window for VRAM writes outside forced blank,
+;     and a forced blank inside processText would cause a visible
+;     mid-frame brightness blip.  The cost is one frame of latency
+;     between rasterizing into the canvas and seeing the pixels on
+;     screen — which lines up naturally with the engine's per-character
+;     typewriter delay.
+;   - Scene-change detection: VWFCaptureSource (Hook 6) records the
+;     resolved 24-bit text source pointer at every Phase 1 entry.
+;     PreRender compares the current (INVERT, TEXT_LO/HI/BNK) tuple
+;     against the LAST_* fingerprint; mismatch triggers a fresh
+;     SceneInit (canvas wipe, CELL_TILE reset, queued VRAM polarity
+;     wipe).  Catches transitions even when the engine doesn't issue an
+;     explicit [cls].
 ;   - [cls] hook at $80:C022 replaces the JSL initTilemapAndSync_Long
-;     dispatched by textStream_ExtFF for the [cls] opcode. It runs the
-;     original clear+sync first, then resets the WRAM canvas + sentinels
-;     so the next page renders with no leftover pixels.
+;     dispatched by textStream_ExtFF for the [cls] opcode.  It runs the
+;     original clear+sync first, then forces a SceneInit so the next
+;     page renders with no leftover canvas pixels.
+;   - Cursor-blink suppression: the readTextCursorState hook (Hook 7,
+;     $00:C219) arms VWF_BLINK; the very next CharHandler invocation
+;     routes to .origPath so the engine's `>` cursor draws as the
+;     original tile $3E rather than as a VWF-rendered glyph.
+;   - Pixel-based line wrap: the line-end check at $00:BE92 (Hook 5)
+;     compares VWF_PX to (line_char_limit * 8) instead of the engine's
+;     col-count comparison.  Lets VWF use the full pixel width of the
+;     dialog box.
+;
+; COVERAGE GAPS (sub-paths of writeTextCharacter that VWF does NOT see):
+;   The Hook 1 install point is on the *default* branch of
+;   writeTextCharacter at $00:C156.  Three sibling branches bypass our
+;   hook entirely; they remain on the original engine path:
+;     - early-out at $00:C167 when (A == 0 && $6F != 0): writes tile
+;       $0100 raw to both planes.  Triggered by the cursor "off" frame
+;       in pollInputFlashCursor.
+;     - textChar_AltMode at $00:C18F: runs when $0A1C != 0
+;       (alt-palette mode).
+;     - textChar_CalcTileAddr at $00:C1A6: runs when $0A1E != 0
+;       (special-tile mode, subtracts $20 and adds $0A1E).
+;   These produce fixed-width tile output — acceptable degradation,
+;   but worth knowing if a future translation pushes $0A1C/$0A1E
+;   non-zero and a glyph appears at the wrong width.
 ;
 ; CONTROL-CODE CONTRACT
 ;   FF control codes (and their parameter bytes) are dispatched by Phase 2
@@ -47,9 +86,19 @@
 
 lorom                                       ; standard LoROM mapping for asar
 
-; ROM expansion to 24 Mbit so $E0 bank is reachable
-org $00FFD7 : db $0C                        ; SNES header byte: ROM size = 24 Mbit
+; ROM expansion to 32 Mbit / 4 MB so the $E0 bank is reachable.
+; Header byte = log2(rom_KB): $0C = 12 → 4096 KB = 4 MB = 32 Mbit (the LoROM max).
+org $00FFD7 : db $0C                        ; SNES header byte: ROM size = 32 Mbit (4 MB)
 org $FFFFFF : db $00                        ; force ROM image to extend through bank $FF
+
+; ----------------------------------------------------------------------------
+; Bank where the VWF body, font, and helpers live (must match every `org $E0...`
+; below and the source-bank loaded into DMA channel 7's A1B7 register).
+; Defined as a named constant so live-code references read as e.g.
+; `LDA.B #!VWF_BANK` instead of a bare `#$E0` literal — single source of
+; truth if the bank ever needs to move.
+; ----------------------------------------------------------------------------
+!VWF_BANK = $E0
 
 ; ----------------------------------------------------------------------------
 ; VWF state — ALL in $7F:5D00..$7F:5D1F, away from the contended $0A30..$0A3B
@@ -305,18 +354,34 @@ org $80C17B
 
 ; ============================================================================
 ; Hook 2 — processText wrapper  ($80:BC75, 15 bytes overwritten)
-; Original 15 bytes initialized $14/$16, called processText ($80:BE3B), and
-; performed cleanup. We split that into:
-;   PreRender  → carries displaced LDA/STA/STZ + sets VWF_FLAG + clears canvas
-;   processText → unchanged JSR
-;   PostRender → carries displaced REP/LDA $0A16 + bulk-DMA canvas into VRAM
-; DMA happens HERE, synchronously, so it can never race the per-char writes.
+; Original 15 bytes were:
+;   LDA #$0400 / STA $14 / STZ $16    (3+2+2 = 7 bytes — text-buffer init)
+;   JSR processText  ($80:BE3B)       (3 bytes)
+;   REP #$20 / LDA $0A16              (2+3 = 5 bytes — pre-BNE setup)
+; ...followed by an unchanged BNE kanji_Return at $80:BC84.
+;
+; We split the 15-byte slot into three pieces while preserving that BNE:
+;   PreRender  → carries displaced LDA #$0400 / STA $14 / STZ $16 plus
+;                VWF setup (polarity sample, scene-fingerprint compare,
+;                per-emit cursor-blink clear, partial canvas wipe, DMA
+;                bounds reset, VWF_FLAG arm).  WRAM-only; no DMA.
+;   processText → unchanged JSR $BE3B.
+;   PostRender → sets VWF_DIRTY=$A5 + carries displaced REP #$20 / LDA
+;                $0A16 (so the BNE at $BC84 reads Z from $0A16 just as in
+;                the original).  WRAM-only; no DMA.
+;
+; The actual canvas → VRAM DMA happens in NMI (see VWFNMI / Hook 4),
+; not here.  This file used to claim "synchronous bulk DMA inside
+; PostRender" — that design was abandoned; NMI-deferred DMA replaced it
+; to avoid the mid-frame forced-blank flicker the synchronous version
+; produced.
 ; ============================================================================
 org $80BC75
-    JSL.L VWFPreRender                      ; 4 bytes — set up VWF state, run displaced setup
-    JSR.W $BE3B                             ; 3 bytes — call processText (Phase 2 dispatcher)
-    JSL.L VWFPostRender                     ; 4 bytes — bulk VRAM upload + run displaced cleanup
-    NOP : NOP : NOP : NOP                   ; 4 bytes — pad to original 15-byte slot
+    JSL.L VWFPreRender                      ; 4 bytes — VWF setup + displaced LDA/STA/STZ
+    JSR.W $BE3B                             ; 3 bytes — processText (Phase 2 dispatcher)
+    JSL.L VWFPostRender                     ; 4 bytes — arm DIRTY + displaced REP/LDA $0A16
+    NOP : NOP : NOP : NOP                   ; 4 bytes — pad to 15-byte slot; original BNE
+                                            ;          at $80:BC84 reads Z from $0A16
 
 ; ============================================================================
 ; Hook 3 — [cls] page transition  ($80:C022, 4 bytes overwritten)
@@ -539,9 +604,15 @@ VWFCharHandler:
     CLC : ADC.L !VWF_SAVX                   ; X' = game_X + delta = tilemap byte offset @ VWF col
     TAX                                     ; X register now points at VWF tile col
 
-    LDA.L !VWF_CHAR                             ; reload char value
-    AND.W #$00FF                            ; mask to byte (clear any stale high bits)
-    CLC : ADC.W $0A02                       ; + palette/priority
+    LDA.L !VWF_CHAR                         ; reload char value (full 16-bit)
+    ; R1.F-15: NO AND.W #$00FF here. Icon tile_ids ($180-$1FF, emitted by
+    ; engine textStream_HandleD0 via ADC #$0180) need their high bit
+    ; preserved or the tilemap entry references the wrong tile (e.g.
+    ; tile $185 → tile $85 = font glyph instead of chrome icon). The mask
+    ; was a no-op for the other .doOrig entry paths (sub-$20 / $F0-$FF /
+    ; saturation / pool-exhausted) since their chars fit in 8 bits anyway,
+    ; and is harmful for the chars-≥-$100 path.
+    CLC : ADC.W $0A02                       ; + palette/priority (16-bit add preserves high bit)
     PHA                                     ; save composed top word
     STA.L $7E9000,X                         ; top tilemap entry at VWF col
     PLA                                     ; restore
@@ -1690,7 +1761,7 @@ VWFNMIVramWipe:
     LDA.B #$80 : STA.W $2115                ; VMAIN: word-inc on $2119 high write
     LDA.B #$09 : STA.W $4370                ; DMAP7 = mode 1 + FIXED source (bit 3)
     LDA.B #$18 : STA.W $4371                ; BBAD7 = $2118 (VMDATAL)
-    LDA.B #bank(VWFVramWipeBytes) : STA.W $4374  ; A1B7 = source bank ($E0)
+    LDA.B #!VWF_BANK : STA.W $4374          ; A1B7 = source bank (VWFVramWipeBytes lives here)
 
     ; Source byte addr depends on polarity (BB→$00, WB→$FF).
     ; Set source once; we'll trigger 2 chunks (split at tile $3E to preserve cursor).
