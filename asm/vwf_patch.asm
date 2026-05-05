@@ -1453,6 +1453,15 @@ VWFNMI:
     CMP.B #$A5
     BNE .checkDirty
     JSR.W VWFNMIVramWipe                    ; runs ch7 DMA, clears the sentinel
+    ; R2.F-2: defer the canvas DMA to the NEXT vblank.  Combined VRAM-wipe
+    ; (~28k cycles) + canvas DMA (up to ~32k) would exceed the ~50k NTSC
+    ; vblank budget on this frame, producing visible mid-screen DMA writes.
+    ; By JMPing past .checkDirty we leave VWF_DIRTY=$A5 and DMA_LO/HI bounds
+    ; intact; the next NMI sees them and uploads the canvas with nothing
+    ; else competing for vblank time.  Cost: one frame where the new scene
+    ; shows wiped VRAM (polarity fill) before any text renders — natural
+    ; visual handoff at scene transitions.
+    JMP .skipDMA
 
 .checkDirty:
     SEP #$20                                ; (defensive — VWFNMIVramWipe leaves M=8)
