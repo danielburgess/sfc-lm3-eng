@@ -1727,21 +1727,37 @@ VWFRequestSceneInit:
     LDA.L !VWF_TEXT_HI  : STA.L !VWF_LAST_TEXT_HI
     LDA.L !VWF_TEXT_BNK : STA.L !VWF_LAST_TEXT_BNK
 
-    ; --- Canvas wipe — polarity-aware fill ($7F:7000..$7FFF, 4 KB) -------
-    ; INVERT==0 → BB → fill $0000;  INVERT!=0 → WB → fill $FFFF
-    LDA.L !VWF_INVERT
-    REP #$20                                ; M=16 for word fill
-    BEQ .canvasFillBlack
-    LDA.W #$FFFF : BRA .canvasFillReady
-.canvasFillBlack:
-    LDA.W #$0000
-.canvasFillReady:
+    ; --- Canvas wipe — polarity-conditional (R2.F-3 BB-skip) ------------
+    ; WB needs the full 4 KB wipe: the WB pool allocator hands out
+    ; tile_ids whose canvas slots can land ANYWHERE inside the canvas,
+    ; in pool-allocation order. We must zero every byte to $FFFF so the
+    ; AND-NOT renderer can punch black holes through clean white paper
+    ; without merging stale pixels from prior scenes.
+    ;
+    ; BB does NOT need the full wipe: BB tile_id = $20 + row*32 + col is
+    ; a formula, so each char's canvas slot is at the SAME byte offset
+    ; PreRender's pen-onward partial wipe will reach (and the row-change
+    ; handler in CharHandler wipes any row the engine jumps to). Stale
+    ; canvas bytes outside those wipes are never referenced — their
+    ; tilemap entries either point at the polarity-wiped blank tile $20
+    ; (CLS path's initTilemapAndSync_Long) or at VRAM tile_ids that
+    ; VWFNMIVramWipe is about to reset to polarity (fingerprint-mismatch
+    ; path). Either way the screen never sees the stale canvas data.
+    ;
+    ; Skipping in BB saves ~25 000 master cycles ≈ 1.2 ms of synchronous
+    ; CPU stall on every BB scene transition. WB still pays the full
+    ; cost.
+    LDA.L !VWF_INVERT                       ; (M=8 from SEP above)
+    REP #$20                                ; M=16 for the fill loop + downstream code
+    BEQ .canvasWipeDone                     ; BB → skip canvas wipe entirely
+    LDA.W #$FFFF                            ; WB → fill white
     LDX.W #$0000
 .canvasLoop:
     STA.L !TILE_BUF,X
     INX : INX
     CPX.W #!CANVAS_SIZE                     ; reached 4096?
     BCC .canvasLoop
+.canvasWipeDone:
 
     ; --- CELL_TILE = $FFFF (unallocated; 256 entries × 2 B = 512 B) ------
     LDX.W #$01FE                            ; last byte offset
