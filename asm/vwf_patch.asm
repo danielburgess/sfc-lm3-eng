@@ -1576,6 +1576,16 @@ VWFNMI:
 ;   carry CLEAR if VWF_PX < (line_char_limit * 8) → caller's BCC continues loop
 ;   carry SET   otherwise → caller falls through to wrap path
 ; Caller is in M=16 mode (text engine convention at this hook site).
+;
+; STACK-SCRATCH TRICK (R1.F-6):
+;   We need a 16-bit scratch to compare VWF_PX against (limit * 8). Rather
+;   than burn a permanent WRAM slot, we PHA a placeholder, overwrite the
+;   pushed word in-place via `STA $01,S`, do `CMP $01,S` against it, and
+;   PLA the scratch.  PLA only updates N and Z — it leaves CARRY untouched
+;   — so the C flag set by CMP survives the pop.  The caller's BCC at
+;   $00:BE96 reads that carry. **Don't replace this with a regular WRAM
+;   scratch unless you need to**; the in-stack form keeps the helper
+;   reentrant and avoids cluttering the $7F:5D00 state region.
 ; ----------------------------------------------------------------------------
 VWFLineEndCheck:
     PHA                                     ; reserve stack slot (2 bytes, M=16)
@@ -1583,8 +1593,8 @@ VWFLineEndCheck:
     ASL A : ASL A : ASL A                   ; * 8 → pixel limit
     STA $01,S                               ; overwrite our PHA'd word with pixel limit
     LDA.L !VWF_PX                           ; current VWF pen pixel x
-    CMP $01,S                               ; compare pen vs pixel limit
-    PLA                                     ; pop scratch (CMP-set carry survives PLA)
+    CMP $01,S                               ; compare pen vs pixel limit (sets C)
+    PLA                                     ; pop scratch — C survives (PLA only sets N/Z)
     RTL                                     ; return — caller's BCC reads carry
 
 ; ----------------------------------------------------------------------------
