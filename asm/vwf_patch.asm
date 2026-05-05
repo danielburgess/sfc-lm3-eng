@@ -101,6 +101,17 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 !VWF_BANK = $E0
 
 ; ----------------------------------------------------------------------------
+; Debug flag (R1.F-10).  When non-zero, compiles in instrumentation that helps
+; live debugging in Mesen but adds runtime overhead:
+;   - VWF_DBG_CAPCOUNT:  per-Phase-1-entry counter at $7F:5D60. Lets you
+;                        confirm Hook 6 is firing by watching that address
+;                        increment, without needing a breakpoint.
+; Set to 0 for release builds. Each gated block's overhead is documented at
+; its `if !VWF_DEBUG` site.
+; ----------------------------------------------------------------------------
+!VWF_DEBUG = 0
+
+; ----------------------------------------------------------------------------
 ; VWF state — ALL in $7F:5D00..$7F:5D1F, away from the contended $0A30..$0A3B
 ; window. Original game uses $0A38 as a 16-bit text-data pointer and $0A3A as
 ; 16-bit config flags ($0A3A AND #1, AND #8, AND #$10, AND #$100 per the
@@ -194,10 +205,12 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; ----------------------------------------------------------------------------
 !VWF_BLINK    = $7F5D1C
 
-; Sentinel counter — VWFCaptureSource increments this once per call.
-; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
-; needing a breakpoint. Wraps at 256.
-!VWF_DBG_CAPCOUNT = $7F5D60
+if !VWF_DEBUG
+    ; Sentinel counter — VWFCaptureSource increments this once per call.
+    ; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
+    ; needing a breakpoint. Wraps at 256. Compiled out when !VWF_DEBUG = 0.
+    !VWF_DBG_CAPCOUNT = $7F5D60
+endif
 
 ; ----------------------------------------------------------------------------
 ; Per-cell tile-id pool ($7F:5DBA..$5DBD and $7F:5E00..$5FFF).
@@ -211,15 +224,12 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; State layout:
 ;   POOL_NEXT    $7F:5DBA  2 B   — next tile_id to hand out (range $0021..$00FF;
 ;                                  $0100 = exhausted, .wbBlank fallback)
-;   CELL_INIT    $7F:5DBC  1 B   — $A5 = CELL_TILE table valid for this scene.
-;                                  Cleared by VWFRequestSceneInit; re-set after
-;                                  the table is filled with $FFFF.
+;   ($7F:5DBC was VWF_CELL_INIT — set but never read, removed in R1.)
 ;   LAST_COL     $7F:5DBD  1 B   — gap-fill tracker; $FF = no prior col.
 ;   CELL_TILE    $7F:5E00  512 B — per-cell allocated tile_id (256 cells
 ;                                  × 16-bit). $FFFF = unallocated.
 ; ----------------------------------------------------------------------------
 !VWF_POOL_NEXT     = $7F5DBA
-!VWF_CELL_INIT     = $7F5DBC
 !VWF_LAST_COL      = $7F5DBD
 !VWF_CELL_TILE     = $7F5E00
 
@@ -1631,9 +1641,10 @@ org $E0A800
 ; Caller convention at $80:B67C is M=16 (set by REP #$20 in loadTextFromPtr
 ; just before the JSL).
 ;
-; Phase A: the captured slots are ONLY read by debug tooling. No render
-; code consults them yet, so the only observable effect of this helper is
-; the sentinel counter increment at !VWF_DBG_CAPCOUNT.
+; The captured TEXT_LO/HI/BNK slots feed VWFPreRender's scene-change
+; fingerprint compare (PreRender vs LAST_*) — that is the load-bearing
+; observable effect.  When !VWF_DEBUG = 1 a sentinel counter at
+; !VWF_DBG_CAPCOUNT also increments per call (Mesen IPC convenience).
 ; ----------------------------------------------------------------------------
 VWFCaptureSource:
     PHP                                     ; preserve caller's M/X
@@ -1647,9 +1658,13 @@ VWFCaptureSource:
     ; Sentinel — increment counter so live debugging can confirm the hook
     ; fires. Wraps at 256; any non-zero value after a text emit means we
     ; ran. INC has no long-addressing form, so do it through A (M=8).
+    ; Compiled out when !VWF_DEBUG = 0 (R1.F-10) — saves 6 cycles per
+    ; Phase-1 entry on release builds.
+if !VWF_DEBUG
     LDA.L !VWF_DBG_CAPCOUNT
     INC A
     STA.L !VWF_DBG_CAPCOUNT
+endif
 
     REP #$20                                ; M=16 for the displaced STZ.W
     STZ.W $0A08                             ; displaced from $80:B67C+0
@@ -1670,7 +1685,7 @@ VWFCaptureSource:
 ;   - Wipes canvas $7F:7000..$7F7FFF with polarity fill ($0000 BB / $FFFF WB)
 ;   - Resets CELL_TILE[0..255] to $FFFF (unallocated)
 ;   - Resets POOL_NEXT cursor to $0021 (skips canonical-blank tile $20)
-;   - Clears DIRTY/DMA bounds, LAST_COL, sets CELL_INIT
+;   - Clears DIRTY/DMA bounds, resets LAST_COL to $FF (no prior col)
 ;   - Sets SCENE_INIT_PENDING=$A5 → next NMI vblank does the VRAM wipe DMA
 ;
 ; Register-state contract:
@@ -1728,8 +1743,7 @@ VWFRequestSceneInit:
     SEP #$20                                ; M=8 for byte sentinels
     LDA.B #$00 : STA.L !VWF_DIRTY           ; nothing to upload
     LDA.B #$FF : STA.L !VWF_LAST_COL        ; gap-fill: no prior col
-    LDA.B #$A5 : STA.L !VWF_CELL_INIT       ; CELL_TILE valid
-    STA.L !VWF_SCENE_INIT_PENDING           ; tell NMI: do VRAM wipe next vblank
+    LDA.B #$A5 : STA.L !VWF_SCENE_INIT_PENDING  ; tell NMI: do VRAM wipe next vblank
 
     PLP                                     ; restore caller's M/X
     RTL
