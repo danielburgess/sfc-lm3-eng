@@ -987,26 +987,30 @@ VWFCharHandler:
 .skipWrite:
 
     ; --- Spillover into the next tile column when sub_x > 0 -----------------
+    ; (M=8 entry from .skipWrite paths above.)
     LDA.L !VWF_TMP_SHIFT                               ; shift (low byte read)
     BEQ .noSpill                            ; no shift → no spill
     LDA.L !VWF_TMP_ORIG                               ; original (un-shifted) font byte
     BEQ .noSpill                            ; original is blank → nothing to spill
 
     ; spill = original << (8 - sub_x)
-    SEP #$20                                ; ensure 8-bit math
-    LDA.B #$08                              ; constant 8
+    ; F-7: removed redundant SEP #$20 — the .skipWrite predecessors above
+    ; all leave M=8, so this block already runs in 8-bit mode.
+    LDA.B #$08                              ; constant 8 (M=8 already)
     SEC : SBC.L !VWF_TMP_SHIFT                         ; A = 8 - shift
     REP #$20                                ; 16-bit for AND/TAX
     AND.W #$00FF                            ; clean high byte
-    TAX                                     ; X = left-shift count
+    TAX                                     ; X = left-shift count (always 1..8 — never 0)
     SEP #$20                                ; back to 8-bit
     LDA.L !VWF_TMP_ORIG                               ; original font byte
-    CPX.W #$0000 : BEQ .noSL                ; 0 shifts → no shift loop
+    ; F-7: removed dead `CPX #$0000 : BEQ .noSL` — TMP_SHIFT in {1..7} via
+    ; the BEQ guards above (line LDA TMP_SHIFT : BEQ .noSpill), so
+    ; X = 8 - shift is always in {1..7} and the loop always executes at
+    ; least once.
 .slLoop:
     ASL A : DEX : BNE .slLoop               ; shift left X times
-.noSL:
     STA.L !VWF_TMP_SHFT                               ; $0F = spill byte
-    CMP.B #$00                              ; STA cleared no flags — re-test for zero
+    CMP.B #$00                              ; STA doesn't set flags — re-test for zero
     BEQ .noSpill                            ; spill is 0 → nothing to write
 
     ; Spill destination = saved canvas pos + 16 (next cell, same plane).
@@ -1015,7 +1019,7 @@ VWFCharHandler:
     REP #$20                                ; 16-bit for ADC
     LDA.L !VWF_TMP_POS : CLC : ADC.W #$0010          ; pos + 16 (next cell, same plane)
     CMP.W #!CANVAS_SIZE                     ; bounds: must stay inside 4 KB canvas
-    BCS .noSpill                            ; out of bounds → drop the spill
+    BCS .noSpill                            ; out of bounds → drop the spill (M=16 join — F-8)
     TAX                                     ; X = canvas spill write index
     SEP #$20                                ; back to 8-bit for byte writes
 
@@ -1036,12 +1040,10 @@ VWFCharHandler:
     LDA.B #$A5 : STA.L !VWF_TMP_DREW        ; mark glyph as non-blank
     BRA .noSpill2
 
-.noSpill:                                   ; F-8: removed SEP #$20.  INY/CPY use the
-                                            ; X flag; .rowLoop and .doneRows each start
-                                            ; with REP #$20, so M state at this join
-                                            ; point is unobservable downstream.  The
-                                            ; one M=16 predecessor (BCS .noSpill above
-                                            ; from the bounds check) is now safe.
+.noSpill:                                   ; F-8: SEP #$20 was redundant; .rowLoop /
+                                            ; .doneRows each force their own M state.
+                                            ; INY / CPY use the X flag.  M=16 entry
+                                            ; from BCS bounds-check is safe.
 .noSpill2:
     INY                                     ; next pixel row
     CPY.W #$0010                            ; rendered all 16 rows?
