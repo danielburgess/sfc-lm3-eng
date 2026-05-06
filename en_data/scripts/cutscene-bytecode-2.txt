@@ -190,7 +190,7 @@
 <<<window[0]:$004A-$0054>>>
 
 <<<window[1]:$007D-$00A2>>>
-"I didn't know Jasban had a room like this.[nl][wait30] I had no idea."
+"I didn't know Jusvan had a room like this.[nl][wait30] I had no idea."
 <<<window[2]:$00B2-$00B9>>>
 "Hey, hey..."
 <<<window[3]:$00C3-$00DA>>>
@@ -276,13 +276,13 @@
 <<<window[10]:$0269-$0298>>>
 [FF060C]Carrying the mysterious tablet,[FF060F]the party visits Professor Raddoc.
 <<<window[11]:$02AC-$02EC>>>
-[FF060B]What happened at Jasban?[FF0C0E]What were the robbers[FF0311]and the Bone Bombers after?
+[FF060B]What happened at Jusvan?[FF0C0E]What were the robbers[FF0311]and the Bone Bombers after?
 
 <<$327696:24[$334025]>>
 <<<window[0]:$0003-$0008>>>
 
 <<<window[1]:$001F-$0050>>>
-"I couldn't let you get near Jasban...[nl] not if I could help it~~![wait30] ...urgh..."
+"I couldn't let you get near Jusvan...[nl] not if I could help it~~![wait30] ...urgh..."
 <<<window[2]:$0052-$0059>>>
 
 <<<window[3]:$005C-$005E>>>
@@ -300,7 +300,7 @@
 <<<window[4]:$0146-$018A>>>
 "Ahh, the village is destroyed~~~"[FFFE00][cls]"You lot are useless.[nl][wait30] Just get out of here!"[FFFE00]
 <<<window[5]:$01A5-$01BC>>>
-[FF070E]The Hero Army heads for Jasban.
+[FF070E]The Hero Army heads for Jusvan.
 
 <<$327696:26[$334577]>>
 <<<window[0]:$0003-$0008>>>
@@ -970,7 +970,7 @@
 <<<window[0]:$001C-$005C>>>
 [FF070B]Having brilliantly solved the quizzes[FF060E]and obtained the indigo Prismarite,[FF0811]the Hero Army visits Professor Raddoc.
 <<<window[1]:$0070-$0084>>>
-[FF080E]Meanwhile: Jasban Ruins
+[FF080E]Meanwhile: Jusvan Ruins
 <<<window[2]:$0101-$0105>>>
 
 <<<window[3]:$016B-$0189>>>
@@ -1056,7 +1056,7 @@
 
 <<$327696:87[$348808]>>
 <<<window[0]:$000D-$004C>>>
-[FF070B]The truth of Jasban finally revealed.[FF080E]To stop Weiss's ambitions,[FF0811]the Hero Army rushes to Linark.
+[FF070B]The truth of Jusvan finally revealed.[FF080E]To stop Weiss's ambitions,[FF0811]the Hero Army rushes to Linark.
 
 <<$327696:88[$348897]>>
 <<<window[0]:$0002-$0008>>>

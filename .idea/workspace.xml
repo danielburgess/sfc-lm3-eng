@@ -5,10 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Unified VWF closer than ever. Still visual issues on menus. *sigh*">
-      <change afterPath="$PROJECT_DIR$/Plans/use-snes-reverse-engineering-greedy-badger.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tools/vwf_gate_probe.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Plans/use-snes-reverse-engineering-greedy-badger.md" beforeDir="false" afterPath="$PROJECT_DIR$/Plans/vwf-fixup-plan.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode-2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt.bak" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-1.txt.bak" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/dialog-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/dialog-2.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/lm3_names.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/lm3_names.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/recruit-lines.old" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/recruit-lines.old" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/recruit-lines.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/recruit-lines.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/en_data/scripts/scene-desc-name1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/scene-desc-name1.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -112,6 +119,7 @@
       <workItem from="1777479562781" duration="775000" />
       <workItem from="1777568721028" duration="141071000" />
       <workItem from="1777864949972" duration="7048000" />
+      <workItem from="1778004888998" duration="9066000" />
     </task>
     <task id="LOCAL-00036" summary="More changes and fixes.">
       <option name="closed" value="true" />

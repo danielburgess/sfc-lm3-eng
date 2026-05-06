@@ -35,9 +35,13 @@
 ;     original clear+sync first, then forces a SceneInit so the next
 ;     page renders with no leftover canvas pixels.
 ;   - Cursor-blink suppression: the readTextCursorState hook (Hook 7,
-;     $00:C219) arms VWF_BLINK; the very next CharHandler invocation
-;     routes to .origPath so the engine's `>` cursor draws as the
-;     original tile $3E rather than as a VWF-rendered glyph.
+;     $00:C219) arms VWF_BLINK before every cursor write.  The cursor-ON
+;     frame (A=$3E) consumes the flag through CharHandler's .vwf →
+;     .origPath route.  The cursor-OFF frame (A=$0000) takes
+;     writeTextCharacter's early path at $00:C167 and bypasses Hook 1
+;     entirely; Hook 8 (R3.F-4) intercepts that write site and clears
+;     VWF_BLINK after replicating its displaced two-plane store.  Either
+;     frame leaves BLINK==$00 — no leak past the cursor loop.
 ;   - Pixel-based line wrap: the line-end check at $00:BE92 (Hook 5)
 ;     compares VWF_PX to (line_char_limit * 8) instead of the engine's
 ;     col-count comparison.  Lets VWF use the full pixel width of the
@@ -441,6 +445,39 @@ org $00BE92
 org $00C219
     JSL.L VWFFlashMark                      ; 4 bytes — arms BLINK + runs displaced setup
     NOP                                     ; 1 byte — pad to 5 (REP + LDX.W)
+
+; ============================================================================
+; Hook 8 — cursor-OFF blank write  ($00:C167, 8 bytes overwritten)  R3.F-4
+;
+; writeTextCharacter at $00:C156 has an EARLY path that fires when
+; A==$0000 && $6F!=0 && $0A1C==0 (the cursor "off" frame in border-mode
+; dialog). It writes tile $0100 raw to both planes and bypasses Hook 1
+; entirely:
+;   $C167: STA.L $7E9000,X        ; 4 bytes (A = $0100, top tilemap entry)
+;   $C16B: STA.L $7E9040,X        ; 4 bytes (bottom tilemap entry)
+;   $C16F: RTS
+;
+; This bypass is the source of the BLINK leak: Hook 7 (readTextCursorState)
+; armed VWF_BLINK before this write, but since the write skips Hook 1, the
+; CharHandler never gets to consume the flag. BLINK persisted past the
+; cursor loop and would route the next non-cursor char (typewriter advance,
+; menu redraw, etc.) through .origPath instead of VWF rendering — visible
+; as a single fixed-width glyph mid-line.
+;
+; Replacement: JSL VWFCursorBlank (4 bytes) + NOP×4 (4 bytes). The helper
+; replicates the two displaced STA.L writes (so the cursor cell still
+; renders as tile $0100), then clears VWF_BLINK so it cannot bridge to
+; the next char. The RTS at $C16F still terminates the path normally.
+;
+; The other path that hits CharHandler (cursor-ON frame, A=$3E) still
+; consumes BLINK via the existing .vwf → .origPath route in CharHandler,
+; so both frames now reliably clear the flag — no leak past any cursor
+; iteration, no leak past the post-loop final blank, no leak across the
+; pollInputFlashCursor/waitForButtonPressText boundary.
+; ============================================================================
+org $80C167
+    JSL.L VWFCursorBlank                    ; 4 bytes — replicates 2 STA.L + clears BLINK
+    NOP : NOP : NOP : NOP                   ; 4 bytes — pad to original 8-byte slot
 
 ; ============================================================================
 ; VWF body — bank $E0 (avoids $C0 collision with title_chunks @ PC 0x200000)
@@ -997,10 +1034,14 @@ VWFCharHandler:
     EOR.B #$FF
     AND.L !TILE_BUF,X : STA.L !TILE_BUF,X
     LDA.B #$A5 : STA.L !VWF_TMP_DREW        ; mark glyph as non-blank
-    BRA .noSpill2                           ; skip the SEP path below (already 8-bit)
+    BRA .noSpill2
 
-.noSpill:
-    SEP #$20                                ; ensure 8-bit before falling through
+.noSpill:                                   ; F-8: removed SEP #$20.  INY/CPY use the
+                                            ; X flag; .rowLoop and .doneRows each start
+                                            ; with REP #$20, so M state at this join
+                                            ; point is unobservable downstream.  The
+                                            ; one M=16 predecessor (BCS .noSpill above
+                                            ; from the bounds check) is now safe.
 .noSpill2:
     INY                                     ; next pixel row
     CPY.W #$0010                            ; rendered all 16 rows?
@@ -1255,17 +1296,35 @@ VWFPreRender:
     LDA.B #$00 : STA.L !VWF_BLINK           ; M=8 here (set above)
 
     ; --- Scene-change detection -----------------------------------------
-    ; Compare current (INVERT, TEXT_LO/HI/BNK) tuple against the LAST_*
-    ; fingerprint captured at the previous SceneInit. Any mismatch triggers
-    ; a fresh SceneInit (canvas wipe, CELL_TILE reset, queue VRAM wipe).
+    ; Two-tier reset (R3.F-Y / R3.F-Z):
+    ;   INVERT (polarity) flip → JSL VWFRequestSceneInit
+    ;     - True scene change.  Resets allocator state AND queues the
+    ;       per-NMI VRAM polarity wipe (chunk 1 / chunk 2 sequence).
+    ;   TEXT_LO/HI/BNK change → JSL VWFRequestPageReset
+    ;     - Dialog page advance (fillTextBuffer fired since last emit).
+    ;       Resets canvas + CELL_TILE + POOL_NEXT so the new page's
+    ;       glyphs allocate fresh tile_ids and write to clean canvas
+    ;       slots (otherwise WB pool keeps incrementing past $FF and
+    ;       CELL_TILE serves stale tile_ids whose canvas slots still
+    ;       hold prior page's pixels — visible as OR/AND-merged
+    ;       garbled glyphs).  Does NOT queue the VRAM wipe; the engine
+    ;       has already cleared the dialog tilemap to blank tile $100,
+    ;       so the prior page's VRAM tile data is unreferenced and the
+    ;       new emit's canvas DMA overwrites the slots it allocates.
+    ;
     ; All compares are 8-bit (M=8 already set above).
-    LDA.L !VWF_INVERT      : CMP.L !VWF_LAST_INVERT   : BNE .needInit
-    LDA.L !VWF_TEXT_LO     : CMP.L !VWF_LAST_TEXT_LO  : BNE .needInit
-    LDA.L !VWF_TEXT_HI     : CMP.L !VWF_LAST_TEXT_HI  : BNE .needInit
+    LDA.L !VWF_INVERT      : CMP.L !VWF_LAST_INVERT   : BNE .needSceneInit
+    LDA.L !VWF_TEXT_LO     : CMP.L !VWF_LAST_TEXT_LO  : BNE .needPageReset
+    LDA.L !VWF_TEXT_HI     : CMP.L !VWF_LAST_TEXT_HI  : BNE .needPageReset
     LDA.L !VWF_TEXT_BNK    : CMP.L !VWF_LAST_TEXT_BNK : BEQ .sceneSame
-.needInit:
+.needPageReset:
     REP #$20                                ; M=16 for JSL boundary
-    JSL.L VWFRequestSceneInit               ; canvas wipe, CELL_TILE reset, queue VRAM wipe
+    JSL.L VWFRequestPageReset               ; canvas + CELL_TILE + POOL_NEXT only
+    SEP #$20
+    BRA .sceneSame
+.needSceneInit:
+    REP #$20                                ; M=16 for JSL boundary
+    JSL.L VWFRequestSceneInit               ; full reset + queue VRAM wipe
     SEP #$20                                ; M=8 for byte stores below
 .sceneSame:
 
@@ -1448,19 +1507,21 @@ VWFNMI:
 
     ; --- Scene-init pending? Run polarity wipe DMA first (vblank-safe) ---
     ; (M=8 already set above; the SEP #$20 here is retained for clarity.)
+    ;
+    ; R3.F-X: wipe is split across TWO consecutive NMIs.  PENDING values:
+    ;   $00 = no wipe pending (canvas DMA path)
+    ;   $A5 = chunk 1 pending (wipes tiles $20..$3D, ~480 B / ~3.8 k cyc)
+    ;   $A6 = chunk 2 pending (wipes tiles $3F..$FF/$11F, ~3088/3600 B /
+    ;                          ~24.7/28.8 k cyc)
+    ; The combined wipe (~28-33 k cyc) leaked past vblank when NMI entered
+    ; at V=240 (~30 k cyc remaining); chunk 2 alone fits comfortably.  The
+    ; cost is an extra 1-frame transition stall at scene boundaries.
     SEP #$20                                ; M=8 for sentinel byte
     LDA.L !VWF_SCENE_INIT_PENDING
-    CMP.B #$A5
-    BNE .checkDirty
-    JSR.W VWFNMIVramWipe                    ; runs ch7 DMA, clears the sentinel
-    ; R2.F-2: defer the canvas DMA to the NEXT vblank.  Combined VRAM-wipe
-    ; (~28k cycles) + canvas DMA (up to ~32k) would exceed the ~50k NTSC
-    ; vblank budget on this frame, producing visible mid-screen DMA writes.
-    ; By JMPing past .checkDirty we leave VWF_DIRTY=$A5 and DMA_LO/HI bounds
-    ; intact; the next NMI sees them and uploads the canvas with nothing
-    ; else competing for vblank time.  Cost: one frame where the new scene
-    ; shows wiped VRAM (polarity fill) before any text renders — natural
-    ; visual handoff at scene transitions.
+    BEQ .checkDirty                         ; $00 → no wipe → canvas DMA path
+    JSR.W VWFNMIVramWipe                    ; runs chunk 1 ($A5) or chunk 2 ($A6)
+    ; R2.F-2: defer canvas DMA past every wipe frame.  DIRTY/DMA bounds
+    ; remain intact across both wipe NMIs; the first non-wipe NMI uploads.
     JMP .skipDMA
 
 .checkDirty:
@@ -1627,6 +1688,33 @@ VWFFlashMark:
     LDX.W $09FC                             ; displaced: LDX.W $09FC
     RTL
 
+; ----------------------------------------------------------------------------
+; VWFCursorBlank — runs at writeTextCharacter's A==0 early path (Hook 8,
+; $00:C167). Replicates the two displaced STA.L writes that put tile $0100
+; into both the top and bottom BG3 tilemap planes (the visible cursor "off"
+; cell), then clears VWF_BLINK so the flag cannot leak past this write.
+;
+; Caller convention at $00:C167: M=16 (text engine sets it via REP earlier
+; in the dispatch chain), A=$0100 (loaded by $C164 LDA.W #$0100), X = the
+; tilemap byte offset for the cursor cell. After this hook, $00:C16F's
+; original RTS terminates the path.
+;
+; R3.F-4: paired with Hook 7 (which arms BLINK before every cursor write)
+; to guarantee BLINK is cleared by SOMETHING in every cursor iteration —
+; cursor-ON consumes via CharHandler's .vwf → .origPath route, cursor-OFF
+; consumes here. Either path leaves BLINK==$00 by the time the next non-
+; cursor writer reaches Hook 1.
+; ----------------------------------------------------------------------------
+VWFCursorBlank:
+    STA.L $7E9000,X                         ; displaced from $C167 (A=$0100, top plane)
+    STA.L $7E9040,X                         ; displaced from $C16B (same A, bot plane)
+    PHP                                     ; preserve caller's M state
+    SEP #$20                                ; M=8 for flag byte clear
+    LDA.B #$00
+    STA.L !VWF_BLINK                        ; clear so it cannot leak past cursor wipe
+    PLP                                     ; restore M=16
+    RTL
+
 warnpc $E09400                              ; VWFNMI + helpers must end before data table
 
 ; ============================================================================
@@ -1693,19 +1781,33 @@ endif
     PLP                                     ; restore caller's M/X
     RTL
 ; ============================================================================
-; VWFRequestSceneInit  ($E0:AA00)
+; VWFRequestSceneInit  ($E0:AA00) / VWFRequestPageReset  (R3.F-Z addition)
 ;
-; Called from:
-;   - VWFClsHook  (after displaced initTilemapAndSync_Long)  — JSL.L
-;   - VWFPreRender (when scene-change detected)              — JSL.L
+; Two PUBLIC entry points share the same allocator-state-reset body.  The
+; difference is whether the per-NMI VRAM polarity wipe is queued.
 ;
-; Effects (all immediate, no vblank required):
-;   - Captures current (INVERT, TEXT_LO/HI/BNK) into LAST_* fingerprint
-;   - Wipes canvas $7F:7000..$7F7FFF with polarity fill ($0000 BB / $FFFF WB)
+; VWFRequestSceneInit (full)
+;   Caller: VWFClsHook (after displaced initTilemapAndSync_Long), or
+;           VWFPreRender on INVERT (polarity) flip.
+;   Effects: full state reset + sets SCENE_INIT_PENDING=$A5 → NMI runs
+;            chunk-1 / chunk-2 VRAM wipe sequence.
+;
+; VWFRequestPageReset (light)
+;   Caller: VWFPreRender on TEXT_LO/HI/BNK change (= dialog page advance).
+;   Effects: full state reset, but does NOT touch SCENE_INIT_PENDING.
+;            The engine has already cleared the dialog tilemap to blank
+;            tile $100, so the prior page's VRAM tile_ids are unreferenced
+;            and the new emit's canvas DMA overwrites the slots it
+;            allocates.  Avoids the OAM-DMA-past-vblank glitch caused by
+;            re-running the VRAM wipe on every page boundary.
+;
+; Common state-reset effects (both entry points):
+;   - Captures current INVERT into VWF_LAST_INVERT
+;   - Captures current TEXT_LO/HI/BNK into VWF_LAST_TEXT_*
+;   - Wipes canvas $7F:7000..$7F7FFF with polarity fill (BB skips, R2.F-3)
 ;   - Resets CELL_TILE[0..255] to $FFFF (unallocated)
-;   - Resets POOL_NEXT cursor to $0021 (skips canonical-blank tile $20)
-;   - Clears DIRTY/DMA bounds, resets LAST_COL to $FF (no prior col)
-;   - Sets SCENE_INIT_PENDING=$A5 → next NMI vblank does the VRAM wipe DMA
+;   - Resets POOL_NEXT cursor to $0021
+;   - Clears DIRTY / DMA bounds, resets LAST_COL to $FF
 ;
 ; Register-state contract:
 ;   ENTRY: M/X any (PHP first, PLP last)
@@ -1716,37 +1818,40 @@ org $E0AA00
 VWFRequestSceneInit:
     PHP                                     ; preserve caller's M/X
     REP #$30                                ; M=16, X=16 inside helper
+    JSR.W VWFResetState                     ; common allocator-state reset (M=8 exit)
+    LDA.B #$A5 : STA.L !VWF_SCENE_INIT_PENDING  ; queue VRAM wipe for next NMI
+    PLP                                     ; restore caller's M/X
+    RTL
 
+VWFRequestPageReset:
+    PHP                                     ; preserve caller's M/X
+    REP #$30                                ; M=16, X=16 inside helper
+    JSR.W VWFResetState                     ; common allocator-state reset (M=8 exit)
+    PLP                                     ; restore caller's M/X
+    RTL
+
+; ----------------------------------------------------------------------------
+; VWFResetState — internal (RTS) shared body for the two entry points above.
+; ENTRY: M=16, X=16
+; EXIT:  M=8, X=16  (caller's PLP will restore the original width)
+; ----------------------------------------------------------------------------
+VWFResetState:
     ; --- Polarity + fingerprint capture (M=8 byte ops) -------------------
     SEP #$20                                ; M=8
     LDA.B $70 : AND.B #$80
     STA.L !VWF_INVERT
-    STA.L !VWF_LAST_INVERT                  ; remember polarity at this init
+    STA.L !VWF_LAST_INVERT                  ; remember polarity at this reset
 
     LDA.L !VWF_TEXT_LO  : STA.L !VWF_LAST_TEXT_LO
     LDA.L !VWF_TEXT_HI  : STA.L !VWF_LAST_TEXT_HI
     LDA.L !VWF_TEXT_BNK : STA.L !VWF_LAST_TEXT_BNK
 
     ; --- Canvas wipe — polarity-conditional (R2.F-3 BB-skip) ------------
-    ; WB needs the full 4 KB wipe: the WB pool allocator hands out
-    ; tile_ids whose canvas slots can land ANYWHERE inside the canvas,
-    ; in pool-allocation order. We must zero every byte to $FFFF so the
-    ; AND-NOT renderer can punch black holes through clean white paper
-    ; without merging stale pixels from prior scenes.
-    ;
-    ; BB does NOT need the full wipe: BB tile_id = $20 + row*32 + col is
-    ; a formula, so each char's canvas slot is at the SAME byte offset
-    ; PreRender's pen-onward partial wipe will reach (and the row-change
-    ; handler in CharHandler wipes any row the engine jumps to). Stale
-    ; canvas bytes outside those wipes are never referenced — their
-    ; tilemap entries either point at the polarity-wiped blank tile $20
-    ; (CLS path's initTilemapAndSync_Long) or at VRAM tile_ids that
-    ; VWFNMIVramWipe is about to reset to polarity (fingerprint-mismatch
-    ; path). Either way the screen never sees the stale canvas data.
-    ;
-    ; Skipping in BB saves ~25 000 master cycles ≈ 1.2 ms of synchronous
-    ; CPU stall on every BB scene transition. WB still pays the full
-    ; cost.
+    ; WB: full 4 KB wipe so AND-NOT rendering punches holes through clean
+    ;     white paper without merging stale pixels.
+    ; BB: skipped — formula tile_id = $20 + row*32 + col means PreRender's
+    ;     pen-onward partial wipe + CharHandler row-change wipe cover all
+    ;     referenced canvas bytes.  Saves ~25 000 master cycles per reset.
     LDA.L !VWF_INVERT                       ; (M=8 from SEP above)
     REP #$20                                ; M=16 for the fill loop + downstream code
     BEQ .canvasWipeDone                     ; BB → skip canvas wipe entirely
@@ -1778,26 +1883,33 @@ VWFRequestSceneInit:
     SEP #$20                                ; M=8 for byte sentinels
     LDA.B #$00 : STA.L !VWF_DIRTY           ; nothing to upload
     LDA.B #$FF : STA.L !VWF_LAST_COL        ; gap-fill: no prior col
-    LDA.B #$A5 : STA.L !VWF_SCENE_INIT_PENDING  ; tell NMI: do VRAM wipe next vblank
-
-    PLP                                     ; restore caller's M/X
-    RTL
+    RTS
 
 ; ============================================================================
 ; VWFNMIVramWipe  ($E0:AB00)
 ;
-; Called from VWFNMI when SCENE_INIT_PENDING == $A5. Runs in vblank, so VRAM
-; writes are safe.
+; Runs ONE chunk per NMI (3-way split, R3.F-X expansion).  The original
+; 2-chunk split still leaked past vblank because chunk 2 alone was
+; ~18-21 scanlines of DMA + game NMI's ~4 scanlines of OAM DMA, edging
+; over the ~21-scanline vblank window remaining when NMI fires at V=240.
+; Halving chunk 2 keeps each NMI's wipe to ~9-11 scanlines, leaving
+; ample headroom for the game's NMI work.
 ;
-; Strategy: DMA mode 1 (alternating B at $2118/$2119) + FIXED source
-; (DMAP bit 3 = 1) lets a single source byte fill the entire range. Source
-; address is a 1-byte slot in ROM; DAS = polarity-dependent:
-;   BB (INVERT==0) → $1000 byte DAS, source = byte $00 (covers tiles $20..$11F)
-;   WB (INVERT!=0) → $0E00 byte DAS, source = byte $FF (covers tiles $20..$FF;
-;                    STRICT cap — never touches engine tiles $100+)
+; PENDING values (1 byte at $7F:5D1B):
+;   $A5 = chunk 1   tiles $20..$3D   480 B   ~3.8 k cyc   ~3 scanlines
+;   $A6 = chunk 2a  tiles $3F..$9E   1536 B  ~12.3 k cyc  ~9 scanlines
+;   $A7 = chunk 2b  tiles $9F..end   1552/2064 B WB/BB    ~9-12 scanlines
+;   $00 = no wipe pending
 ;
-; Channel 7 is unused by the engine. VMAIN word-inc on $2119 high write
-; advances VRAM word per pair.
+; Tile $3E (cursor) is preserved by the chunk-1 / chunk-2a gap.  The
+; chunk-2a / chunk-2b boundary at tile $9F is arbitrary (no semantic
+; significance — just splits the remaining range roughly in half).
+;
+; Polarity-fill uses DMA mode 1 + FIXED source (DMAP bit 3) → one ROM
+; byte fills the entire range; source = $00 (BB) or $FF (WB).
+;
+; Channel 7 is unused by the engine; VMAIN word-inc on $2119 high write
+; advances VRAM word per byte pair.
 ;
 ; Register-state contract:
 ;   ENTRY: M=8, X=16  (NMI prelude already set REP #$30 then SEP #$20)
@@ -1813,7 +1925,6 @@ VWFNMIVramWipe:
     LDA.B #!VWF_BANK : STA.W $4374          ; A1B7 = source bank (VWFVramWipeBytes lives here)
 
     ; Source byte addr depends on polarity (BB→$00, WB→$FF).
-    ; Set source once; we'll trigger 2 chunks (split at tile $3E to preserve cursor).
     LDA.L !VWF_INVERT
     BEQ .wipeBlackBB
     REP #$20
@@ -1825,8 +1936,52 @@ VWFNMIVramWipe:
 .srcSet:
     STA.W $4372                             ; A1T7 = fixed source byte addr
 
-    ; --- Chunk 1: tiles $20..$3D (canvas/VRAM bytes 0..$1E0, 480 bytes) ---
-    ; Wipes 30 tiles, leaving tile $3E (cursor) untouched.
+    ; --- Dispatch on PENDING value ---------------------------------------
+    SEP #$20
+    LDA.L !VWF_SCENE_INIT_PENDING
+    CMP.B #$A5
+    BEQ .doChunk1
+    CMP.B #$A6
+    BEQ .doChunk2a
+    ; else falls through to chunk 2b ($A7)
+
+    ; --- Chunk 2b: tiles $9F..end-of-polarity-range ---------------------
+    ; WB: $9F..$FF  → 97 tiles × 16 = 1552 bytes ($0610)
+    ; BB: $9F..$11F → 129 tiles × 16 = 2064 bytes ($0810)
+    REP #$20
+    LDA.L !VWF_INVERT
+    BEQ .chunk2b_BB
+    LDA.W #$0610                            ; WB chunk 2b byte count
+    BRA .chunk2b_setDAS
+.chunk2b_BB:
+    LDA.W #$0810                            ; BB chunk 2b byte count
+.chunk2b_setDAS:
+    STA.W $4375
+    LDA.W #!VWF_VRAM_WORD_BASE+$03F8        ; $64F8 = tile $9F word
+    STA.W $2116
+    SEP #$20
+    LDA.B #$80 : STA.W $420B                ; trigger chunk 2b
+
+    LDA.B #$00 : STA.L !VWF_SCENE_INIT_PENDING  ; chunk 2b done → clear pending
+    RTS                                     ; back to NMI body (M=8, X=16)
+
+.doChunk2a:
+    ; --- Chunk 2a: tiles $3F..$9E (96 tiles × 16 = 1536 B / ~12.3 k cyc) -
+    REP #$20
+    LDA.W #$0600                            ; 1536 bytes (same for BB and WB)
+    STA.W $4375
+    LDA.W #!VWF_VRAM_WORD_BASE+$00F8        ; $61F8 = tile $3F word
+    STA.W $2116
+    SEP #$20
+    LDA.B #$80 : STA.W $420B                ; trigger chunk 2a
+
+    LDA.B #$A7 : STA.L !VWF_SCENE_INIT_PENDING  ; advance to chunk 2b next NMI
+    RTS                                     ; back to NMI body (M=8, X=16)
+
+.doChunk1:
+    ; --- Chunk 1: tiles $20..$3D (480 bytes / ~3.8 k cyc) ---------------
+    ; Wipes 30 tiles, leaving tile $3E (cursor) untouched for chunks 2a/2b.
+    REP #$20
     LDA.W #$01E0                            ; 480 bytes
     STA.W $4375
     LDA.W #!VWF_VRAM_WORD_BASE              ; $6100 = tile $20 word
@@ -1834,27 +1989,7 @@ VWFNMIVramWipe:
     SEP #$20
     LDA.B #$80 : STA.W $420B                ; trigger chunk 1
 
-    ; --- Chunk 2: tiles $3F..end of polarity range (skip tile $3E) -------
-    ; BB: $3F..$11F → 225 tiles × 16 = 3600 bytes ($0E10 hex). Total wiped: 480 + 3600 = 4080 = $0FF0.
-    ;     ...wait $0E10 + $1E0 = $FF0. Hmm. Let me use easier: original BB wipe was $1000 (256 tiles).
-    ;     Chunk 1 = $1E0 (30 tiles). Chunk 2 = $1000 - $1E0 - $10 (subtract tile $3E itself) = $E10.
-    ; WB: $3F..$FF → 193 tiles × 16 = 3088 bytes. Original WB wipe was $0E00 (224 tiles).
-    ;     Chunk 2 = $0E00 - $1E0 - $10 = $C10 bytes.
-    REP #$20
-    LDA.L !VWF_INVERT
-    BEQ .chunk2_BB
-    LDA.W #$0C10                            ; WB chunk 2 byte count
-    BRA .chunk2_setDAS
-.chunk2_BB:
-    LDA.W #$0E10                            ; BB chunk 2 byte count
-.chunk2_setDAS:
-    STA.W $4375
-    LDA.W #!VWF_VRAM_WORD_BASE+$00F8        ; $61F8 = tile $3F word
-    STA.W $2116
-    SEP #$20
-    LDA.B #$80 : STA.W $420B                ; trigger chunk 2
-
-    LDA.B #$00 : STA.L !VWF_SCENE_INIT_PENDING  ; clear pending sentinel
+    LDA.B #$A6 : STA.L !VWF_SCENE_INIT_PENDING  ; advance to chunk 2a next NMI
     RTS                                     ; back to NMI body (M=8, X=16)
 
 ; ============================================================================

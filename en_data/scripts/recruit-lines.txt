@@ -209,7 +209,7 @@
 
 <<$1BCA4:43[$1F20A]>>
 <<<window[0]:$0000-$002F>>>
-[msg][special]"This is the Jasban Ruins.[nl]
+[msg][special]"This is the Jusvan Ruins.[nl]
 [wait30] Step on a switch to open the door."[FFFE]
 
 <<$1BCA4:44[$1F23B]>>
