@@ -917,22 +917,6 @@ VWFCharHandler:
     STA.L !VWF_TMP_FBI                               ; $0C = font byte index
 
     ; --- Render 16 rows: rows 0..7 → top tile, rows 8..15 → bottom tile ---
-    ;
-    ; R4.F-7 (structural): set DBR=$7F for the row loop body so that LDX
-    ; absolute (DBR-relative) can reach the $7F:5Dxx scratch slots.  The
-    ; shift count is invariant across all 16 row iterations; the pre-F-7
-    ; row body re-loaded it every row via `REP #$20 / LDA.L TMP_SHIFT /
-    ; TAX / SEP #$20 / LDA.L TMP_ORIG (reload)` — the M=16 wrap was
-    ; mandatory because LDA.L in M=8 left A's hidden high byte stale and
-    ; TAX would copy that into X.high (broke the patch when LSR ran
-    ; ~4000 iters instead of 0..7, see lines 670-676 history).  With
-    ; DBR=$7F, `LDX.W !VWF_TMP_SHIFT&$FFFF` (5 cyc, X-flag-controlled,
-    ; M-state-independent) replaces the 21-cycle wrap.  Saves ~16 cyc
-    ; per row × 16 rows ≈ 256 cyc/glyph, less ~16 cyc/glyph PHB+PLB
-    ; overhead = ~240 cyc/glyph net.
-    PHB                                     ; preserve caller's DBR
-    LDA.B #$7F : PHA : PLB                  ; DBR = $7F for the row loop body
-
     LDY.W #$0000                            ; Y = pixel row counter
 
 .rowLoop:
@@ -943,11 +927,21 @@ VWFCharHandler:
     LDA.L VWFFontData,X                     ; A = source font byte (8 horizontal pixels)
     STA.L !VWF_TMP_ORIG                               ; $0E = original (preserved for spill calc)
 
-    ; F-7: LDX abs (DBR=$7F) — M-state-independent, no wrap, no A reload.
-    ; TMP_SHIFT is stored 16-bit-clean (high byte zero, see line 763), so
-    ; LDX.W reads X = (0 << 8) | shift_count cleanly.
-    LDX.W !VWF_TMP_SHIFT&$FFFF              ; X = shift count (5 cyc abs,X=16)
-    BEQ .noSR                               ; X=0 → no shift
+    ; Load shift count into X without disturbing A. The original `LDX.B $08`
+    ; preserved A (the font byte) so the LSR loop below could shift it. After
+    ; relocating the scratch out of DP, we must use `LDA.L : TAX` — which
+    ; CLOBBERS A. Save A first via the scratch, do the load, then reload A.
+    ; The 16-bit-M wrap on the load is also required: in M=8 mode, LDA.L only
+    ; updates A's visible low byte and TAX would copy A's stale hidden high
+    ; byte into X.high — earlier symptom: shift count came out as $1XXX,
+    ; LSR loop ran ~4000 times instead of 0..7 (entire VWF rendering broke).
+    REP #$20                                ; 16-bit M so LDA.L reads full word + clears A high
+    LDA.L !VWF_TMP_SHIFT                    ; A = shift count (0..7)
+    TAX                                     ; X = shift count (high byte clean)
+    SEP #$20                                ; back to 8-bit M for byte shift loop
+    LDA.L !VWF_TMP_ORIG                     ; reload font byte that TAX/load clobbered
+    CPX.W #$0000                            ; X=0 means no shift
+    BEQ .noSR                               ; → skip shift loop, store byte as-is
 .srLoop:
     LSR A : DEX : BNE .srLoop               ; shift A (font byte) right by X positions
 .noSR:
@@ -1057,10 +1051,6 @@ VWFCharHandler:
     JMP .rowLoop                            ; continue with next row
 
 .doneRows:
-    ; F-7: restore caller's DBR (was forced to $7F at .rowLoop entry to
-    ; enable LDX abs reads of $7F slots).
-    PLB                                     ; restore DBR
-
     ; --- Update DMA_LO/HI bounds for the canvas → VRAM upload ----------
     ; LO = min cell start (TMP_BASE).
     ; HI = polarity-dependent:
