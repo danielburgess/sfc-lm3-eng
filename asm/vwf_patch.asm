@@ -209,6 +209,129 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
 ; ----------------------------------------------------------------------------
 !VWF_BLINK    = $7F5D1C
 
+; ----------------------------------------------------------------------------
+; Scene-aware tile cache (Plans/vwf-scene-aware-cache-plan.md, Phase 1).
+;
+; Phase 1 = read-only instrumentation: VWFPreRender computes a 4-byte
+; fingerprint identifying the current scene and stores it in
+; !VWF_SCENE_TAG. No render-path consumer reads it yet — verification is
+; via Mesen IPC reading $7F:5D40 across scenes (dialog, file-info,
+; unit-info) and confirming distinct stable values per scene type.
+;
+; Subsequent phases (2..4) introduce SLICE / HEAD / CACHE_VALID consumers
+; that turn the fingerprint into per-scene tile-range allocation and
+; tilemap-only re-emit caching. Phase 1 only allocates the slots; phases
+; 2..4 wire them up.
+;
+; Layout:
+;   $7F:5D40  +0..+1  text source LO / HI       (mirrors !VWF_TEXT_LO/HI)
+;   $7F:5D42  +2      text source BNK           (mirrors !VWF_TEXT_BNK)
+;   $7F:5D43  +3      polarity | $0A1E_HI       (composite scene byte)
+;
+; Composite byte recipe:
+;   bit 7   = polarity ($00 or $80, mirrors !VWF_INVERT bit 7)
+;   bits 6..0 = $0A1E high byte's low 7 bits  (encodes palette / priority /
+;             flips / tile_high_2bits — distinguishes menu categories)
+;
+; Observed values during Unit Information rendering (V2 capture):
+;   $0A1E = $3900 → comp = $80 | ($39 & $7F) = $B9   (names, palette 6)
+;   $0A1E = $3500 → comp = $80 | ($35 & $7F) = $B5   (classes, palette 5)
+;   $0A1E = $3100 → comp = $80 | ($31 & $7F) = $B1   (numbers, palette 4)
+;   $0A1E = $0000 → comp = $80 | $00 = $80           (dialog WB)
+;   $0A1E = $0000 → comp = $00 | $00 = $00           (dialog BB)
+; All distinct.
+; ----------------------------------------------------------------------------
+!VWF_SCENE_TAG    = $7F5D40   ; 4 B  scene fingerprint (Phase 1: read-only)
+!VWF_SCENE_SLICE  = $7F5D44   ; 1 B  active slice index (Phase 3+)
+!VWF_SCENE_HEAD   = $7F5D46   ; 2 B  next-free tile_id in active slice (Phase 3+)
+!VWF_CACHE_VALID  = $7F5D48   ; 1 B  $A5 = previous emit's CELL_TILE/canvas
+                              ;       state is committed and reusable
+                              ;       (Phase 2: set by VWFPostRender,
+                              ;        cleared by VWFRequestSceneInit/
+                              ;        VWFRequestPageReset).
+!VWF_REGEN_ONLY   = $7F5D49   ; 1 B  $A5 = this emit is a re-emit of the
+                              ;       previously-committed scene+buffer
+                              ;       (Phase 2: set by VWFPreRender's
+                              ;        cache-hit path; consumed by
+                              ;        VWFCharHandler's fast-path in
+                              ;        Phase 2.5+).
+!VWF_LAST_SCENE_TAG = $7F5D4A ; 4 B  prev committed emit's SCENE_TAG
+!VWF_LAST_BUF_SIG   = $7F5D4E ; 2 B  prev committed emit's buffer
+                              ;       XOR-fold of first 32 bytes ($0400..$041F)
+
+; --- Phase 3 step 1 — scene→slice LRU tracking (instrumentation) -----------
+; 3-slot LRU mapping SCENE_TAG → slice index. On scene change, PreRender
+; calls VWFAssignSlice which sets !VWF_SCENE_SLICE to the slot owning this
+; scene. On hit, slot is reused (next phase: tile-range cache hit). On
+; miss, round-robin advance LRU_NEXT and copy SCENE_TAG into the chosen
+; slot's tag slot.
+;
+; Phase 3 step 1 is INSTRUMENTATION ONLY — !VWF_SCENE_SLICE is set but
+; not yet consumed by the pool allocator or canvas wipe. Verification:
+; navigate dialog → file-info → unit-info → dialog and confirm each
+; scene type lands at a stable slot index, and re-visits hit existing
+; slots without round-robin churn (within 3-slot LRU capacity).
+;
+; The slice ownership lives in the upcoming WB pool carve-up:
+;   slot 0 → tiles $00B1..$00C8 (24 tiles)  (Phase 3 step 2)
+;   slot 1 → tiles $00C9..$00E0 (24 tiles)
+;   slot 2 → tiles $00E1..$00F1 (17 tiles)
+; Phase 3 step 1 does not yet reserve these — that happens when the
+; allocator and wipe routines learn to scope to !VWF_SCENE_SLICE.
+!VWF_SLICE_LRU_TAG_0 = $7F5D52 ; 4 B  scene tag for LRU slot 0
+!VWF_SLICE_LRU_TAG_1 = $7F5D56 ; 4 B  scene tag for LRU slot 1
+!VWF_SLICE_LRU_TAG_2 = $7F5D5A ; 4 B  scene tag for LRU slot 2
+!VWF_SLICE_LRU_NEXT  = $7F5D5E ; 1 B  next slot to evict on miss (0..2)
+
+; --- Phase 3 step 2 — active slice's pool tile range (set per-emit by
+;     VWFAssignSlice; consumed by VWFCharHandler's pool allocator and
+;     exhaustion check).  Carved into the CHROME-SAFE range $00B1..$00F1
+;     only — VRAM analysis showed unit-info and file-info both use
+;     tile_ids in $0022..$008C (in the broader $21..$F1 window) for
+;     chrome / icons / stat indicators.  Allocating Hook 9 / VWF tiles
+;     anywhere in $0022..$00B0 corrupted chrome on screens that revisit
+;     those tiles.  Restricting all 3 LRU slots to $00B1..$00F1 (which
+;     was clean of chrome usage on both observed WB screens) preserves
+;     chrome while still giving Hook 9 a reasonable allocation pool.
+;
+;       LRU slot 0:  $00B1..$00C8  (24 tiles)
+;       LRU slot 1:  $00C9..$00E0  (24 tiles)
+;       LRU slot 2:  $00E1..$00F1  (17 tiles)
+;
+; Trade-off: total VWF allocator capacity drops from 209 → 65 tiles.
+; Per-slice capacity drops to ~24 tiles, which may exhaust on
+; chunkier menus (file-info needed 36 tiles in earlier 48-tile slice).
+; Phase 4+ may need to expand by carving narrow allocator-safe slivers
+; INSIDE the otherwise chrome-occupied range, but for the immediate
+; "Hero renders + chrome stays" goal, the conservative all-in-$B1..$F1
+; layout is the cleanest first cut.
+;
+; BB / dialog (SCENE_SLICE = $FF) does NOT consume pool tiles — its
+; per-char tilemap entries are computed by formula (`$20 + row*32 +
+; col`).  POOL_FIRST_ACTIVE / POOL_END_ACTIVE are written to safe
+; defaults on the BB short-circuit but are not read on the BB code
+; path.
+!VWF_POOL_FIRST_ACTIVE = $7F5D60 ; 2 B  active slice's first allocable tile_id
+!VWF_POOL_END_ACTIVE   = $7F5D62 ; 2 B  active slice's exhausted-at tile_id
+                                 ;       (CMP A, end_active; BCS = exhausted)
+!VWF_LAST_SCENE_SLICE  = $7F5D64 ; 1 B  prev emit's SCENE_SLICE; if differs
+                                 ;       from current, POOL_NEXT is reset to
+                                 ;       new slice's FIRST (cross-scene
+                                 ;       isolation). Within same slice,
+                                 ;       POOL_NEXT carries over for typewriter
+                                 ;       advance + cell reuse.
+
+; Phase 4 step 1+: char-map caching for the Hook 9 path.
+;   Maps char_value (8-bit) → tile_id_low_byte within the active slice.
+;   $FF = unallocated. Otherwise the byte holds the tile_id; tilemap
+;   composition reuses it to avoid re-allocating on repeat chars.
+;   Wiped on slice-change (so a new slice's char-map starts fresh).
+;
+;   Without this, 68 Hook 9 hits on file-info (only 23 distinct chars)
+;   would exhaust a 24-tile slice; with the cache, ~23 unique
+;   allocations fit comfortably.
+!VWF_HOOK9_CHARMAP     = $7F6000 ; 256 B  char_map[char] = tile_id_low ($FF=unalloc)
+
 if !VWF_DEBUG
     ; Sentinel counter — VWFCaptureSource increments this once per call.
     ; Lets us confirm in Mesen IPC ($7F:5D60) that the hook is firing without
@@ -478,6 +601,56 @@ org $00C219
 org $80C167
     JSL.L VWFCursorBlank                    ; 4 bytes — replicates 2 STA.L + clears BLINK
     NOP : NOP : NOP : NOP                   ; 4 bytes — pad to original 8-byte slot
+
+; ============================================================================
+; Hook 9 — textChar_CalcTileAddr  ($00:C1A6, 14 bytes overwritten)
+;
+; writeTextCharacter ($00:C156) dispatches to textChar_CalcTileAddr at $C1A6
+; whenever $0A1E != 0 (the "special-tile mode" — single-plane TOP-only
+; tilemap write with formula `entry = (char - $20) + $0A1E`).  Hook 1's
+; install site at writeTilemapEntry ($C17B) is on the *fall-through* branch,
+; so this path bypasses VWF entirely.
+;
+; The Unit Information screen exercises this path via configMapMonitor
+; ($01:CBD7), which sets $0A1E = $3900 around each char-write.  In the EN
+; build the formula lands tile_ids at $100..$15F — outside the WB pool's
+; hard cap of $00FF — so VRAM there holds whatever the engine left behind
+; (no English glyph data) and names render as garbled fragments.
+;
+; The hook reroutes renderable chars through VWFCharHandler.  Non-renderable
+; chars (control codes, padding) replicate the original engine math
+; byte-exactly inside the helper.  The helper's design contract is in the
+; VWFCalcTileAddrHook header in $E0:9100.
+;
+; Original 14 bytes at $C1A6:
+;   PLA / SEC / SBC #$0020 / CLC / ADC $0A1E / STA.L $7E9000,X / RTS
+; Replacement (14 bytes exactly):
+;   PLA                       ; consume PHA-pushed char from $00:C170
+;   STA.L !VWF_CHAR           ; stash for handler
+;   JSL VWFCalcTileAddrHook   ; long-call (pushes K=$00 + ret addr)
+;   RTS                       ; return to writeTextCharacter caller
+;   NOP × 4                   ; pad to 14
+;
+; Why JSL/RTL instead of JML:
+;   JML to bank $E0 changes K to $E0; an RTS at end of helper would pop the
+;   caller's 2-byte JSR return but execute it at K=$E0, jumping into bank
+;   $E0 garbage (caused the SP=$FFFF runaway in the first V1 attempt).
+;   JSL pushes K+ret; RTL pops K+ret and resumes at the install-site RTS in
+;   bank $00. Proper bank discipline.
+; ============================================================================
+; ============================================================================
+; Hook 9 UNINSTALLED — restored to original engine bytes while we study
+; the original render path more carefully (per user feedback: chrome
+; territory is tiles $100+, font territory is $00..$FF; understand
+; before redesigning Hook 9).  Phase 3 slice / LRU / char-map
+; infrastructure stays installed but inert without Hook 9.
+; ============================================================================
+org $00C1A6
+    PLA                                     ; original byte ($68)
+    SEC : SBC.W #$0020                      ; original 4 bytes
+    CLC : ADC.W $0A1E                       ; original 4 bytes
+    STA.L $7E9000,X                         ; original 4 bytes
+    RTS                                     ; original byte
 
 ; ============================================================================
 ; VWF body — bank $E0 (avoids $C0 collision with title_chunks @ PC 0x200000)
@@ -828,7 +1001,7 @@ VWFCharHandler:
     STA.L !VWF_POOL_NEXT
 .wbBumpL_NotCursor:
     LDA.L !VWF_POOL_NEXT
-    CMP.W #!VWF_WB_TILE_LIMIT
+    CMP.L !VWF_POOL_END_ACTIVE              ; Phase 3 step 2: per-slice exhaustion
     BCS .wbExhausted
     PHA
     INC A
@@ -890,7 +1063,7 @@ VWFCharHandler:
     STA.L !VWF_POOL_NEXT
 .wbBumpP_NotCursor:
     LDA.L !VWF_POOL_NEXT
-    CMP.W #!VWF_WB_TILE_LIMIT
+    CMP.L !VWF_POOL_END_ACTIVE              ; Phase 3 step 2: per-slice exhaustion
     BCS .wbExhausted
     PHA
     INC A
@@ -1330,6 +1503,33 @@ VWFPreRender:
     SEP #$20                                ; M=8 for byte stores below
 .sceneSame:
 
+    ; --- Phase 1 — scene fingerprint capture -----------------------------
+    ; (See state-block header at $5D40 for layout details.)
+    ; Stack at this point (inside VWFPreRender, called via JSL from
+    ; $80:BC75): $01,S..$03,S = JSL ret; $04,S..$05,S = caller's JSR ret.
+    REP #$20                                 ; M=16 to read 2-byte caller ret
+    LDA $04,S
+    STA.L !VWF_SCENE_TAG                     ; +0..+1 caller PC fingerprint
+    SEP #$20                                 ; back to M=8
+    LDA.L !VWF_INVERT
+    STA.L !VWF_SCENE_TAG+2                   ; +2 polarity
+    LDA.W $0A1F : AND.B #$7F : ORA.L !VWF_INVERT
+    STA.L !VWF_SCENE_TAG+3                   ; +3 composite scene byte
+
+    ; --- Phase 2 — re-emit detection -------------------------------------
+    ; Helper computes buffer XOR-fold signature, compares (SCENE_TAG,
+    ; sig) to LAST_*, sets !VWF_REGEN_ONLY = $A5 on cache hit, and
+    ; updates LAST_* slots.  Factored out so PreRender stays under its
+    ; warnpc bound. M=8 entry/exit.
+    JSR.W VWFCheckReEmit                     ; same-bank near call
+
+    ; --- Phase 3 step 1 — slice LRU assignment (instrumentation) ---------
+    ; Helper looks up SCENE_TAG in 3-slot LRU. Sets !VWF_SCENE_SLICE to
+    ; the matching slot (hit) or to the next round-robin slot (miss,
+    ; advancing LRU_NEXT and writing SCENE_TAG into the chosen slot).
+    ; No allocator consumer yet — verification only at this step.
+    JSR.W VWFAssignSlice                     ; same-bank near call
+
     ; --- Pen / row / col anchors for this emit --------------------------
     ; (LAST_COL was reset by SceneInit if it ran; if not, it carries the
     ; prior-emit value which is correct for typewriter advance.)
@@ -1409,15 +1609,19 @@ VWFPreRender:
 +
     RTL                                     ; long-return — wrapper continues with JSR processText
 
-warnpc $E08FE0                              ; VWFPreRender must end before VWFPostRender
+warnpc $E09000                              ; VWFPreRender must end before VWFPostRender
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
 ; Bulk-uploads the entire canvas to VRAM (forced blank, NMI off), clears the
 ; VWF flag, then carries the displaced bytes (REP #$20 / LDA $0A16) so the
 ; original code resumes byte-identically.
+;
+; Org bumped from $E08FE0 → $E09000 (Phase 1, scene-aware cache plan) to
+; give VWFPreRender room for fingerprint capture; subsequent phases add
+; more PreRender code.
 ; ----------------------------------------------------------------------------
-org $E08FE0
+org $E09000
 
 VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
@@ -1432,12 +1636,17 @@ VWFPostRender:
     STA.L !VWF_DIRTY                        ; ensure NMI does the upload
     LDA.B #$00 : STA.L !VWF_FLAG            ; disarm VWF (handler passes through)
 
+    ; Phase 2 — commit cache: this emit's CELL_TILE/canvas state is now
+    ; live and reusable. Next emit's PreRender compares (SCENE_TAG,
+    ; LAST_BUF_SIG) and skips rasterization on a hit.
+    LDA.B #$A5 : STA.L !VWF_CACHE_VALID
+
 .done:
     REP #$20                                ; displaced: 16-bit mode
     LDA.W $0A16                             ; displaced: load text-engine state word
     RTL                                     ; long-return — caller's NOPs follow harmlessly
 
-warnpc $E09000                              ; VWFPostRender must end before VWFClsHook
+warnpc $E09030                              ; VWFPostRender must end before VWFClsHook
 
 ; ----------------------------------------------------------------------------
 ; VWFClsHook — called from $80:C022 in place of JSL initTilemapAndSync_Long.
@@ -1446,10 +1655,11 @@ warnpc $E09000                              ; VWFPostRender must end before VWFC
 ; The VRAM tile range itself does NOT need clearing: initTilemapAndSync_Long
 ; rewrites the tilemap to point at blank tiles, so any tilemap entry not
 ; touched by the new page references blanks rather than stale VWF tiles.
-; Moved to $E0:9000 (was $E0:8FC0) — PostRender body extends to ~$E0:8FD4,
-; old placement caused fall-through into this hook every emit (silent crash).
+;
+; Org bumped from $E0:9000 → $E0:9030 (Phase 1, scene-aware cache plan)
+; to clear room for VWFPostRender's new home at $E09000.
 ; ----------------------------------------------------------------------------
-org $E09000
+org $E09030
 
 ; ENTRY: M=16 (caller convention from $80:C022 is M=16 mid-text-stream).
 ; EXIT:  M=16 (RTL preserves carrier P state).
@@ -1460,7 +1670,391 @@ VWFClsHook:
     STA.L !VWF_ROW                          ; force per-row reinit on first char post-cls
     RTL                                     ; long-return to game caller
 
-warnpc $E09200                              ; VWFClsHook must end before VWFNMI
+; ============================================================================
+; VWFCalcTileAddrHook — body of Hook 9 (install site at $00:C1A6).
+;
+; Phase 4 step 1 implementation, sitting on the slice infrastructure
+; from Phase 3:
+;   - Phase 3 step 1: SCENE_SLICE = LRU(SCENE_TAG)
+;   - Phase 3 step 2: POOL_NEXT / POOL_END_ACTIVE scoped to active slice
+;   - Hook 9 path now allocates from the same POOL_NEXT, so unit-info /
+;     file-info-style menus rasterize into their own slice's tile range.
+;     Dialog (BB) is unchanged because BB renders via formula path, not
+;     pool, and our SCENE_SLICE = $FF short-circuit keeps BB from
+;     touching this code.
+;
+; ENTRY (M=16, X=16):
+;   X = caller's tilemap byte offset (preserved across handler)
+;   !VWF_CHAR = char value (stashed by install-site STA)
+;
+; EXIT: RTL — pops install-site JSL return; install-site RTS then pops
+;       the writeTextCharacter caller's JSR return.
+;
+; Strategy:
+;   1. Gate to .passthrough on:
+;        - char outside $20..$EF (control code / icon)
+;        - VWF_FLAG != $A5 (PreRender hasn't run; spurious entry)
+;        - SCENE_SLICE = $FF (BB; formula path owns this scene)
+;        - POOL_NEXT >= POOL_END_ACTIVE (slice exhausted)
+;   2. Allocate next tile_id from slice (POOL_NEXT++).
+;   3. Rasterize 1bpp glyph into canvas at the allocated tile's slot
+;      ((tile - $20) * 16 byte offset). For Phase 4 step 1, render only
+;      the TOP HALF (8 rows) of the 8x16 font glyph; the engine's
+;      $0A1E-mode rendering is single-tile per char, so a paired
+;      bottom-half render would need a separate dispatch from the engine
+;      side that we haven't yet characterized.
+;   4. Update DMA bounds + DIRTY for next NMI canvas-to-VRAM upload.
+;   5. Write tilemap entry at $7E:9000+X (single-plane, matching the
+;      original $C1A6 path's output): entry = vwf_tile_id + ($0A1E mask).
+;
+; The mask = $FC00 strips tile_id bits (9:0) from $0A1E, leaving the
+; palette / priority / flip bits intact. This is the V3-mask lesson:
+; $0A1E packs both palette and a tile_id base; we want the palette but
+; we provide our own tile_id from the slice pool.
+; ============================================================================
+VWFCalcTileAddrHook:
+    PHX                                     ; +1 save caller's tilemap byte offset
+    BRA .gateStart                          ; jump over passthrough block
+
+; --- Passthrough early so gate branches reach (relative branch ±127) ----
+.passthrough_pull_M8:
+    REP #$20
+.passthrough_pull:
+    PLX                                     ; restore caller's tilemap X
+.passthrough:
+    LDA.L !VWF_CHAR
+    SEC : SBC.W #$0020
+    CLC : ADC.W $0A1E
+    STA.L $7E9000,X
+    RTL
+
+.gateStart:
+    LDA.L !VWF_CHAR
+    CMP.W #$0020 : BCC .passthrough_pull
+    CMP.W #$00F0 : BCS .passthrough_pull
+
+    SEP #$20
+    LDA.L !VWF_SCENE_SLICE : CMP.B #$FF : BEQ .passthrough_pull_M8
+    REP #$20
+
+    ; --- Char-map lookup (Phase 4 step 1+ caching) -----------------------
+    ; If we've already rasterized this char in the active slice, just
+    ; reuse the cached tile_id and skip rasterization.
+    LDA.L !VWF_CHAR
+    AND.W #$00FF
+    TAX                                     ; X = char index (16-bit)
+    SEP #$20
+    LDA.L !VWF_HOOK9_CHARMAP,X
+    CMP.B #$FF
+    BEQ .charMiss                           ; unallocated → rasterize fresh
+
+    ; --- Char-map HIT: reuse cached tile_id -----------------------------
+    REP #$20
+    AND.W #$00FF                            ; A = tile_id low byte (high cleared)
+    STA.L !VWF_TMP_TILE_ID
+    LDA.W $0A1E
+    AND.W #$FC00                            ; strip tile_id bits
+    CLC : ADC.L !VWF_TMP_TILE_ID
+    PLX                                     ; restore caller's tilemap X
+    STA.L $7E9000,X
+    RTL
+
+.charMiss:
+    REP #$20
+    LDA.L !VWF_POOL_NEXT
+    CMP.L !VWF_POOL_END_ACTIVE
+    BCS .passthrough_pull                   ; slice exhausted → fallback
+    STA.L !VWF_TMP_TILE_ID                  ; allocated tile_id
+    INC A
+    STA.L !VWF_POOL_NEXT
+
+    ; --- Stash tile_id in char-map for future re-emits ------------------
+    LDA.L !VWF_CHAR
+    AND.W #$00FF
+    TAX
+    SEP #$20
+    LDA.L !VWF_TMP_TILE_ID                  ; A = tile_id low byte (M=8 reads only low)
+    STA.L !VWF_HOOK9_CHARMAP,X
+    REP #$20
+
+    ; --- Compute font base offset = char * 16 (saved to scratch) -----------
+    LDA.L !VWF_CHAR
+    AND.W #$00FF
+    ASL A : ASL A : ASL A : ASL A
+    STA.L !VWF_TMP_FBI                      ; reuse existing font-byte-index scratch
+
+    ; --- X = canvas byte offset = (tile_id - $20) * 16 --------------------
+    LDA.L !VWF_TMP_TILE_ID
+    SEC : SBC.W #$0020
+    ASL A : ASL A : ASL A : ASL A
+    TAX                                     ; X = canvas write index
+
+    ; --- Loop 8 rows: read 1bpp font byte, write to canvas low+high planes -
+    LDY.W #$0000                            ; Y = row counter (16-bit)
+    SEP #$20                                ; M=8 for byte ops
+.rasterRow:
+    PHX                                     ; +1 save canvas X
+    PHY                                     ; +2 save row counter
+    REP #$20
+    TYA : CLC : ADC.L !VWF_TMP_FBI
+    TAX                                     ; X = font byte index
+    SEP #$20
+    LDA.L VWFFontData,X                     ; 1bpp font byte
+    REP #$20
+    PLY                                     ; -2
+    PLX                                     ; -1
+    SEP #$20
+    STA.L !TILE_BUF,X                       ; canvas low plane
+    INX
+    STA.L !TILE_BUF,X                       ; canvas high plane (same byte → solid)
+    INX
+    INY
+    CPY.W #$0008
+    BNE .rasterRow
+    REP #$20
+
+    ; --- Update DMA bounds + DIRTY -----------------------------------------
+    LDA.L !VWF_TMP_TILE_ID
+    SEC : SBC.W #$0020
+    ASL A : ASL A : ASL A : ASL A           ; canvas start byte
+    PHA                                     ; +1 save canvas start
+    CMP.L !VWF_DMA_LO
+    BCS .skipUpdLO
+    STA.L !VWF_DMA_LO
+.skipUpdLO:
+    PLA                                     ; -1 → A = canvas start
+    CLC : ADC.W #$0010                      ; +16 bytes (8 rows × 2 planes)
+    CMP.L !VWF_DMA_HI
+    BCC .skipUpdHI
+    STA.L !VWF_DMA_HI
+.skipUpdHI:
+    SEP #$20
+    LDA.B #$A5 : STA.L !VWF_DIRTY
+    REP #$20
+
+    ; --- Write tilemap entry: vwf_tile_id + ($0A1E & $FC00) ----------------
+    LDA.W $0A1E
+    AND.W #$FC00                            ; strip tile_id bits 9:0; keep pal/pri/flip
+    CLC : ADC.L !VWF_TMP_TILE_ID            ; A = composed tilemap entry word
+    PLX                                     ; restore caller's tilemap X
+    STA.L $7E9000,X                         ; single-plane top entry (matches engine)
+    RTL                                     ; back to install-site RTS
+
+; ============================================================================
+; VWFCheckReEmit — Phase 2 re-emit detection helper.
+;
+; ENTRY: M=8, X=any. Called via JSR.W from VWFPreRender (same-bank).
+; EXIT:  M=8 (caller's PreRender expects M=8 to continue with its byte
+;        sentinel writes). Stomps A, X.
+;
+; Behavior:
+;   1. Compute current text-buffer XOR-fold of 16 words ($0400..$041F).
+;   2. If !VWF_CACHE_VALID == $A5 AND !VWF_SCENE_TAG matches
+;      !VWF_LAST_SCENE_TAG AND current sig matches !VWF_LAST_BUF_SIG:
+;        set !VWF_REGEN_ONLY = $A5 (re-emit cache hit).
+;      Else:
+;        clear !VWF_REGEN_ONLY = 0 (full rasterization will run);
+;        copy SCENE_TAG → LAST_SCENE_TAG.
+;   3. Always: write current sig → LAST_BUF_SIG.
+;
+; Phase 2 is INSTRUMENTATION ONLY at this point — no consumer reads
+; !VWF_REGEN_ONLY yet. Verification via Mesen IPC: pause across
+; consecutive emits and check $7F:5D49 lights up at expected moments.
+; Phase 2.5+ wires VWFCharHandler's fast-path to skip rasterization
+; when REGEN_ONLY is set.
+; ============================================================================
+VWFCheckReEmit:
+    ; --- Compute current buffer signature (M=16, X=16) -------------------
+    REP #$30
+    LDA.W #$0000
+    LDX.W #$001E                            ; index 30 = last word of 32-byte window
+.sigLoop:
+    EOR.W $0400,X
+    DEX : DEX
+    BPL .sigLoop
+    PHA                                     ; +1: save current sig
+
+    ; --- CACHE_VALID gate (M=8) ------------------------------------------
+    SEP #$20
+    LDA.B #$00 : STA.L !VWF_REGEN_ONLY      ; default: full rasterization
+    LDA.L !VWF_CACHE_VALID
+    CMP.B #$A5
+    BNE .miss                               ; no prior commit → cache miss
+
+    ; --- SCENE_TAG word-compare to LAST_SCENE_TAG (M=16) -----------------
+    REP #$20
+    LDA.L !VWF_SCENE_TAG+0 : CMP.L !VWF_LAST_SCENE_TAG+0 : BNE .missRep
+    LDA.L !VWF_SCENE_TAG+2 : CMP.L !VWF_LAST_SCENE_TAG+2 : BNE .missRep
+
+    ; --- Buffer-sig compare (M=16, current sig is at $01,S) --------------
+    LDA $01,S
+    CMP.L !VWF_LAST_BUF_SIG
+    BNE .missRep
+
+    ; --- Cache hit ------------------------------------------------------
+    SEP #$20
+    LDA.B #$A5 : STA.L !VWF_REGEN_ONLY
+    BRA .commit
+
+.missRep:
+    SEP #$20
+.miss:
+    ; Update LAST_SCENE_TAG ← SCENE_TAG (4 bytes via 2 word writes)
+    REP #$20
+    LDA.L !VWF_SCENE_TAG+0 : STA.L !VWF_LAST_SCENE_TAG+0
+    LDA.L !VWF_SCENE_TAG+2 : STA.L !VWF_LAST_SCENE_TAG+2
+    SEP #$20
+
+.commit:
+    ; Always commit current buffer sig (and pop)
+    REP #$20
+    PLA
+    STA.L !VWF_LAST_BUF_SIG
+    SEP #$20
+    RTS                                     ; near-call return to PreRender
+
+; ============================================================================
+; VWFAssignSlice — Phase 3 step 1 LRU tracking helper.
+;
+; ENTRY: M=8, X-flag-status preserved by PHP/PLP. SCENE_TAG already
+;        captured at $7F:5D40. JSR-called from VWFPreRender.
+; EXIT:  M=8. !VWF_SCENE_SLICE = 0/1/2 = LRU slot owning this scene.
+;        On miss: !VWF_SLICE_LRU_NEXT advanced (round-robin 0,1,2).
+;        Stomps A, X.
+;
+; Comparison strategy: 4-byte SCENE_TAG matched against each slot's
+; cached tag in 2-word compares. First slot that matches wins. On miss,
+; the slot at LRU_NEXT is overwritten with the new SCENE_TAG.
+;
+; This is INSTRUMENTATION ONLY in step 1 — no pool allocator or canvas
+; wipe consumer reads !VWF_SCENE_SLICE yet. Phase 3 step 2 wires
+; per-slice tile-range allocation.
+; ============================================================================
+VWFAssignSlice:
+    PHP                                     ; preserve caller's M/X
+    REP #$30                                ; M=16, X=16 inside helper
+
+    ; --- BB short-circuit (INVERT=$00 → dialog, no LRU slice) ------------
+    SEP #$20
+    LDA.L !VWF_INVERT
+    BNE .doLRU                              ; non-zero = WB → use LRU slice
+
+    ; BB / dialog: no slice allocation. BB uses formula path, doesn't
+    ; consume pool tiles. POOL_*_ACTIVE set to safe non-empty defaults
+    ; (range never read on BB code path; values just need to exist so
+    ; any spurious WB-path read can't crash).
+    LDA.B #$FF : STA.L !VWF_SCENE_SLICE
+    REP #$20
+    LDA.W #$0021 : STA.L !VWF_POOL_FIRST_ACTIVE
+    LDA.W #$00F2 : STA.L !VWF_POOL_END_ACTIVE   ; full WB range as safety default
+    SEP #$20
+    LDA.B #$FF : STA.L !VWF_LAST_SCENE_SLICE    ; record BB-mode marker
+    PLP : RTS
+
+.doLRU:
+    REP #$20
+
+    ; --- Slot 0 ---------------------------------------------------------
+    LDA.L !VWF_SCENE_TAG+0 : CMP.L !VWF_SLICE_LRU_TAG_0+0 : BNE .checkSlot1
+    LDA.L !VWF_SCENE_TAG+2 : CMP.L !VWF_SLICE_LRU_TAG_0+2 : BNE .checkSlot1
+    SEP #$20
+    LDA.B #$00 : STA.L !VWF_SCENE_SLICE
+    BRA .applyRange
+
+.checkSlot1:
+    LDA.L !VWF_SCENE_TAG+0 : CMP.L !VWF_SLICE_LRU_TAG_1+0 : BNE .checkSlot2
+    LDA.L !VWF_SCENE_TAG+2 : CMP.L !VWF_SLICE_LRU_TAG_1+2 : BNE .checkSlot2
+    SEP #$20
+    LDA.B #$01 : STA.L !VWF_SCENE_SLICE
+    BRA .applyRange
+
+.checkSlot2:
+    LDA.L !VWF_SCENE_TAG+0 : CMP.L !VWF_SLICE_LRU_TAG_2+0 : BNE .miss
+    LDA.L !VWF_SCENE_TAG+2 : CMP.L !VWF_SLICE_LRU_TAG_2+2 : BNE .miss
+    SEP #$20
+    LDA.B #$02 : STA.L !VWF_SCENE_SLICE
+    BRA .applyRange
+
+.miss:
+    ; Allocate next slot (LRU_NEXT). Copy SCENE_TAG → LRU_TAG[NEXT].
+    SEP #$20
+    LDA.L !VWF_SLICE_LRU_NEXT
+    STA.L !VWF_SCENE_SLICE                  ; SCENE_SLICE = slot index 0..2
+
+    ; Compute byte offset into LRU table = NEXT * 4 (4 B per slot).
+    AND.B #$03                              ; safety mask
+    ASL A : ASL A                           ; A = NEXT * 4
+    REP #$20
+    AND.W #$00FF
+    TAX                                     ; X = byte offset within LRU table
+
+    LDA.L !VWF_SCENE_TAG+0
+    STA.L !VWF_SLICE_LRU_TAG_0+0,X
+    LDA.L !VWF_SCENE_TAG+2
+    STA.L !VWF_SLICE_LRU_TAG_0+2,X
+
+    SEP #$20
+    LDA.L !VWF_SLICE_LRU_NEXT
+    INC A
+    CMP.B #$03
+    BCC .storeNext
+    LDA.B #$00
+.storeNext:
+    STA.L !VWF_SLICE_LRU_NEXT
+    ; Fall through to .applyRange
+
+.applyRange:
+    ; SCENE_SLICE (0/1/2) is set. Compute slice tile range via small
+    ; ROM table indexed by SLICE * 4 (4 B per entry: first_word, end_word).
+    ; M=8 here; need M=16 for word table reads.
+    LDA.L !VWF_SCENE_SLICE                  ; A = 0/1/2
+    AND.B #$03
+    ASL A : ASL A                           ; A = SLICE * 4
+    REP #$20
+    AND.W #$00FF
+    TAX                                     ; X = byte offset into table
+
+    LDA.L VWFSliceRangeTable+0,X
+    STA.L !VWF_POOL_FIRST_ACTIVE
+    LDA.L VWFSliceRangeTable+2,X
+    STA.L !VWF_POOL_END_ACTIVE
+
+    ; If SCENE_SLICE differs from LAST_SCENE_SLICE, the previous emit's
+    ; POOL_NEXT was bumping into a DIFFERENT slice's range — reset to
+    ; this slice's FIRST so allocations stay in-range, AND wipe the
+    ; Hook 9 char-map (its tile_ids referred to the previous slice's
+    ; tile range and would point at wrong tiles in the new slice).
+    SEP #$20
+    LDA.L !VWF_SCENE_SLICE
+    CMP.L !VWF_LAST_SCENE_SLICE
+    BEQ .sameSlice
+    REP #$20
+    LDA.L !VWF_POOL_FIRST_ACTIVE
+    STA.L !VWF_POOL_NEXT
+    SEP #$20
+    LDA.L !VWF_SCENE_SLICE
+    STA.L !VWF_LAST_SCENE_SLICE
+
+    ; Wipe Hook 9 char-map (256 bytes → $FF = unallocated)
+    REP #$10                                ; X=16 for 16-bit indexing
+    LDX.W #$00FF
+    LDA.B #$FF
+.assignWipeMap:
+    STA.L !VWF_HOOK9_CHARMAP,X
+    DEX
+    BPL .assignWipeMap
+
+.sameSlice:
+    PLP : RTS
+
+; ROM table: per-slice (first_tile, end_tile_exclusive) word pairs.
+; All slices live in chrome-safe $B1..$F1 (65 tiles split 3 ways).
+VWFSliceRangeTable:
+    dw $00B1, $00C9                         ; slot 0: tiles $B1..$C8 (24 tiles)
+    dw $00C9, $00E1                         ; slot 1: tiles $C9..$E0 (24 tiles)
+    dw $00E1, $00F2                         ; slot 2: tiles $E1..$F1 (17 tiles)
+
+warnpc $E09300                              ; VWFClsHook + Hook 9 helper + cache helper + slice LRU + Phase 4 rasterizer must end before VWFNMI
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -1475,8 +2069,12 @@ warnpc $E09200                              ; VWFClsHook must end before VWFNMI
 ;
 ; $2115/$2116 leftover is harmless: game's NMI body re-writes them at
 ; $D4F0+ before triggering its own VRAM DMA on channels 1/2.
+;
+; Org bumped from $E09200 → $E09300 (Phase 4 step 1, scene-aware-cache
+; plan) to give the ClsHook block more room for the Hook 9 helper +
+; phase 2/3 helpers + Phase 4 rasterizer.
 ; ============================================================================
-org $E09200
+org $E09300
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -1717,13 +2315,13 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E09400                              ; VWFNMI + helpers must end before data table
+warnpc $E09500                              ; VWFNMI + helpers must end before data table (bumped Phase 4 step 1)
 
 ; ============================================================================
-; Data — placed at $E0:9400, safely past VWFNMI
-; ($E09400 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A411)
+; Data — placed at $E0:9500, safely past VWFNMI (bumped Phase 4 step 1)
+; ($E09500 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A511)
 ; ============================================================================
-org $E09400
+org $E09500
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
@@ -1885,6 +2483,13 @@ VWFResetState:
     SEP #$20                                ; M=8 for byte sentinels
     LDA.B #$00 : STA.L !VWF_DIRTY           ; nothing to upload
     LDA.B #$FF : STA.L !VWF_LAST_COL        ; gap-fill: no prior col
+
+    ; Phase 2 — invalidate re-emit cache. CELL_TILE just got wiped to
+    ; $FFFF and POOL_NEXT reset, so any cached tile_id from a prior emit
+    ; would point at uninitialized canvas bytes. Force the next emit to
+    ; rasterize fresh.
+    LDA.B #$00 : STA.L !VWF_CACHE_VALID
+    STA.L !VWF_REGEN_ONLY                   ; clear regen flag too
     RTS
 
 ; ============================================================================

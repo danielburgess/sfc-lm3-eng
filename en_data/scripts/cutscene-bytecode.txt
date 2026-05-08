@@ -483,13 +483,13 @@ It would be the proof[nl]I've been looking for![wait20][cls]The Prisma treasure 
 <<<window[63]:$0810-$0814>>>
 
 <<<window[64]:$0849-$086B>>>
-「This is bad, the entrance[nl] has been blocked off~~~~!」
+「This is bad, the entrance[nl] is blocked~~~~!」
 <<<window[65]:$0889-$089B>>>
 Knock knock....[wait0A]Knock knock....
 <<<window[66]:$08C8-$08EA>>>
-「Ah! We're saved![wait20][cls]Professor, it seems that[nl]help has arrived!」
+「Ah! We're saved![wait20][nl]Professor, help has arrived!」
 <<<window[67]:$08F7-$0905>>>
-「But, that isn't the way ou...」
+「But, that isn't the way ou-...」
 <<<window[68]:$090F-$092D>>>
 「Hey, over here, over here![nl] Help us~!」
 <<<window[69]:$0965-$0974>>>
