@@ -971,144 +971,29 @@ VWFCharHandler:
     CLC : ADC.L !VWF_TMP_BASE                         ; add row*512
     STA.L !VWF_TMP_BASE                               ; $0A = canvas tile byte offset (BB final)
 
-    ; --- WB-only: pool allocator + TMP_BASE override ---------------------
-    ; WB cells use per-cell pool allocation (skipping tile $20 = canonical
-    ; blank, skipping tile $3E = engine cursor, hard cap at $0100). Canvas
-    ; position MUST match the allocated tile_id slot ((tile - $20) * 16),
-    ; not the row/col formula, because the canvas DMA writes contiguously
-    ; and tilemap references the allocated tile_id.
+    ; --- Phase A: WB allocator dropped (2026-05-09) ----------------------
+    ; The variable-width pool allocator (LEFTMOST + PRIMARY pen-tile-keyed
+    ; CELL_TILE lookup, POOL_NEXT advancement, dedup-blank discard,
+    ; .tmShiftX shifted writes) is gone. Both polarities now use the
+    ; formula tile_id below (.bbTileFormula): tile_id = $20 + row*32 +
+    ; $09FC. Each engine col gets a deterministic tile_id; no cross-emit
+    ; sharing, no end-of-emit kerning loss.
     ;
-    ; CELL_TILE[cell] persists across emits within a scene so typewriter
-    ; advance reuses prior allocations. SceneInit wipes CELL_TILE on scene
-    ; change so allocations don't leak across scenes.
+    ; Kerning still works visually: chars whose pen-tile shares a canvas
+    ; slot OR-merge (BB) or AND-NOT-merge (WB) into the shared canvas
+    ; bytes via sub-pixel shift + spill (existing rendering loop below).
+    ; Trailing engine cols whose canvas was never written display as
+    ; canvas-default (BB: $0000 = black BG; WB: $FFFF = white BG) — same
+    ; as the surrounding background, so visually invisible.
     ;
-    ; Pool exhaustion → fall back to .doOrig (engine pass-through path).
-    SEP #$20
-    LDA.L !VWF_INVERT
-    BNE .wbAllocStart                       ; non-zero (WB) → run allocator
-    JMP .wbAllocSkip_M8                     ; BB → out-of-range branch via JMP
-.wbAllocStart:
-    REP #$20
-
-    ; Variant F: kerning-aware allocator with LEFTMOST + PRIMARY slots.
-    ; Two pen-tile-keyed allocations per emit:
-    ;   LEFTMOST = TMP_COL                       (pen tile holding leftmost px)
-    ;   PRIMARY  = LEFTMOST + 1   if spill else  LEFTMOST
-    ;     spill iff (TMP_SHIFT + TMP_W > 8)
-    ; LEFTMOST drives the canvas write position (override TMP_BASE), so
-    ; chars sharing a pen tile collapse into the same canvas slot (kerning
-    ; preserved). PRIMARY drives the tilemap entry, so each engine col
-    ; references the canvas tile that holds its char's primary body.
-    ; CELL_TILE is keyed by row*32 + pen_tile, so adjacent chars sharing
-    ; a pen tile re-use the same alloc; pool advances once per fresh
-    ; pen tile (≤ 32 per row), bounded well under the $100 cap.
-
-    ; --- LEFTMOST cell: row*32 + TMP_COL → CELL_TILE byte offset in X ---
-    LDA.L !VWF_TMP_ROW
-    AND.W #$0007
-    ASL A : ASL A : ASL A : ASL A : ASL A   ; row * 32
-    CLC : ADC.L !VWF_TMP_COL                ; + LEFTMOST pen tile
-    AND.W #$00FF
-    ASL A                                   ; cell * 2 (16-bit table offset)
-    TAX
-
-    LDA.L !VWF_CELL_TILE,X
-    CMP.W #$FFFF
-    BNE .wbLeftReuse                        ; reuse → default tilemap = $20 (blank)
-
-    ; --- LEFTMOST fresh alloc (this pen tile is new on this row) -----------
-    ; Bump POOL_NEXT for LEFTMOST. Skip cursor tile $3E.
-    LDA.L !VWF_POOL_NEXT
-    CMP.W #$003E
-    BNE .wbBumpL_NotCursor
-    LDA.W #$003F
-    STA.L !VWF_POOL_NEXT
-.wbBumpL_NotCursor:
-    LDA.L !VWF_POOL_NEXT
-    CMP.L !VWF_POOL_END_ACTIVE              ; Phase 3 step 2: per-slice exhaustion
-    BCS .wbExhausted
-    PHA
-    INC A
-    STA.L !VWF_POOL_NEXT
-    PLA
-    STA.L !VWF_CELL_TILE,X                  ; remember for next emit at this pen tile
-
-    ; A = fresh LEFTMOST tile_id. Default tilemap = LEFTMOST tile_id (this
-    ; engine col is the FIRST char to occupy this pen tile, so the tile_id
-    ; correctly references the new canvas slot).
-    STA.L !VWF_TMP_TILE_ID
-    STA.L !VWF_LAST_LEFTMOST_TID            ; Bug-B fix: track for PostRender flush
-    BRA .wbLeftDone
-
-.wbLeftReuse:
-    ; A = LEFTMOST tile_id (reused — a prior char on this row already
-    ; allocated this pen tile). The current char shares the canvas slot;
-    ; pointing tilemap at LEFTMOST would visually duplicate the prior
-    ; char's content. Default tilemap = $20 (canonical blank); will be
-    ; overwritten with PRIMARY tile_id below if the char spills.
-    STA.L !VWF_LAST_LEFTMOST_TID            ; Bug-B fix: track for PostRender flush
-    PHA
-    LDA.W #!VWF_BLANK_TILE_ID               ; $20
-    STA.L !VWF_TMP_TILE_ID
-    PLA
-
-.wbLeftDone:
-    ; A = LEFTMOST tile_id (regardless of fresh/reuse).
-    ; Override TMP_BASE = (LEFTMOST - $20) * 16 — canvas pos = LEFTMOST slot.
-    SEC : SBC.W #!VWF_TILE_BASE
-    AND.W #$00FF
-    ASL A : ASL A : ASL A : ASL A
-    STA.L !VWF_TMP_BASE
-
-    ; --- Spill check: TMP_SHIFT + TMP_W > 8 ? ---
-    ; TMP_W is stored 8-bit-only (`STA.L !VWF_TMP_W` runs at SEP #$20 in
-    ; .doRender). Its high byte at $7F:5D23 is stale. Existing code at
-    ; .penAdvance loads 8-bit and AND-masks before any 16-bit math; do
-    ; the same here. TMP_SHIFT was AND'd to #$0007 before storage so its
-    ; high byte is zero, but treat both 8-bit for symmetry.
-    SEP #$20                                ; M=8 for byte add+compare
-    LDA.L !VWF_TMP_SHIFT
-    CLC : ADC.L !VWF_TMP_W
-    CMP.B #$09
-    REP #$20                                ; back to M=16 (carry preserved)
-    BCC .wbAllocDone                        ; no spill → done (TMP_TILE_ID = LEFTMOST)
-
-    ; --- Spilled. PRIMARY cell = LEFTMOST cell + 1 (next byte-offset = +2). ---
-    ; X currently holds LEFTMOST byte offset. Advance to PRIMARY cell.
-    INX : INX
-
-    LDA.L !VWF_CELL_TILE,X
-    CMP.W #$FFFF
-    BNE .wbPrimHave                         ; reuse
-
-    ; Bump POOL_NEXT for PRIMARY. Same cursor-skip + exhaustion handling.
-    LDA.L !VWF_POOL_NEXT
-    CMP.W #$003E
-    BNE .wbBumpP_NotCursor
-    LDA.W #$003F
-    STA.L !VWF_POOL_NEXT
-.wbBumpP_NotCursor:
-    LDA.L !VWF_POOL_NEXT
-    CMP.L !VWF_POOL_END_ACTIVE              ; Phase 3 step 2: per-slice exhaustion
-    BCS .wbExhausted
-    PHA
-    INC A
-    STA.L !VWF_POOL_NEXT
-    PLA
-    STA.L !VWF_CELL_TILE,X
-
-.wbPrimHave:
-    ; A = PRIMARY tile_id. Overwrite saved TMP_TILE_ID (LEFTMOST default).
-    STA.L !VWF_TMP_TILE_ID
-    BRA .wbAllocDone
-
-.wbExhausted:
-    REP #$20
-    JMP .doOrig                             ; pool exhausted — fallback
-
-.wbAllocSkip_M8:
-    REP #$20
-.wbAllocDone:
+    ; Phase D adds a trailing-blank scan to skip DMA'ing those untouched
+    ; tiles, but until then the full canvas DMAs harmlessly.
+    ;
+    ; TMP_BASE remains its formula value (set at line 972: row*512 +
+    ; TMP_COL*16). Kerning-overlap via TMP_BASE = pen-tile canvas pos.
+    ; TMP_TILE_ID is now inert (no consumer; .haveTileId tile_id source
+    ; is unconditional formula).
+    ; --------------------------------------------------------------------
 
     ; Font glyph offset = char * 16  (16 bytes per glyph: 8 top + 8 bottom)
     LDA.L !VWF_TMP_CHAR                               ; char index
@@ -1251,34 +1136,25 @@ VWFCharHandler:
 
 .doneRows:
     ; --- Update DMA_LO/HI bounds for the canvas → VRAM upload ----------
-    ; LO = min cell start (TMP_BASE).
-    ; HI = polarity-dependent:
-    ;   BB → end of canvas row ((row+1) * 512). DMAing the polarity-fill
-    ;        tail clears trailing VRAM tile slots from prior emits.
-    ;   WB → just this cell's end (TMP_BASE + 16). Pool allocator means
-    ;        canvas is sparse; row-end extension would DMA over engine
-    ;        cursor (tile $3E) and unallocated slots.
+    ; Phase A: BOTH polarities use end-of-row HI (same as historical BB).
+    ; WB previously used per-cell HI (TMP_BASE + 16) because the pool
+    ; allocator made canvas sparse — row-end extension would DMA over
+    ; the cursor canvas range and unallocated slots. With the pool
+    ; allocator gone, canvas is pen-tile-based (dense in active row),
+    ; so end-of-row DMA correctly clears trailing VRAM tile slots from
+    ; prior emits with the canvas-default polarity fill (BG-matching,
+    ; visually invisible). The cursor-tile preservation lives in
+    ; VWFNMI's two-chunk DMA (which still runs for WB).
     REP #$20                                ; M=16 for word compares
     LDA.L !VWF_TMP_BASE                     ; current cell canvas start
     CMP.L !VWF_DMA_LO
     BCS .lo_keep
     STA.L !VWF_DMA_LO                       ; new LO
 .lo_keep:
-    SEP #$20
-    LDA.L !VWF_INVERT
-    BEQ .hiFromRow                          ; BB → end-of-row math
-    ; WB: HI candidate = TMP_BASE + 16 (just this allocated cell)
-    REP #$20
-    LDA.L !VWF_TMP_BASE
-    CLC : ADC.W #$0010
-    BRA .hiCheck
-.hiFromRow:
-    REP #$20
     LDA.L !VWF_TMP_ROW
     INC A                                   ; (row+1)
     XBA                                     ; (row+1) << 8
-    ASL A                                   ; (row+1) * 512
-.hiCheck:
+    ASL A                                   ; (row+1) * 512 — end-of-row byte
     CMP.L !VWF_DMA_HI
     BCC .hi_keep
     STA.L !VWF_DMA_HI                       ; new HI
@@ -1358,22 +1234,14 @@ VWFCharHandler:
     STA.L !VWF_LAST_COL
     REP #$20                                ; M=16 for tile_id math below
 
-    ; --- Step 2: tile_id source — polarity branch -----------------------
-    ; BB: formula tile_id = $20 + row*32 + col (matches canvas DMA position)
-    ; WB: pool-allocated tile_id from CELL_TILE[cell] (set in .hasWidth)
-    SEP #$20
-    LDA.L !VWF_INVERT
-    BEQ .bbTileFormula                      ; BB → formula
-
-    ; WB: tile_id = !VWF_TMP_TILE_ID (PRIMARY pen-tile alloc, saved in
-    ; .hasWidth Variant F allocator). For non-spilling chars this equals
-    ; the LEFTMOST alloc; for spilling chars it points at the canvas tile
-    ; holding the char's primary body (LEFTMOST + 1).
-    REP #$20
-    LDA.L !VWF_TMP_TILE_ID
-    BRA .haveTileId
-
-.bbTileFormula:
+    ; --- Step 2: tile_id source — formula for both polarities (Phase A) -
+    ; tile_id = $20 + row*32 + $09FC. Each engine col gets a deterministic,
+    ; unique tile_id. Canvas writes go to PEN-tile slot (TMP_BASE) via
+    ; sub-pixel-shifted rasterization; tilemap entries point at engine-col
+    ; slots. PEN and engine col can diverge for variable-width chars —
+    ; that's the kerning visual: chars at later engine cols whose canvas
+    ; was never written display as canvas-default (matches BG color, so
+    ; visually invisible).
     REP #$20                                ; M=16 for tile_id math
     LDA.L !VWF_TMP_ROW
     AND.W #$0007
