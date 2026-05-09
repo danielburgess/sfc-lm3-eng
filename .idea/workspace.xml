@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Rolled back broken optimization.">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Plans/vwf-fixup-plan.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/combat-bytecode-2.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/cutscene-bytecode.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" beforeDir="false" afterPath="$PROJECT_DIR$/en_data/scripts/menu-prompts.txt" afterDir="false" />
-    </list>
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Just saving in case anything breaks more." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -116,15 +109,7 @@
       <workItem from="1777864949972" duration="7048000" />
       <workItem from="1778004888998" duration="14553000" />
       <workItem from="1778091115860" duration="14089000" />
-      <workItem from="1778201811009" duration="28280000" />
-    </task>
-    <task id="LOCAL-00040" summary="more changes to script. need debugged">
-      <option name="closed" value="true" />
-      <created>1776067885049</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1776067885049</updated>
+      <workItem from="1778201811009" duration="33581000" />
     </task>
     <task id="LOCAL-00041" summary="updated annotations and exported updated disassembly">
       <option name="closed" value="true" />
@@ -510,7 +495,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778135867837</updated>
     </task>
-    <option name="localTasksCounter" value="89" />
+    <task id="LOCAL-00089" summary="Just saving in case anything breaks more.">
+      <option name="closed" value="true" />
+      <created>1778284058208</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
+      <option name="project" value="LOCAL" />
+      <updated>1778284058208</updated>
+    </task>
+    <option name="localTasksCounter" value="90" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -561,7 +554,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Saving current state as &quot;mostly working&quot; for dialog and static text screens. There are some rendering oddities still, but we will systematically quash the remaining bugs." />
     <MESSAGE value="Mostly fixed. snapshot" />
     <MESSAGE value="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis." />
     <MESSAGE value="Auto-wrap garbage fixed, but its still not perfect." />
@@ -586,7 +578,8 @@
     <MESSAGE value="F-7 done" />
     <MESSAGE value="Committing so we can find the crash" />
     <MESSAGE value="Rolled back broken optimization." />
-    <option name="LAST_COMMIT_MESSAGE" value="Rolled back broken optimization." />
+    <MESSAGE value="Just saving in case anything breaks more." />
+    <option name="LAST_COMMIT_MESSAGE" value="Just saving in case anything breaks more." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$debug_vwf_probe.coverage" NAME="debug_vwf_probe Coverage Results" MODIFIED="1777439065577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />

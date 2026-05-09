@@ -249,12 +249,17 @@ org $FFFFFF : db $00                        ; force ROM image to extend through 
                               ;       (Phase 2: set by VWFPostRender,
                               ;        cleared by VWFRequestSceneInit/
                               ;        VWFRequestPageReset).
-!VWF_REGEN_ONLY   = $7F5D49   ; 1 B  $A5 = this emit is a re-emit of the
-                              ;       previously-committed scene+buffer
-                              ;       (Phase 2: set by VWFPreRender's
-                              ;        cache-hit path; consumed by
-                              ;        VWFCharHandler's fast-path in
-                              ;        Phase 2.5+).
+!VWF_REGEN_ONLY   = $7F5D49   ; 1 B  REPURPOSED for !VWF_CLS_PENDING in
+                              ;       Phase 4b Option D (cls-gated PageReset).
+                              ;       Original Phase 2 use (re-emit cache fast
+                              ;       path) was never wired up to consumers.
+                              ;       New use: $A5 = VWFClsHook fired since
+                              ;       last VWFPreRender; consumed (cleared) by
+                              ;       VWFPreRender's PageReset gate. Distinguishes
+                              ;       dialog page advance (cls fires) from
+                              ;       menu sub-string emits (no cls), so menu
+                              ;       state persists across emits within scene.
+!VWF_CLS_PENDING  = $7F5D49   ; alias for !VWF_REGEN_ONLY (Phase 4b Option D)
 !VWF_LAST_SCENE_TAG = $7F5D4A ; 4 B  prev committed emit's SCENE_TAG
 !VWF_LAST_BUF_SIG   = $7F5D4E ; 2 B  prev committed emit's buffer
                               ;       XOR-fold of first 32 bytes ($0400..$041F)
@@ -1489,17 +1494,49 @@ VWFPreRender:
     ;
     ; All compares are 8-bit (M=8 already set above).
     LDA.L !VWF_INVERT      : CMP.L !VWF_LAST_INVERT   : BNE .needSceneInit
-    LDA.L !VWF_TEXT_LO     : CMP.L !VWF_LAST_TEXT_LO  : BNE .needPageReset
-    LDA.L !VWF_TEXT_HI     : CMP.L !VWF_LAST_TEXT_HI  : BNE .needPageReset
+    LDA.L !VWF_TEXT_LO     : CMP.L !VWF_LAST_TEXT_LO  : BNE .textChanged
+    LDA.L !VWF_TEXT_HI     : CMP.L !VWF_LAST_TEXT_HI  : BNE .textChanged
     LDA.L !VWF_TEXT_BNK    : CMP.L !VWF_LAST_TEXT_BNK : BEQ .sceneSame
+.textChanged:
+    ; Phase 4b Option D: TEXT_LO/HI/BNK changed, but only PageReset if
+    ; VWFClsHook fired since last emit (= dialog page advance / scene
+    ; pop / sub-menu open|close). Otherwise this is a menu sub-string
+    ; emit (each name/class/stat field is a separate JSR-driven emit
+    ; with its own text source pointer). Preserve allocator state so
+    ; multi-emit menus don't recycle the same low tile_ids across slots.
+    ;
+    ; Audit data (2026-05-08): cls fires for unit-info exit, dialog
+    ; page-advance, dialog close, sub-menu open/close. Does NOT fire for
+    ; re-entering screens, file-info navigation, or sub-string emits
+    ; within a menu render.
+    ; M=8 byte gate. EOR-trick: A := A ^ $A5 — if A was $A5, result = $00
+    ; (Z set, A=0); otherwise non-zero (Z clear). Saves 2 bytes vs LDA+CMP+
+    ; BNE+LDA#0+STA path because STA reuses the now-zero A.
+    LDA.L !VWF_CLS_PENDING
+    EOR.B #$A5
+    BNE .updateLastTextOnly                 ; A!=0 ⇒ flag wasn't $A5 ⇒ suppress
+    STA.L !VWF_CLS_PENDING                  ; A=0 ⇒ consume one-shot to $00
 .needPageReset:
     REP #$20                                ; M=16 for JSL boundary
     JSL.L VWFRequestPageReset               ; canvas + CELL_TILE + POOL_NEXT only
+                                            ; (also updates LAST_TEXT_*)
     SEP #$20
+    BRA .sceneSame
+.updateLastTextOnly:
+    ; Phase 4b refinement (post initial-Option-D regression): "lite reset"
+    ; — full PageReset (wipes canvas + CELL_TILE, updates LAST_TEXT_*,
+    ; clears DIRTY/LAST_COL), but preserves POOL_NEXT across emits so each
+    ; emit gets unique tile_ids (avoids tile_id reuse / canvas-pos
+    ; collision visible as cross-emit leakage). Without the CELL_TILE
+    ; wipe here, prior emit's stale entries served as "reuse" for cells
+    ; that THIS emit re-keys — the new char's pixels would land at the
+    ; PRIOR emit's canvas pos, corrupting prior tile content.
+    JSR.W VWFLiteReset                      ; same-bank near call
     BRA .sceneSame
 .needSceneInit:
     REP #$20                                ; M=16 for JSL boundary
     JSL.L VWFRequestSceneInit               ; full reset + queue VRAM wipe
+                                            ; (clears CLS_PENDING via VWFResetState)
     SEP #$20                                ; M=8 for byte stores below
 .sceneSame:
 
@@ -1668,7 +1705,41 @@ VWFClsHook:
     JSL.L VWFRequestSceneInit               ; canvas wipe, CELL_TILE reset, queue VRAM wipe
     LDA.W #$FFFF                            ; M=16 — sentinel
     STA.L !VWF_ROW                          ; force per-row reinit on first char post-cls
+    ; Phase 4b Option D: arm cls-pending flag so the next VWFPreRender
+    ; runs PageReset on TEXT_*-change. Without this flag set, PreRender
+    ; preserves POOL_NEXT/CELL_TILE across emits (correct for menu
+    ; sub-string emits that don't go through cls).
+    SEP #$20                                ; M=8 for byte store
+    LDA.B #$A5 : STA.L !VWF_CLS_PENDING
+    REP #$20                                ; restore M=16 per exit contract
     RTL                                     ; long-return to game caller
+
+; ----------------------------------------------------------------------------
+; VWFLiteReset — Phase 4b Option D refinement helper.
+;
+; "Lite reset" = full VWFRequestPageReset (wipes canvas + CELL_TILE, updates
+; LAST_TEXT_*, clears DIRTY / LAST_COL), but POOL_NEXT is saved across the
+; reset so each emit-after-suppression continues allocating UNIQUE tile_ids
+; instead of restarting from slice_first.
+;
+; Why this is necessary:
+;   - Wipes are needed to prevent cross-emit CELL_TILE reuse pointing into
+;     prior emit's canvas slots (corrupts prior emit's tilemap entries).
+;   - POOL_NEXT preservation is needed so 11 menu sub-string emits don't
+;     all hammer the same low tile_ids (the original bug).
+;
+; ENTRY: M=8 (caller is VWFPreRender's .updateLastTextOnly branch).
+; EXIT:  M=8, X-state caller-restored by VWFRequestPageReset's PLP.
+; ----------------------------------------------------------------------------
+VWFLiteReset:
+    REP #$20                                ; M=16 for word save/restore
+    LDA.L !VWF_POOL_NEXT
+    PHA                                     ; save POOL_NEXT (16-bit)
+    JSL.L VWFRequestPageReset               ; full reset (clobbers POOL_NEXT to $21)
+    PLA                                     ; restore POOL_NEXT
+    STA.L !VWF_POOL_NEXT
+    SEP #$20                                ; back to M=8 per exit contract
+    RTS
 
 ; ============================================================================
 ; VWFCalcTileAddrHook — body of Hook 9 (install site at $00:C1A6).
@@ -2020,17 +2091,33 @@ VWFAssignSlice:
     STA.L !VWF_POOL_END_ACTIVE
 
     ; If SCENE_SLICE differs from LAST_SCENE_SLICE, the previous emit's
-    ; POOL_NEXT was bumping into a DIFFERENT slice's range — reset to
-    ; this slice's FIRST so allocations stay in-range, AND wipe the
-    ; Hook 9 char-map (its tile_ids referred to the previous slice's
-    ; tile range and would point at wrong tiles in the new slice).
+    ; POOL_NEXT was bumping into a DIFFERENT slice's range. Only reset
+    ; POOL_NEXT if the current value is OUTSIDE the new slice's range —
+    ; otherwise preserve POOL_NEXT so consecutive emits within a scene
+    ; (each with potentially distinct caller_PC fingerprints producing
+    ; different LRU slots) accumulate unique tile_id allocations instead
+    ; of restarting from slice_first on every emit.
+    ;
+    ; Phase 4b post-regression: Phase 1 SCENE_TAG fingerprints were observed
+    ; cycling among 3 slots within a SINGLE unit-info render (caller_PC
+    ; varies per JSR-driven sub-emit dispatcher). With single-pool slices
+    ; ($21..$FF for all 3), the in-range check always preserves POOL_NEXT,
+    ; eliminating the cross-emit tile_id collision that produced "Hero
+    ; duplicated across all 4 slots" symptom.
     SEP #$20
     LDA.L !VWF_SCENE_SLICE
     CMP.L !VWF_LAST_SCENE_SLICE
     BEQ .sameSlice
     REP #$20
+    LDA.L !VWF_POOL_NEXT
+    CMP.L !VWF_POOL_FIRST_ACTIVE
+    BCC .resetPoolNext                      ; POOL_NEXT < FIRST → out of range, reset
+    CMP.L !VWF_POOL_END_ACTIVE
+    BCC .poolNextInRange                    ; POOL_NEXT < END → in range, preserve
+.resetPoolNext:
     LDA.L !VWF_POOL_FIRST_ACTIVE
     STA.L !VWF_POOL_NEXT
+.poolNextInRange:
     SEP #$20
     LDA.L !VWF_SCENE_SLICE
     STA.L !VWF_LAST_SCENE_SLICE
@@ -2050,9 +2137,17 @@ VWFAssignSlice:
 ; ROM table: per-slice (first_tile, end_tile_exclusive) word pairs.
 ; All slices live in chrome-safe $B1..$F1 (65 tiles split 3 ways).
 VWFSliceRangeTable:
-    dw $00B1, $00C9                         ; slot 0: tiles $B1..$C8 (24 tiles)
-    dw $00C9, $00E1                         ; slot 1: tiles $C9..$E0 (24 tiles)
-    dw $00E1, $00F2                         ; slot 2: tiles $E1..$F1 (17 tiles)
+    ; Phase 4b post-regression: single shared pool, all 3 slots cover the
+    ; full font area $0021..$00FF (255 tiles; $20 blank, $3E cursor → ~222
+    ; usable). Pool starts at VRAM word $6108 ($21*16 + $C000 byte). The
+    ; chrome-safe carve from Phase 4 step 1 ($B1..$F1 in 24/24/17) was too
+    ; small to fit a multi-emit menu like unit-info (~50 unique chars
+    ; across 4 slots) and produced large unused VRAM gaps. Slicing infra
+    ; preserved (LRU, FIRST/END_ACTIVE) but degenerates to one pool while
+    ; we test Option D's preserve-POOL_NEXT behavior end-to-end.
+    dw $0021, $0100                         ; slot 0: tiles $21..$FF (255)
+    dw $0021, $0100                         ; slot 1: same
+    dw $0021, $0100                         ; slot 2: same
 
 warnpc $E09300                              ; VWFClsHook + Hook 9 helper + cache helper + slice LRU + Phase 4 rasterizer must end before VWFNMI
 
