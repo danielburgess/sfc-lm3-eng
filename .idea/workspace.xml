@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Just saving in case anything breaks more." />
+    <list default="true" id="d8374a3b-2226-44ae-84e0-dddb93d758e6" name="Changes" comment="Getting pretty close.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/asm/vwf_patch.asm" beforeDir="false" afterPath="$PROJECT_DIR$/asm/vwf_patch.asm" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -109,15 +112,7 @@
       <workItem from="1777864949972" duration="7048000" />
       <workItem from="1778004888998" duration="14553000" />
       <workItem from="1778091115860" duration="14089000" />
-      <workItem from="1778201811009" duration="33581000" />
-    </task>
-    <task id="LOCAL-00041" summary="updated annotations and exported updated disassembly">
-      <option name="closed" value="true" />
-      <created>1776098169204</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1776098169204</updated>
+      <workItem from="1778201811009" duration="43984000" />
     </task>
     <task id="LOCAL-00042" summary="more updated annotations and exported updated disassembly. Added cdl export.">
       <option name="closed" value="true" />
@@ -503,7 +498,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778284058208</updated>
     </task>
-    <option name="localTasksCounter" value="90" />
+    <task id="LOCAL-00090" summary="Getting pretty close.">
+      <option name="closed" value="true" />
+      <created>1778304927170</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
+      <option name="project" value="LOCAL" />
+      <updated>1778304927170</updated>
+    </task>
+    <option name="localTasksCounter" value="91" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -554,7 +557,6 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/RetroTool" />
     </ignored-roots>
-    <MESSAGE value="Mostly fixed. snapshot" />
     <MESSAGE value="Added fixes for line limits. Now instead of wrapping at a character limit, the pixel limit is enforced on a per-line basis." />
     <MESSAGE value="Auto-wrap garbage fixed, but its still not perfect." />
     <MESSAGE value="Getting much closer to a perfect vwf in dialog." />
@@ -579,7 +581,8 @@
     <MESSAGE value="Committing so we can find the crash" />
     <MESSAGE value="Rolled back broken optimization." />
     <MESSAGE value="Just saving in case anything breaks more." />
-    <option name="LAST_COMMIT_MESSAGE" value="Just saving in case anything breaks more." />
+    <MESSAGE value="Getting pretty close." />
+    <option name="LAST_COMMIT_MESSAGE" value="Getting pretty close." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/sfc_lm3_eng$debug_vwf_probe.coverage" NAME="debug_vwf_probe Coverage Results" MODIFIED="1777439065577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />

@@ -406,6 +406,25 @@ endif
                             ; tile_id, so each engine col references the
                             ; canvas tile holding the char's primary body.
 
+; --- Phase 4b Bug-B fix: end-of-emit flush state -----------------------------
+; The dedup-blank discard path drops the LAST char of an emit when it kerns
+; into the prior char's pen-tile with no spill — TMP_TILE_ID is set to BLANK
+; ($20), discard fires, TM_OFFSET++, and the trailing engine col is left
+; unwritten (chrome blank). With no NEXT non-blank emit on the row to absorb
+; the shift, the trailing chars of class strings disappeared visually.
+;
+; Fix: CharHandler tracks LAST_LEFTMOST_TID (the LEFTMOST tile_id at every
+; alloc/reuse) and LAST_DISCARD ($A5 = last char hit the discard path).
+; PostRender, if both VWF_FLAG=$A5 and LAST_DISCARD=$A5, writes a final
+; "flush" tilemap entry at VWF_SAVX (the last char's engine-side tilemap
+; offset) reusing LAST_LEFTMOST_TID — the trailing engine col gets the same
+; canvas tile that holds the discarded char's rasterized pixels (kerned
+; alongside its predecessor in the LEFTMOST canvas slot).
+!VWF_LAST_LEFTMOST_TID = $7F5D36 ; 2 B — last LEFTMOST tile_id allocated/reused
+!VWF_LAST_DISCARD      = $7F5D38 ; 1 B — $A5 if last char was discard-blank
+                                  ;       Reset to $00 by every non-discard
+                                  ;       tilemap write and by VWFPreRender.
+
 ; ============================================================================
 ; VWF VRAM-owned tile ranges — polarity-dependent.
 ;
@@ -1018,6 +1037,7 @@ VWFCharHandler:
     ; engine col is the FIRST char to occupy this pen tile, so the tile_id
     ; correctly references the new canvas slot).
     STA.L !VWF_TMP_TILE_ID
+    STA.L !VWF_LAST_LEFTMOST_TID            ; Bug-B fix: track for PostRender flush
     BRA .wbLeftDone
 
 .wbLeftReuse:
@@ -1026,6 +1046,7 @@ VWFCharHandler:
     ; pointing tilemap at LEFTMOST would visually duplicate the prior
     ; char's content. Default tilemap = $20 (canonical blank); will be
     ; overwritten with PRIMARY tile_id below if the char spills.
+    STA.L !VWF_LAST_LEFTMOST_TID            ; Bug-B fix: track for PostRender flush
     PHA
     LDA.W #!VWF_BLANK_TILE_ID               ; $20
     STA.L !VWF_TMP_TILE_ID
@@ -1387,6 +1408,8 @@ VWFCharHandler:
     LDA.L !VWF_TM_OFFSET
     INC A
     STA.L !VWF_TM_OFFSET
+    LDA.B #$A5                              ; Bug-B fix: arm flush flag for PostRender
+    STA.L !VWF_LAST_DISCARD
     REP #$20
     JMP .penAdvance                         ; skip tilemap write, still advance pen
 
@@ -1426,6 +1449,13 @@ VWFCharHandler:
     CLC : ADC.W $0A02                       ; + palette/priority bits
     CLC : ADC.W #$0400                      ; + palette-row offset for bottom
     STA.L $7E9040,X                         ; write BOTTOM tilemap entry (same tile)
+    ; Bug-B fix: a real tilemap entry was just written → cancel any pending
+    ; flush request from a prior discard-blank in this emit. (Each emit's
+    ; flush should target the CURRENT trailing discard, not an old one
+    ; that's already been absorbed by the shifted write above.)
+    SEP #$20
+    LDA.B #$00 : STA.L !VWF_LAST_DISCARD
+    REP #$20
 
 .tilemapSkip:
 .penAdvance:
@@ -1678,6 +1708,16 @@ VWFPostRender:
     ; LAST_BUF_SIG) and skips rasterization on a hit.
     LDA.B #$A5 : STA.L !VWF_CACHE_VALID
 
+    ; Bug-B fix-attempt #1 (REVERTED 2026-05-09): VWFPostFlush JSR was here.
+    ; The fix didn't address the actual bug — most "missing" trailing
+    ; class chars come from .tmShiftX consuming TM_OFFSET on the right
+    ; edge (not from a trailing discard), so the flush condition
+    ; (LAST_DISCARD==$A5) was never true on unit-info. On screens where
+    ; it DID fire, it wrote LEFTMOST_TID at SAVX duplicating the prior
+    ; cell's content (user observed "extra repeat of last tile").
+    ; State slots LAST_LEFTMOST_TID + LAST_DISCARD remain in code as
+    ; instrumentation but no consumer wired up.
+
 .done:
     REP #$20                                ; displaced: 16-bit mode
     LDA.W $0A16                             ; displaced: load text-engine state word
@@ -1739,6 +1779,39 @@ VWFLiteReset:
     PLA                                     ; restore POOL_NEXT
     STA.L !VWF_POOL_NEXT
     SEP #$20                                ; back to M=8 per exit contract
+    RTS
+
+; ----------------------------------------------------------------------------
+; VWFPostFlush — Phase 4b Bug-B fix.
+;
+; Called from VWFPostRender (M=8). If LAST_DISCARD == $A5, the last char
+; processed in this emit hit the dedup-blank discard path — its content was
+; rasterized into LEFTMOST's canvas slot but the trailing engine col was
+; left unwritten. Write a final tilemap entry at VWF_SAVX referencing
+; LAST_LEFTMOST_TID so the trailing col displays the kerned content.
+;
+; Consumes LAST_DISCARD on use (one-shot per emit).
+;
+; ENTRY: M=8.  Caller: VWFPostRender after FLAG/DIRTY/CACHE_VALID setup.
+; EXIT:  M=8.  RTS (same-bank near call).
+; ----------------------------------------------------------------------------
+VWFPostFlush:
+    LDA.L !VWF_LAST_DISCARD
+    CMP.B #$A5
+    BNE .skip                               ; no pending discard → nothing to do
+    LDA.B #$00 : STA.L !VWF_LAST_DISCARD    ; consume one-shot
+    REP #$20                                ; M=16 for tilemap word write
+    LDA.L !VWF_LAST_LEFTMOST_TID
+    CLC : ADC.W $0A02                       ; + palette/priority bits
+    PHA                                     ; save composed top
+    LDA.L !VWF_SAVX                         ; engine tilemap byte offset
+    TAX
+    PLA
+    STA.L $7E9000,X                         ; write TOP tilemap entry
+    CLC : ADC.W #$0400                      ; + palette-row offset for bottom
+    STA.L $7E9040,X                         ; write BOTTOM tilemap entry
+    SEP #$20                                ; back to M=8 per exit contract
+.skip:
     RTS
 
 ; ============================================================================
@@ -2149,7 +2222,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09300                              ; VWFClsHook + Hook 9 helper + cache helper + slice LRU + Phase 4 rasterizer must end before VWFNMI
+warnpc $E09340                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer must end before VWFNMI (bumped +$40 for VWFPostFlush)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2168,8 +2241,9 @@ warnpc $E09300                              ; VWFClsHook + Hook 9 helper + cache
 ; Org bumped from $E09200 → $E09300 (Phase 4 step 1, scene-aware-cache
 ; plan) to give the ClsHook block more room for the Hook 9 helper +
 ; phase 2/3 helpers + Phase 4 rasterizer.
+; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09300
+org $E09340
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
