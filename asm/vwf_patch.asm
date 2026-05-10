@@ -1805,7 +1805,9 @@ VWFDedupeRow:
     REP #$20                                ; M=16 for word ops
     LDA.L !VWF_FIRST_SAVX
     CMP.W #$FFFF
-    BEQ .exit                               ; sentinel intact → nothing to dedupe
+    BNE +
+    BRL .exit                               ; sentinel intact → nothing to dedupe
++
 
     ; Defensive: backward cursor jumps (FF nn col-jump) could leave
     ; VWF_SAVX < FIRST_SAVX. Skip scan in that case (handle in a later
@@ -1813,13 +1815,15 @@ VWFDedupeRow:
     CMP.L !VWF_SAVX
     BEQ .rangeOK                            ; FIRST == SAVX → single cell
     BCC .rangeOK                            ; FIRST < SAVX → forward range
-    BRA .exit                               ; FIRST > SAVX → backward jump, skip
+    BRL .exit                               ; FIRST > SAVX → backward jump, skip
 .rangeOK:
 
     ; Step 7 polarity gate: WB only (Step 8b drops the gate for BB).
     SEP #$20
     LDA.L !VWF_INVERT
-    BEQ .exit_m8                            ; BB → skip dedupe
+    BNE +
+    BRL .exit_m8                            ; BB → skip dedupe
++
     REP #$20
 
     ; canvas_row = (FIRST_SAVX >> 6) mod 7  — matches WB rasterizer source.
@@ -1872,8 +1876,18 @@ VWFDedupeRow:
     INX : INX
     DEY
     BNE .tileScan
-    ; All 8 words = $FFFF → tile is fully blank
-    ; Step 7: NO rewrite (Step 8a fills this branch).
+    ; All 8 words = $FFFF → tile is fully blank. Rewrite tilemap entry
+    ; pair to canonical blank tile_id $0020 + palette so this VRAM slot
+    ; can be reclaimed (DMA bound tightening) and the cell renders the
+    ; engine's blank glyph instead of a VWF-owned all-blank tile.
+    ; Step 8a — WB scope (gated at .exit_m8 above).
+    LDA.L !VWF_TMP_FBI                      ; A = current outer SAVX (tilemap byte off)
+    TAX                                     ; X = tilemap byte offset
+    LDA.W #!VWF_BLANK_TILE_ID               ; A = $0020 (canonical blank)
+    CLC : ADC.W $0A02                       ; + palette/priority bits
+    STA.L $7E9000,X                         ; rewrite TOP tilemap entry
+    CLC : ADC.W #$0400                      ; + palette-row offset for bottom
+    STA.L $7E9040,X                         ; rewrite BOTTOM tilemap entry
 .tileNotBlank:
 
     ; Advance outer SAVX by 2 (next cell)
@@ -2296,7 +2310,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E093F0                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 then +$20 for VWFDedupeRow body Steps 6→8b)
+warnpc $E09400                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 then +$20 then +$10 for Step 8a rewrite + BRL conversions)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2317,7 +2331,7 @@ warnpc $E093F0                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E093F0
+org $E09400
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2558,14 +2572,14 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E095B0                              ; VWFNMI + helpers must end before data table (bumped +$20 more for VWFDedupeRow body)
+warnpc $E095C0                              ; VWFNMI + helpers must end before data table (bumped +$10 more for Step 8a)
 
 ; ============================================================================
-; Data — placed at $E0:95B0, safely past VWFNMI (bumped +$20 more for
-; VWFDedupeRow body; was $E09590)
-; ($E095B0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A5C1)
+; Data — placed at $E0:95C0, safely past VWFNMI (bumped +$10 more for
+; Step 8a; was $E095B0)
+; ($E095C0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A5D1)
 ; ============================================================================
-org $E095B0
+org $E095C0
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
