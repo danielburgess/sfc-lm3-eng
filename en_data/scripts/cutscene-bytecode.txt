@@ -58,7 +58,7 @@
 <<<window[1]:$0052-$0060>>>
 「I'll get you-nya!」
 <<<window[2]:$006F-$0095>>>
-示ぁ[P]呼甘‥[R]憂ぁ[R]呼甘‥[E][d][G]ぁ[E]呼[r.]囲ョ猪[r.]紋ぁ[02]
+
 <<<window[3]:$009F-$00B7>>>
 「Look![wait20] It's the same shape as the manuscript」
 <<<window[4]:$00C1-$00D6>>>

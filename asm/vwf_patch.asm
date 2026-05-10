@@ -729,20 +729,23 @@ VWFCharHandler:
 
     ; Newline detection: $09FE is the game's text row id. If it changed
     ; mid-emit (engine FF nn codes can jump $09FE between chars):
-    ;   1. Clear the new canvas row to the polarity fill value, since
-    ;      PreRender only cleared from its own pen forward — rows the
-    ;      emit jumps to LATER may still hold stale data from prior
-    ;      sessions and cause unpaired bp0/bp1 (visible as garbage).
+    ;   1. Clear the new canvas row to the polarity fill value (BB only —
+    ;      preserves pre-Phase-A multi-line dialog rendering). WB skips
+    ;      this because PreRender does a full canvas wipe and the WB
+    ;      rasterizer's canvas_row source (SAVX) wouldn't match the
+    ;      $09FE-based row-fill source.
     ;   2. Reset VWF_PX so the new row's pen aligns to the engine's col.
-    ; Single-row emits (typewriter dialog) never hit this branch — first
-    ; char's $09FE matches PreRender's STA $09FE→VWF_ROW init, so no
-    ; redundant clear of pre-pen typewriter content.
     REP #$20                                ; ensure 16-bit for word compare
     LDA.W $09FE                             ; current text row id
     CMP.L !VWF_ROW                          ; compare against our saved row
     BEQ .sameLine                           ; same row → keep current pen
 
-    ; --- New canvas row: clear it before render ---------------------------
+    ; --- BB-only: clear the new canvas row before render -----------------
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BNE .skipBBRowFill                      ; WB → skip (PreRender did full wipe)
+
     PHX                                     ; preserve caller's tilemap-byte X
     PHA                                     ; preserve current $09FE (16-bit)
 
@@ -754,23 +757,18 @@ VWFCharHandler:
 
     LDY.W #$0100                            ; 256 iterations × 2 = 512 bytes
 
-    SEP #$20                                ; 8-bit polarity peek
-    LDA.L !VWF_INVERT
-    REP #$20
-    BEQ .rowFillBlack
-    LDA.W #$FFFF                            ; WB → fill white
-    BRA .rowFillReady
-.rowFillBlack:
+    ; BB polarity fill = $0000 (no need to re-check INVERT, just fall through
+    ; to the BB fill value).
     LDA.W #$0000                            ; BB → fill black
-.rowFillReady:
-.rowFillLoop:
+.bbRowFillLoop:
     STA.L !TILE_BUF,X
     INX : INX
     DEY
-    BNE .rowFillLoop
+    BNE .bbRowFillLoop
 
     PLA                                     ; restore $09FE word
     PLX                                     ; restore caller's tilemap-byte X
+.skipBBRowFill:
 
     ; Continue with pen reset
     LDA.W $09FC                             ; col index for the new row
@@ -934,12 +932,43 @@ VWFCharHandler:
     ; M is 16 here from caller; SEP for 1-byte STZ then back.
     SEP #$20 : LDA.B #$00 : STA.L !VWF_TMP_DREW : REP #$20
 
-    ; Row index = ($09FE >> 1) & 7  → 8 row slots support up to 8 text
-    ; lines without colliding (file info menu has 4 lines that previously
-    ; collapsed to 2 canvas rows under the old &3 mask).
-    LDA.W $09FE                             ; text row id
-    LSR A : AND.W #$0007                    ; halve, mask to 0..7
-    STA.L !VWF_TMP_ROW                      ; canvas row index 0..7
+    ; Row index — polarity-branched.
+    ;
+    ; BB dialog: canvas_row = ($09FE >> 1) & 7. Pre-Phase-A behavior;
+    ;   BB rendering historically worked correctly with this source.
+    ;   Switching BB to SAVX broke rasterization (root cause TBD —
+    ;   user-attested "this worked before"). Preserved per polarity
+    ;   branch.
+    ;
+    ; WB menus: canvas_row = (SAVX >> 6) mod 7. Engine masks $09FE to
+    ;   5 bits (docs/control_codes.md §4), so 4-slot menus' distinct
+    ;   engine rows collapse to identical $09FE values → all slots hash
+    ;   to same canvas_row → cross-slot tile_id collision. SAVX (engine
+    ;   tilemap byte offset) preserves true engine_row. Mod 7 caps
+    ;   canvas_row at 6 to keep tile_id in $20..$FF (no chrome overflow).
+    ;
+    ; Each polarity is internally consistent: TMP_BASE (canvas write pos)
+    ; and tile_id formula both read TMP_ROW so they always pick the
+    ; same canvas slot/tile. PreRender's full canvas wipe handles
+    ; cross-emit canvas freshness regardless of canvas_row source.
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .bbRowSrc                           ; BB → $09FE>>1 & 7
+    ; WB: canvas_row = (SAVX >> 6) mod 7
+    LDA.L !VWF_SAVX
+    LSR A : LSR A : LSR A
+    LSR A : LSR A : LSR A                   ; /64 → engine_row (0..31)
+.rowMod7:
+    CMP.W #$0007
+    BCC .rowDone
+    SBC.W #$0007                            ; CMP set C=1 when A>=7, SBC clean
+    BRA .rowMod7
+.bbRowSrc:
+    LDA.W $09FE
+    LSR A : AND.W #$0007                    ; ($09FE>>1) & 7
+.rowDone:
+    STA.L !VWF_TMP_ROW                      ; canvas row index 0..7 (BB) / 0..6 (WB)
 
     ; Tile column = VWF_PX >> 3  (each tile is 8 px wide).
     LDA.L !VWF_PX                           ; pen pixel x
@@ -1502,27 +1531,42 @@ VWFPreRender:
     STA.L !VWF_DMA_HI
 
     ; -----------------------------------------------------------------------
-    ; Partial canvas clear: zero bytes from current pen position to end of
-    ; canvas. Tiles BEHIND the pen hold previously-rendered chars in this
-    ; page (their tilemap entries are still on screen, so their tile bytes
-    ; must persist across the per-frame PreRender→processText→PostRender
-    ; cycle that drives typewriter rendering). Tiles AT or AFTER the pen
-    ; are about to be (re)written by this emit, so they need a fresh start.
+    ; Canvas clear — polarity-gated:
+    ;   BB: partial wipe from current pen pos onwards (pre-Phase-A behavior).
+    ;       Tiles BEHIND the pen hold previously-rendered chars in this page
+    ;       (their tilemap entries are still on screen, so their tile bytes
+    ;       must persist across the per-frame PreRender→processText→
+    ;       PostRender cycle that drives typewriter dialog rendering).
+    ;       Tiles AT or AFTER the pen are about to be (re)written by this
+    ;       emit, so they need a fresh start.
+    ;   WB: full canvas wipe from $0. WB menu emits are independent (each
+    ;       scene re-paints from scratch) so partial wipe leaks stale data
+    ;       under SAVX-derived canvas_row source. Full wipe removes the
+    ;       canvas_row consistency requirement for WB.
     ;
-    ; offset = row * 512 + col * 16   (matches VWFCharHandler's $0A calc)
-    ;   row = ($09FE >> 1) & 7
+    ; offset = row * 512 + col * 16   (matches CharHandler's TMP_BASE calc)
+    ;   row = ($09FE >> 1) & 7  (BB's canvas_row source)
     ;   col = $09FC
     ; -----------------------------------------------------------------------
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .partialWipeStart                   ; BB → partial wipe from pen pos
+    ; WB: full wipe from canvas start
+    LDX.W #$0000
+    BRA .preFillCheckPolarity
+.partialWipeStart:
     LDA.W $09FE                             ; text row source word
     LSR A : AND.W #$0007                    ; row index 0..7
     XBA                                     ; row << 8
     ASL A                                   ; row << 9 = * 512 (max 7*512=$0E00)
-    STA.L !VWF_TMP_BASE                     ; partial: row * 512 (1bpp-IL stride)
+    STA.L !VWF_TMP_BASE                     ; partial: row * 512
     LDA.W $09FC                             ; col index
     AND.W #$001F                            ; clamp 0..31 defensively
-    ASL A : ASL A : ASL A : ASL A           ; col * 16 (1bpp-IL cell stride)
+    ASL A : ASL A : ASL A : ASL A           ; col * 16
     CLC : ADC.L !VWF_TMP_BASE               ; + row * 512
-    TAX                                     ; X = canvas byte offset to start clearing
+    TAX                                     ; X = canvas byte offset to start
+.preFillCheckPolarity:
 
     ; Polarity-aware fill: $FFFF for inverted (WB) so AND-NOT render punches
     ; black holes through a white paper; $0000 for normal (BB) so OR-render
@@ -1544,7 +1588,7 @@ VWFPreRender:
 +
     RTL                                     ; long-return — wrapper continues with JSR processText
 
-warnpc $E09000                              ; VWFPreRender must end before VWFPostRender
+warnpc $E09010                              ; VWFPreRender must end before VWFPostRender (bumped +$10 for polarity-gated wipe)
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
@@ -1554,9 +1598,10 @@ warnpc $E09000                              ; VWFPreRender must end before VWFPo
 ;
 ; Org bumped from $E08FE0 → $E09000 (Phase 1, scene-aware cache plan) to
 ; give VWFPreRender room for fingerprint capture; subsequent phases add
-; more PreRender code.
+; more PreRender code. Bumped again $E09000 → $E09010 (Phase A polarity-
+; gated wipe) for partial-vs-full wipe selector.
 ; ----------------------------------------------------------------------------
-org $E09000
+org $E09010
 
 VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
@@ -1591,7 +1636,7 @@ VWFPostRender:
     LDA.W $0A16                             ; displaced: load text-engine state word
     RTL                                     ; long-return — caller's NOPs follow harmlessly
 
-warnpc $E09030                              ; VWFPostRender must end before VWFClsHook
+warnpc $E09040                              ; VWFPostRender must end before VWFClsHook (bumped +$10 cascade)
 
 ; ----------------------------------------------------------------------------
 ; VWFClsHook — called from $80:C022 in place of JSL initTilemapAndSync_Long.
@@ -1604,7 +1649,7 @@ warnpc $E09030                              ; VWFPostRender must end before VWFC
 ; Org bumped from $E0:9000 → $E0:9030 (Phase 1, scene-aware cache plan)
 ; to clear room for VWFPostRender's new home at $E09000.
 ; ----------------------------------------------------------------------------
-org $E09030
+org $E09040
 
 ; ENTRY: M=16 (caller convention from $80:C022 is M=16 mid-text-stream).
 ; EXIT:  M=16 (RTL preserves carrier P state).
