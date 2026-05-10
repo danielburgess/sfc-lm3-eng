@@ -421,6 +421,13 @@ endif
 ; canvas tile that holds the discarded char's rasterized pixels (kerned
 ; alongside its predecessor in the LEFTMOST canvas slot).
 !VWF_LAST_LEFTMOST_TID = $7F5D36 ; 2 B — last LEFTMOST tile_id allocated/reused
+                                  ;       (variant-A inert).
+!VWF_FIRST_SAVX        = $7F5D36 ; 2 B — alias: SAVX captured at first char of
+                                  ;       emit. PreRender inits to $FFFF. First
+                                  ;       CharHandler call where it's $FFFF sets
+                                  ;       it to current SAVX. PostRender reads
+                                  ;       it as the start of the engine col
+                                  ;       range to scan for dedupe-blank.
 !VWF_LAST_DISCARD      = $7F5D38 ; 1 B — $A5 if last char was discard-blank
                                   ;       Reset to $00 by every non-discard
                                   ;       tilemap write and by VWFPreRender.
@@ -726,6 +733,16 @@ VWFCharHandler:
 
     TXA                                     ; X→A (LDX.L doesn't exist; round-trip via A)
     STA.L !VWF_SAVX                         ; preserve tilemap byte offset for later writes
+
+    ; PostRender dedupe support: capture FIRST_SAVX on first char of emit.
+    ; PreRender inits FIRST_SAVX = $FFFF; first char overwrites with current
+    ; SAVX. PostRender uses [FIRST_SAVX, VWF_SAVX] as the engine col range.
+    LDA.L !VWF_FIRST_SAVX
+    CMP.W #$FFFF
+    BNE .firstSavxAlreadySet
+    LDA.L !VWF_SAVX
+    STA.L !VWF_FIRST_SAVX
+.firstSavxAlreadySet:
 
     ; Newline detection: $09FE is the game's text row id. If it changed
     ; mid-emit (engine FF nn codes can jump $09FE between chars):
@@ -1527,6 +1544,7 @@ VWFPreRender:
     ; no char gets rendered between now and next vblank.
     LDA.W #$FFFF
     STA.L !VWF_DMA_LO                       ; sentinel "no range yet"
+    STA.L !VWF_FIRST_SAVX                   ; sentinel "no first-char SAVX yet" (PostRender dedupe)
     LDA.W #$0000
     STA.L !VWF_DMA_HI
 
@@ -1588,7 +1606,7 @@ VWFPreRender:
 +
     RTL                                     ; long-return — wrapper continues with JSR processText
 
-warnpc $E09010                              ; VWFPreRender must end before VWFPostRender (bumped +$10 for polarity-gated wipe)
+warnpc $E09020                              ; VWFPreRender must end before VWFPostRender (bumped +$20 for polarity-gated wipe + FIRST_SAVX init)
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
@@ -1601,7 +1619,7 @@ warnpc $E09010                              ; VWFPreRender must end before VWFPo
 ; more PreRender code. Bumped again $E09000 → $E09010 (Phase A polarity-
 ; gated wipe) for partial-vs-full wipe selector.
 ; ----------------------------------------------------------------------------
-org $E09010
+org $E09020
 
 VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
@@ -1621,6 +1639,14 @@ VWFPostRender:
     ; LAST_BUF_SIG) and skips rasterization on a hit.
     LDA.B #$A5 : STA.L !VWF_CACHE_VALID
 
+    ; Single-row dedupe: scan engine cols [FIRST_SAVX..VWF_SAVX]. For each
+    ; col whose canvas tile is fully blank (polarity-match), rewrite the
+    ; tilemap entry to canonical $20+palette. Stops "duplicating blank
+    ; tiles in the tileset" — multiple cells share single $20 VRAM tile.
+    ; Runs after rasterization completes so canvas state is final (no
+    ; staleness bug).
+    JSR.W VWFDedupeRow                      ; same-bank near call (M=8 in/out)
+
     ; Bug-B fix-attempt #1 (REVERTED 2026-05-09): VWFPostFlush JSR was here.
     ; The fix didn't address the actual bug — most "missing" trailing
     ; class chars come from .tmShiftX consuming TM_OFFSET on the right
@@ -1636,7 +1662,7 @@ VWFPostRender:
     LDA.W $0A16                             ; displaced: load text-engine state word
     RTL                                     ; long-return — caller's NOPs follow harmlessly
 
-warnpc $E09040                              ; VWFPostRender must end before VWFClsHook (bumped +$10 cascade)
+warnpc $E09050                              ; VWFPostRender must end before VWFClsHook (bumped +$10 cascade for FIRST_SAVX)
 
 ; ----------------------------------------------------------------------------
 ; VWFClsHook — called from $80:C022 in place of JSL initTilemapAndSync_Long.
@@ -1649,7 +1675,7 @@ warnpc $E09040                              ; VWFPostRender must end before VWFC
 ; Org bumped from $E0:9000 → $E0:9030 (Phase 1, scene-aware cache plan)
 ; to clear room for VWFPostRender's new home at $E09000.
 ; ----------------------------------------------------------------------------
-org $E09040
+org $E09050
 
 ; ENTRY: M=16 (caller convention from $80:C022 is M=16 mid-text-stream).
 ; EXIT:  M=16 (RTL preserves carrier P state).
@@ -1725,6 +1751,96 @@ VWFPostFlush:
     STA.L $7E9040,X                         ; write BOTTOM tilemap entry
     SEP #$20                                ; back to M=8 per exit contract
 .skip:
+    RTS
+
+; ----------------------------------------------------------------------------
+; VWFDedupeRow — PostRender-time single-row tilemap dedupe.
+;
+; Iterates engine cols [FIRST_SAVX .. VWF_SAVX] (inclusive, 2-byte step). For
+; each cell, reads the 16-byte canvas tile at (TMP_ROW*512 + col*16). If all
+; 8 words match the polarity blank pattern ($FFFF for WB, $0000 for BB),
+; rewrites the tilemap entries (top + bot) to canonical $20+palette so that
+; engine col references the single shared canonical-blank VRAM tile instead
+; of a unique formula tile_id holding identical blank content.
+;
+; Single-row only — assumes the entire emit stays on one canvas_row (the
+; current TMP_ROW). Multi-row emits (BB title, dialog page advance) are NOT
+; handled by this version — they fall through unchanged.
+;
+; If FIRST_SAVX == $FFFF (sentinel: no chars rendered), helper exits.
+;
+; ENTRY: M=8 (caller is VWFPostRender after FLAG/DIRTY/CACHE_VALID setup).
+; EXIT:  M=8. RTS (same-bank near call).
+; ----------------------------------------------------------------------------
+VWFDedupeRow:
+    REP #$20                                ; M=16 for word ops
+    LDA.L !VWF_FIRST_SAVX
+    CMP.W #$FFFF
+    BEQ .drExit                             ; sentinel → no chars, skip
+    CMP.L !VWF_SAVX
+    BCC .drStart
+    BEQ .drStart
+    BRA .drExit                             ; first > last (defensive) → exit
+.drStart:
+    ; Determine blank pattern based on polarity, cache in TMP_FBI.
+    SEP #$20
+    LDA.L !VWF_INVERT
+    REP #$20
+    BEQ .drBB
+    LDA.W #$FFFF
+    BRA .drCacheBlank
+.drBB:
+    LDA.W #$0000
+.drCacheBlank:
+    STA.L !VWF_TMP_FBI                      ; blank pattern (16-bit)
+
+    ; Compute row*512 once, cache in LAST_LEFTMOST_TID slot (free here).
+    LDA.L !VWF_TMP_ROW
+    AND.W #$0007
+    XBA                                     ; row << 8
+    ASL A                                   ; row << 9 = row*512
+    STA.L !VWF_LAST_LEFTMOST_TID            ; reuse as scratch for row*512
+
+    ; Iterate engine cols. X = current SAVX (start at FIRST_SAVX).
+    LDA.L !VWF_FIRST_SAVX
+    TAX
+.drColLoop:
+    ; canvas_pos = (SAVX>>1 & $1F) * 16 + row*512
+    PHX                                     ; save SAVX (will need it for tilemap rewrite)
+    TXA
+    LSR A                                   ; SAVX/2
+    AND.W #$001F                            ; & $1F = engine col
+    ASL A : ASL A : ASL A : ASL A           ; col*16
+    CLC : ADC.L !VWF_LAST_LEFTMOST_TID       ; + row*512 = canvas pos
+    TAX                                     ; X = canvas byte offset
+
+    LDA.L !VWF_TMP_FBI                      ; blank pattern
+    LDY.W #$0008                            ; 8 words = 16 bytes
+.drCheckLoop:
+    CMP.L !TILE_BUF,X
+    BNE .drNonBlank
+    INX : INX
+    DEY
+    BNE .drCheckLoop
+
+    ; All 8 words match blank → rewrite tilemap.
+    PLX                                     ; X = SAVX (engine tilemap byte offset)
+    LDA.W $0A02
+    CLC : ADC.W #!VWF_BLANK_TILE_ID         ; $20 + palette
+    STA.L $7E9000,X                         ; rewrite TOP tilemap entry
+    CLC : ADC.W #$0400
+    STA.L $7E9040,X                         ; rewrite BOT tilemap entry
+    BRA .drColAdvance
+.drNonBlank:
+    PLX                                     ; restore SAVX, leave tilemap as-is
+.drColAdvance:
+    TXA                                     ; X→A so we can CMP with long addr
+    CMP.L !VWF_SAVX
+    BEQ .drExit                             ; processed last col → done
+    INX : INX                               ; advance to next col (2-byte SAVX step)
+    BRA .drColLoop
+.drExit:
+    SEP #$20                                ; M=8 per exit contract
     RTS
 
 ; ============================================================================
@@ -2135,7 +2251,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09340                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer must end before VWFNMI (bumped +$40 for VWFPostFlush)
+warnpc $E093E0                              ; ClsHook + helpers + slice LRU + dedupe-row helper must end before VWFNMI (bumped +$A0 for VWFDedupeRow)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2156,7 +2272,7 @@ warnpc $E09340                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09340
+org $E093E0
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2397,13 +2513,13 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E09500                              ; VWFNMI + helpers must end before data table (bumped Phase 4 step 1)
+warnpc $E09520                              ; VWFNMI + helpers must end before data table (bumped +$20 for cascade)
 
 ; ============================================================================
 ; Data — placed at $E0:9500, safely past VWFNMI (bumped Phase 4 step 1)
 ; ($E09500 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A511)
 ; ============================================================================
-org $E09500
+org $E09520
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
