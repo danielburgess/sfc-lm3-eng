@@ -1854,6 +1854,15 @@ VWFDedupeRow:
     LDA.L !VWF_FIRST_SAVX
     STA.L !VWF_TMP_FBI                      ; outer loop counter = current SAVX
 
+    ; Step 8a-ext v2 — DMA-trim sentinels for first/last non-blank canvas
+    ; byte. Reuses TMP_ORIG / TMP_SHIFT (transient in rasterizer; dead at
+    ; PostRender). After scan, only used to SHRINK existing DMA bounds —
+    ; never expand, never clear DIRTY.
+    LDA.W #$FFFF
+    STA.L !VWF_TMP_ORIG                     ; first_nonblank sentinel = "none"
+    LDA.W #$0000
+    STA.L !VWF_TMP_SHIFT                    ; last_nonblank end = 0
+
 .scanRow:
     LDA.L !VWF_TMP_FBI
     CMP.L !VWF_TMP_W
@@ -1872,15 +1881,13 @@ VWFDedupeRow:
 .tileScan:
     LDA.L !TILE_BUF,X
     CMP.W #$FFFF
-    BNE .tileNotBlank                       ; non-blank → next tile
+    BNE .tileNotBlank                       ; non-blank → record + advance
     INX : INX
     DEY
     BNE .tileScan
     ; All 8 words = $FFFF → tile is fully blank. Rewrite tilemap entry
-    ; pair to canonical blank tile_id $0020 + palette so this VRAM slot
-    ; can be reclaimed (DMA bound tightening) and the cell renders the
-    ; engine's blank glyph instead of a VWF-owned all-blank tile.
-    ; Step 8a — WB scope (gated at .exit_m8 above).
+    ; pair to canonical blank tile_id $0020 + palette so the engine's
+    ; blank glyph renders here.
     LDA.L !VWF_TMP_FBI                      ; A = current outer SAVX (tilemap byte off)
     TAX                                     ; X = tilemap byte offset
     LDA.W #!VWF_BLANK_TILE_ID               ; A = $0020 (canonical blank)
@@ -1888,8 +1895,22 @@ VWFDedupeRow:
     STA.L $7E9000,X                         ; rewrite TOP tilemap entry
     CLC : ADC.W #$0400                      ; + palette-row offset for bottom
     STA.L $7E9040,X                         ; rewrite BOTTOM tilemap entry
-.tileNotBlank:
+    BRA .tileAdvance                        ; skip non-blank tracker
 
+.tileNotBlank:
+    ; v2 trim tracking — capture first non-blank canvas byte (once) and
+    ; running last non-blank canvas byte end.
+    LDA.L !VWF_TMP_ORIG
+    CMP.W #$FFFF
+    BNE +
+    LDA.L !VWF_TMP_POS                      ; first encounter — record
+    STA.L !VWF_TMP_ORIG
++
+    LDA.L !VWF_TMP_POS
+    CLC : ADC.W #$0010                      ; tile_end = TMP_POS + 16
+    STA.L !VWF_TMP_SHIFT
+
+.tileAdvance:
     ; Advance outer SAVX by 2 (next cell)
     LDA.L !VWF_TMP_FBI
     INC A : INC A
@@ -1897,6 +1918,31 @@ VWFDedupeRow:
     BRA .scanRow
 
 .scanDone:
+    ; --- DMA-trim v2: strictly shrink bounds ----------------------------
+    ; If no non-blanks recorded → leave DMA bounds alone. Otherwise:
+    ;   DMA_LO ← max(DMA_LO, TMP_ORIG)  — shrink from left only
+    ;   DMA_HI ← min(DMA_HI, TMP_SHIFT) — shrink from right only
+    ; Cannot expand, cannot clear DIRTY. If our scan range disagrees with
+    ; the rasterizer's actual canvas writes (different row, multi-row
+    ; emit, etc.) the worst case is no benefit, not a regression.
+    LDA.L !VWF_TMP_ORIG
+    CMP.W #$FFFF
+    BEQ .exit                               ; no non-blanks → leave DMA alone
+
+    ; LO trim: DMA_LO = max(DMA_LO, TMP_ORIG)
+    LDA.L !VWF_TMP_ORIG
+    CMP.L !VWF_DMA_LO
+    BCC .skipLo                             ; TMP_ORIG < DMA_LO → don't expand
+    STA.L !VWF_DMA_LO                       ; ≥ → safe to advance LO
+.skipLo:
+
+    ; HI trim: DMA_HI = min(DMA_HI, TMP_SHIFT)
+    LDA.L !VWF_TMP_SHIFT
+    CMP.L !VWF_DMA_HI
+    BCS .skipHi                             ; TMP_SHIFT ≥ DMA_HI → don't expand
+    STA.L !VWF_DMA_HI                       ; < → safe to retreat HI
+.skipHi:
+
 .exit:
     SEP #$20
 .exit_m8:                                   ; entry for BB polarity-gate skip
@@ -2310,7 +2356,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09400                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 then +$20 then +$10 for Step 8a rewrite + BRL conversions)
+warnpc $E09480                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 +$20 +$10 +$80 for Step 8a-ext DMA trim)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2331,7 +2377,7 @@ warnpc $E09400                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09400
+org $E09480
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2572,14 +2618,14 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E095C0                              ; VWFNMI + helpers must end before data table (bumped +$10 more for Step 8a)
+warnpc $E09640                              ; VWFNMI + helpers must end before data table (bumped +$80 more for Step 8a-ext DMA trim)
 
 ; ============================================================================
-; Data — placed at $E0:95C0, safely past VWFNMI (bumped +$10 more for
-; Step 8a; was $E095B0)
-; ($E095C0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A5D1)
+; Data — placed at $E0:9640, safely past VWFNMI (bumped +$80 more for
+; Step 8a-ext DMA trim; was $E095C0)
+; ($E09640 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A651)
 ; ============================================================================
-org $E095C0
+org $E09640
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
