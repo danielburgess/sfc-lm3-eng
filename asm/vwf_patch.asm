@@ -388,6 +388,16 @@ endif
 !VWF_DMA_IN_RUN   = $7F5DD0     ; 2 B
 !VWF_DMA_MAX_RUNS = 4           ; cap; exceeding this falls back to single-DMA
 
+; ----------------------------------------------------------------------------
+; Path B — max canvas slot index reached by rasterizer in current emit.
+; Tracks the highest canvas tile slot the rasterizer wrote to (primary OR
+; spill). Used by PostRender's VWFDedupeRow (Step B7) to compute a precise
+; DMA_HI = row_base + (MAX_SLOT+1)*16. Sentinel $FFFF = no writes yet.
+;
+; This is INDEX, not byte offset. End byte of slot N = (N+1)*16.
+; ----------------------------------------------------------------------------
+!VWF_MAX_SLOT     = $7F5DD2     ; 2 B  (canvas slot INDEX, 0..31; $FFFF = none)
+
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
 ; task-state dispatcher at $01:B7F0..$B807 reads DP $10 to decide whether to
@@ -1222,6 +1232,14 @@ VWFCharHandler:
     ; prior emits with the canvas-default polarity fill (BG-matching,
     ; visually invisible). The cursor-tile preservation lives in
     ; VWFNMI's two-chunk DMA (which still runs for WB).
+    ;
+    ; LOAD-BEARING: Step 10 (2026-05-10) tried tightening to TMP_BASE+$20
+    ; and caused full regression on both polarities (BB static garbage,
+    ; BB typewriter end-of-line garbage, WB missing lines + garbage).
+    ; Mid-emit NMI DMAs see tilemap entries pointing at VWF tile_ids
+    ; before the rasterizer rewrites them or PostRender dedupe runs;
+    ; if those VRAM slots aren't pre-cleared via this row-end fill,
+    ; stale prior-emit content is displayed.
     REP #$20                                ; M=16 for word compares
     LDA.L !VWF_TMP_BASE                     ; current cell canvas start
     CMP.L !VWF_DMA_LO
@@ -1591,7 +1609,8 @@ VWFPreRender:
     STA.L !VWF_DMA_LO                       ; sentinel "no range yet"
     STA.L !VWF_FIRST_SAVX                   ; sentinel: PostRender dedupe
                                             ;   "no FIRST_SAVX captured yet"
-                                            ;   (A still $FFFF from above)
+    STA.L !VWF_MAX_SLOT                     ; Path B: sentinel "no rasterizer
+                                            ;   writes yet" (A still $FFFF)
     LDA.W #$0000
     STA.L !VWF_DMA_HI
 
@@ -1798,6 +1817,42 @@ VWFPostFlush:
     STA.L $7E9040,X                         ; write BOTTOM tilemap entry
     SEP #$20                                ; back to M=8 per exit contract
 .skip:
+    RTS
+
+; ----------------------------------------------------------------------------
+; VWFTrailingRowClear — Path B Step B2.
+;
+; Writes canonical $20 + palette to all 32 tilemap entries (both TOP and
+; BOTTOM rows) for an engine row. Called from PreRender (Step B3) and
+; CharHandler's row-change branch (Step B4) to pre-clear trailing tilemap
+; entries before the rasterizer overwrites them per char. After the emit,
+; cells past the last rendered char remain canonical $20 — so the upcoming
+; DMA_HI tightening (Step B6) is safe (stale VRAM at trailing VWF tile_ids
+; isn't referenced by the now-canonical trailing tilemap entries).
+;
+; ENTRY: M=16. A = row tilemap byte base (= engine_row * 64). Caller saved
+;        A/X/Y as needed. This helper clobbers A, X, Y.
+; EXIT:  M=16. RTS (same-bank near call).
+;
+; Loop body pre-computes TOP / BOTTOM composed values once to avoid
+; per-iteration SEC/SBC of the palette-row offset.
+; ----------------------------------------------------------------------------
+VWFTrailingRowClear:
+    TAX                                     ; X = row tilemap byte base
+    LDY.W #$0020                            ; 32 cells per row
+    LDA.W #!VWF_BLANK_TILE_ID
+    CLC : ADC.W $0A02                       ; canonical blank + palette/priority (TOP)
+    STA.L !VWF_TMP_FBI                      ; cache TOP composed word
+    CLC : ADC.W #$0400                      ; + palette-row offset (BOTTOM)
+    STA.L !VWF_TMP_W                        ; cache BOTTOM composed word
+.clrLoop:
+    LDA.L !VWF_TMP_FBI
+    STA.L $7E9000,X                         ; TOP tilemap entry
+    LDA.L !VWF_TMP_W
+    STA.L $7E9040,X                         ; BOTTOM tilemap entry
+    INX : INX                               ; next cell (2 bytes per entry)
+    DEY
+    BNE .clrLoop
     RTS
 
 ; ----------------------------------------------------------------------------
