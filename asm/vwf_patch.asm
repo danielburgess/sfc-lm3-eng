@@ -1233,13 +1233,19 @@ VWFCharHandler:
     ; visually invisible). The cursor-tile preservation lives in
     ; VWFNMI's two-chunk DMA (which still runs for WB).
     ;
-    ; LOAD-BEARING: Step 10 (2026-05-10) tried tightening to TMP_BASE+$20
-    ; and caused full regression on both polarities (BB static garbage,
-    ; BB typewriter end-of-line garbage, WB missing lines + garbage).
-    ; Mid-emit NMI DMAs see tilemap entries pointing at VWF tile_ids
-    ; before the rasterizer rewrites them or PostRender dedupe runs;
-    ; if those VRAM slots aren't pre-cleared via this row-end fill,
-    ; stale prior-emit content is displayed.
+    ; LOAD-BEARING: row-end DMA_HI is doing DOUBLE DUTY. It covers (a) the
+    ; current cell's canvas + spill, AND (b) the end-of-row VRAM scrub
+    ; that hides stale prior-emit tile content at engine_cols past the
+    ; rasterizer's reach. Cutting to TMP_BASE+$20 (Step 10 attempt, twice
+    ; reverted 2026-05-10) eliminates (b) — trailing tilemap entries still
+    ; reference VWF tile_ids whose VRAM isn't refreshed → visible garbage.
+    ; VWFDedupeRow's chrome-aware trailing-clear is scoped to
+    ; [FIRST..VWF_SAVX] only and does NOT clear cells past VWF_SAVX, so
+    ; the safety net doesn't extend to where tightened DMA exposes stale
+    ; content. Solving this requires a different mechanism (e.g., the
+    ; canvas-compaction approach where each non-blank glyph gets a new
+    ; canvas slot and trailing slots are GUARANTEED untouched by the
+    ; rasterizer) — NOT a simple DMA_HI tighten.
     REP #$20                                ; M=16 for word compares
     LDA.L !VWF_TMP_BASE                     ; current cell canvas start
     CMP.L !VWF_DMA_LO
@@ -1931,14 +1937,18 @@ VWFDedupeRow:
     ASL A                                   ; A = canvas_row << 9 = * 512
     STA.L !VWF_TMP_BASE                     ; row_base byte offset
 
-    ; Loop end (exclusive) = VWF_SAVX + 2 so SAVX==VWF_SAVX still processes.
-    ; (REVERTED 2026-05-10: tried extending to row_end, but trailing cells
-    ; past VWF_SAVX belong to sibling emits' content / right-margin chrome.
-    ; Rewriting them with canonical $20 + palette $2000 caused white tiles
-    ; to overrun the right-hand black border. Leaving cells past VWF_SAVX
-    ; alone preserves sibling content.)
-    LDA.L !VWF_SAVX
-    INC A : INC A
+    ; Loop end (exclusive) = row_end (= row_base + 64 in tilemap byte space).
+    ; Option A — Cycle 1: scope extended past VWF_SAVX to row_end so trailing
+    ; tilemap entries (past last rendered char) are also evaluated. Chrome-
+    ; aware rewrite-gate ($00..$1F preserved as engine pre-loaded tiles,
+    ; $100+ preserved as chrome) prevents clobbering engine content.
+    ; Sibling emits' VWF-range entries within the gap will be cleared to
+    ; canonical $20 but get restored when the sibling re-renders this frame
+    ; (static screens) or next frame (typewriter). This is the safety net
+    ; for Cycle 2's DMA_HI tightening.
+    LDA.L !VWF_FIRST_SAVX
+    AND.W #$FFC0                            ; row tilemap byte base
+    CLC : ADC.W #$0040                      ; + 64 = row_end (exclusive)
     STA.L !VWF_TMP_W                        ; loop bound (exclusive)
 
     LDA.L !VWF_FIRST_SAVX
@@ -2518,7 +2528,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09520                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow + VWFTrailingRowClear must end before VWFNMI (bumped +$10 for trailing-clear chrome check)
+warnpc $E09530                              ; ClsHook + helpers + ... + VWFDedupeRow + VWFTrailingRowClear must end before VWFNMI (bumped +$10 for Option A scope extension)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2539,7 +2549,7 @@ warnpc $E09520                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09520
+org $E09530
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2834,14 +2844,14 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E096E0                              ; VWFNMI + helpers must end before data table (bumped +$10 for trailing-clear)
+warnpc $E096F0                              ; VWFNMI + helpers must end before data table (bumped +$10 for Option A)
 
 ; ============================================================================
-; Data — placed at $E0:96E0, safely past VWFNMI (bumped +$10 for
-; trailing-clear chrome check; was $E096D0)
-; ($E096E0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A6F1)
+; Data — placed at $E0:96F0, safely past VWFNMI (bumped +$10 for
+; Option A scope extension; was $E096E0)
+; ($E096F0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A701)
 ; ============================================================================
-org $E096E0
+org $E096F0
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
