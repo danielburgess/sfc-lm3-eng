@@ -365,6 +365,29 @@ endif
 !VWF_LAST_COL      = $7F5DBD
 !VWF_CELL_TILE     = $7F5E00
 
+; ----------------------------------------------------------------------------
+; Step 9 — non-blank run list (VWFDedupeRow + VWFNMI multi-segment DMA).
+;
+; The dedupe scan walks each tile in [FIRST_SAVX..VWF_SAVX]. Consecutive
+; non-blank tiles form a "run". The list captures up to MAX_RUNS runs;
+; each entry = (canvas_byte_start, canvas_byte_end_exclusive). VWFNMI's
+; WB path iterates the list and issues one DMA per run, skipping interior
+; blank gaps that the existing single-DMA approach would have re-uploaded.
+;
+;   $7F:5DBE  DMA_RUNS    16 B  — array of 4 × (start_W, end_W)
+;   $7F:5DCE  DMA_NRUNS    2 B  — number of valid entries (0..MAX_RUNS)
+;   $7F:5DD0  DMA_IN_RUN   2 B  — transient flag during scan ($A5 = in run)
+;
+; Slots are 16-bit so M=16 helper code can load/store without M dance.
+;
+; NRUNS == 0 → no run list captured. VWFNMI falls back to the legacy
+; [DMA_LO..DMA_HI] single-DMA path (preserves BB behavior + WB fallback).
+; ----------------------------------------------------------------------------
+!VWF_DMA_RUNS     = $7F5DBE     ; 16 B  (4 × (start_W, end_W))
+!VWF_DMA_NRUNS    = $7F5DCE     ; 2 B
+!VWF_DMA_IN_RUN   = $7F5DD0     ; 2 B
+!VWF_DMA_MAX_RUNS = 4           ; cap; exceeding this falls back to single-DMA
+
 ; --- VWFCharHandler scratch — RELOCATED FROM DP $00..$10 ---
 ; Earlier builds used direct-page slots $00..$10 as render scratch. The game's
 ; task-state dispatcher at $01:B7F0..$B807 reads DP $10 to decide whether to
@@ -1863,10 +1886,17 @@ VWFDedupeRow:
     LDA.W #$0000
     STA.L !VWF_TMP_SHIFT                    ; last_nonblank end = 0
 
+    ; Step 9a — non-blank run list capture (consumed by VWFNMI Step 9b).
+    LDA.W #$0000
+    STA.L !VWF_DMA_NRUNS                    ; runs captured so far
+    STA.L !VWF_DMA_IN_RUN                   ; not currently in a run
+
 .scanRow:
     LDA.L !VWF_TMP_FBI
     CMP.L !VWF_TMP_W
-    BCS .scanDone                           ; counter >= bound → done
+    BCC +                                   ; counter < bound → continue
+    BRL .scanDone                           ; counter >= bound → done (long branch)
++
 
     ; canvas byte offset = row_base + col*16  (col*2 = SAVX & $003F)
     AND.W #$003F                            ; col*2 (low 6 bits of SAVX)
@@ -1895,6 +1925,17 @@ VWFDedupeRow:
     STA.L $7E9000,X                         ; rewrite TOP tilemap entry
     CLC : ADC.W #$0400                      ; + palette-row offset for bottom
     STA.L $7E9040,X                         ; rewrite BOTTOM tilemap entry
+
+    ; Step 9a — blank tile ends any current run.
+    LDA.L !VWF_DMA_IN_RUN
+    BEQ .tileAdvance                        ; not in run → nothing to close
+    LDA.W #$0000
+    STA.L !VWF_DMA_IN_RUN                   ; clear in-run flag
+    LDA.L !VWF_DMA_NRUNS
+    CMP.W #!VWF_DMA_MAX_RUNS+1
+    BCS .tileAdvance                        ; already abandoned
+    INC A
+    STA.L !VWF_DMA_NRUNS                    ; commit closed run
     BRA .tileAdvance                        ; skip non-blank tracker
 
 .tileNotBlank:
@@ -1910,14 +1951,59 @@ VWFDedupeRow:
     CLC : ADC.W #$0010                      ; tile_end = TMP_POS + 16
     STA.L !VWF_TMP_SHIFT
 
+    ; Step 9a — open or extend the current run.
+    LDA.L !VWF_DMA_IN_RUN
+    BNE .runExtend                          ; already in a run → just extend end
+
+    ; Not in a run. Try to open one.
+    LDA.L !VWF_DMA_NRUNS
+    CMP.W #!VWF_DMA_MAX_RUNS
+    BCC .runOpen                            ; < MAX → open
+    ; ≥ MAX → abandon list. Set NRUNS to a sentinel beyond MAX so VWFNMI
+    ; falls back to legacy single-DMA. Edge trim (v2) still applies.
+    LDA.W #!VWF_DMA_MAX_RUNS+1
+    STA.L !VWF_DMA_NRUNS
+    BRA .tileAdvance
+
+.runOpen:
+    ; X = NRUNS * 4 (byte offset into RUNS array)
+    ASL A : ASL A
+    TAX
+    LDA.L !VWF_TMP_POS
+    STA.L !VWF_DMA_RUNS,X                   ; RUNS[NRUNS].start = TMP_POS
+    LDA.W #$00A5
+    STA.L !VWF_DMA_IN_RUN
+
+.runExtend:
+    ; RUNS[NRUNS].end = TMP_POS + 16
+    LDA.L !VWF_DMA_NRUNS
+    ASL A : ASL A
+    CLC : ADC.W #$0002
+    TAX
+    LDA.L !VWF_TMP_POS
+    CLC : ADC.W #$0010
+    STA.L !VWF_DMA_RUNS,X
+
 .tileAdvance:
     ; Advance outer SAVX by 2 (next cell)
     LDA.L !VWF_TMP_FBI
     INC A : INC A
     STA.L !VWF_TMP_FBI
-    BRA .scanRow
+    BRL .scanRow                            ; long branch (loop body grew)
 
 .scanDone:
+    ; Step 9a — close any pending run (last tile was non-blank).
+    LDA.L !VWF_DMA_IN_RUN
+    BEQ .runsDone
+    LDA.W #$0000
+    STA.L !VWF_DMA_IN_RUN
+    LDA.L !VWF_DMA_NRUNS
+    CMP.W #!VWF_DMA_MAX_RUNS+1
+    BCS .runsDone                           ; already abandoned → leave
+    INC A
+    STA.L !VWF_DMA_NRUNS
+.runsDone:
+
     ; --- DMA-trim v2: strictly shrink bounds ----------------------------
     ; If no non-blanks recorded → leave DMA bounds alone. Otherwise:
     ;   DMA_LO ← max(DMA_LO, TMP_ORIG)  — shrink from left only
@@ -2356,7 +2442,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09480                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 +$20 +$10 +$80 for Step 8a-ext DMA trim)
+warnpc $E09500                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 +$20 +$10 +$80 +$80 for Step 9a run-list capture)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2377,7 +2463,7 @@ warnpc $E09480                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09480
+org $E09500
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2618,14 +2704,14 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E09640                              ; VWFNMI + helpers must end before data table (bumped +$80 more for Step 8a-ext DMA trim)
+warnpc $E096C0                              ; VWFNMI + helpers must end before data table (bumped +$80 more for Step 9a)
 
 ; ============================================================================
-; Data — placed at $E0:9640, safely past VWFNMI (bumped +$80 more for
-; Step 8a-ext DMA trim; was $E095C0)
-; ($E09640 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A651)
+; Data — placed at $E0:96C0, safely past VWFNMI (bumped +$80 more for
+; Step 9a; was $E09640)
+; ($E096C0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A6D1)
 ; ============================================================================
-org $E09640
+org $E096C0
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
