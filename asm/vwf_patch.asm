@@ -1053,10 +1053,10 @@ VWFCharHandler:
     XBA                                     ; row << 8
     ASL A                                   ; row << 9 (multiply by 512)
     STA.L !VWF_TMP_BASE                               ; partial: row*512
-    LDA.L !VWF_TMP_COL                               ; col
+    LDA.L !VWF_TMP_COL                               ; col (pen_col)
     ASL A : ASL A : ASL A : ASL A           ; col << 4 (multiply by 16)
     CLC : ADC.L !VWF_TMP_BASE                         ; add row*512
-    STA.L !VWF_TMP_BASE                               ; $0A = canvas tile byte offset (BB final)
+    STA.L !VWF_TMP_BASE                               ; $0A = canvas tile byte offset
 
     ; --- Phase A: WB allocator dropped (2026-05-09) ----------------------
     ; The variable-width pool allocator (LEFTMOST + PRIMARY pen-tile-keyed
@@ -1614,6 +1614,14 @@ VWFPreRender:
     LDA.W #$0000
     STA.L !VWF_DMA_HI
 
+    ; Step B3 (REVERTED 2026-05-10): pre-clearing the entire engine_row at
+    ; PreRender clobbers OTHER emits' tilemap entries on the same row.
+    ; Unit-info has multiple emits per row (name, class, stats). Emit B's
+    ; pre-clear wiped emit A's content → visible bleed (e.g., slot 4 class
+    ; label rendered as "DkAmberUser" with leftover chars from prior emit).
+    ; Path B needs a SCOPED clear — only the cells THIS emit writes, or
+    ; only the trailing cells past the LAST char — not the entire row.
+
     ; -----------------------------------------------------------------------
     ; Canvas clear — polarity-gated:
     ;   BB: partial wipe from current pen pos onwards (pre-Phase-A behavior).
@@ -1672,7 +1680,7 @@ VWFPreRender:
 +
     RTL                                     ; long-return — wrapper continues with JSR processText
 
-warnpc $E09020                              ; VWFPreRender must end before VWFPostRender (bumped +$10 cascade for FIRST_SAVX sentinel)
+warnpc $E09030                              ; VWFPreRender must end before VWFPostRender (bumped +$10 cascade for Path B Step B3 row pre-clear)
 
 ; ----------------------------------------------------------------------------
 ; VWFPostRender — called after processText
@@ -1685,8 +1693,9 @@ warnpc $E09020                              ; VWFPreRender must end before VWFPo
 ; more PreRender code. Bumped again $E09000 → $E09010 (Phase A polarity-
 ; gated wipe) for partial-vs-full wipe selector. Bumped again $E09010 →
 ; $E09020 for FIRST_SAVX sentinel init (PostRender dedupe Step 2).
+; Bumped again $E09020 → $E09030 for Path B Step B3 (PreRender row pre-clear).
 ; ----------------------------------------------------------------------------
-org $E09020
+org $E09030
 
 VWFPostRender:
     SEP #$20                                ; 8-bit for flag check
@@ -1727,7 +1736,7 @@ VWFPostRender:
     LDA.W $0A16                             ; displaced: load text-engine state word
     RTL                                     ; long-return — caller's NOPs follow harmlessly
 
-warnpc $E09050                              ; VWFPostRender must end before VWFClsHook (bumped +$10 cascade)
+warnpc $E09060                              ; VWFPostRender must end before VWFClsHook (bumped +$10 cascade for Path B B3)
 
 ; ----------------------------------------------------------------------------
 ; VWFClsHook — called from $80:C022 in place of JSL initTilemapAndSync_Long.
@@ -1740,8 +1749,9 @@ warnpc $E09050                              ; VWFPostRender must end before VWFC
 ; Org bumped from $E0:9000 → $E0:9030 (Phase 1, scene-aware cache plan)
 ; to clear room for VWFPostRender's new home at $E09000. Bumped again
 ; $E09030 → $E09040 (Phase A) and $E09040 → $E09050 (FIRST_SAVX sentinel).
+; Bumped again $E09050 → $E09060 (Path B Step B3 cascade).
 ; ----------------------------------------------------------------------------
-org $E09050
+org $E09060
 
 ; ENTRY: M=16 (caller convention from $80:C022 is M=16 mid-text-stream).
 ; EXIT:  M=16 (RTL preserves carrier P state).
@@ -1922,9 +1932,11 @@ VWFDedupeRow:
     STA.L !VWF_TMP_BASE                     ; row_base byte offset
 
     ; Loop end (exclusive) = VWF_SAVX + 2 so SAVX==VWF_SAVX still processes.
-    ; 65816 has no LDX.L / CPX.L (X-indexed long only for LDA/STA/CMP/etc.) —
-    ; so the outer loop counter lives in a 16-bit scratch (TMP_FBI) and we
-    ; compare via A. Inner loop uses X (X-indexed long IS valid).
+    ; (REVERTED 2026-05-10: tried extending to row_end, but trailing cells
+    ; past VWF_SAVX belong to sibling emits' content / right-margin chrome.
+    ; Rewriting them with canonical $20 + palette $2000 caused white tiles
+    ; to overrun the right-hand black border. Leaving cells past VWF_SAVX
+    ; alone preserves sibling content.)
     LDA.L !VWF_SAVX
     INC A : INC A
     STA.L !VWF_TMP_W                        ; loop bound (exclusive)
@@ -1970,16 +1982,25 @@ VWFDedupeRow:
     INX : INX
     DEY
     BNE .tileScan
-    ; All 8 words = $FFFF → tile is fully blank. Rewrite tilemap entry
-    ; pair to canonical blank tile_id $0020 + palette so the engine's
-    ; blank glyph renders here.
+    ; All 8 words = $FFFF → tile is fully blank. Maybe rewrite tilemap.
+    ; Range-check: only rewrite entries pointing inside the VWF tile range
+    ; ($20..$FF). Tile_ids $00..$1F are engine pre-loaded tiles (icons,
+    ; cursors). Tile_ids $100+ are chrome (palette-4 icons/frames). Both
+    ; classes belong to non-VWF engine UI and must be preserved.
     LDA.L !VWF_TMP_FBI                      ; A = current outer SAVX (tilemap byte off)
     TAX                                     ; X = tilemap byte offset
+    LDA.L $7E9000,X                         ; existing TOP tilemap entry
+    AND.W #$03FF                            ; mask tile_id (bits 0..9)
+    CMP.W #$0020
+    BCC .chromeSkipRewrite                  ; < $20 → engine tile, preserve
+    CMP.W #$0100
+    BCS .chromeSkipRewrite                  ; >= $100 → chrome, preserve
     LDA.W #!VWF_BLANK_TILE_ID               ; A = $0020 (canonical blank)
     CLC : ADC.W $0A02                       ; + palette/priority bits
     STA.L $7E9000,X                         ; rewrite TOP tilemap entry
     CLC : ADC.W #$0400                      ; + palette-row offset for bottom
     STA.L $7E9040,X                         ; rewrite BOTTOM tilemap entry
+.chromeSkipRewrite:
 
     ; Step 9a — blank tile ends any current run.
     LDA.L !VWF_DMA_IN_RUN
@@ -2497,7 +2518,7 @@ VWFSliceRangeTable:
     dw $0021, $0100                         ; slot 1: same
     dw $0021, $0100                         ; slot 2: same
 
-warnpc $E09500                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow must end before VWFNMI (bumped +$80 +$20 +$10 +$80 +$80 for Step 9a run-list capture)
+warnpc $E09520                              ; ClsHook + helpers + slice LRU + flush helper + Phase 4 rasterizer + VWFDedupeRow + VWFTrailingRowClear must end before VWFNMI (bumped +$10 for trailing-clear chrome check)
 
 ; ============================================================================
 ; VWFNMI — runs at $00:D469 NMI entry (replaces PHP/REP#$30/PHA, 4 bytes).
@@ -2518,7 +2539,7 @@ warnpc $E09500                              ; ClsHook + helpers + slice LRU + fl
 ; phase 2/3 helpers + Phase 4 rasterizer.
 ; Bumped again $E09300 → $E09340 (Phase 4b Bug-B fix) for VWFPostFlush.
 ; ============================================================================
-org $E09500
+org $E09520
 
 ; ENTRY: native NMI vector entry (after game's $00:D469-D46C bytes that we
 ;        displaced: PHP / REP #$30 / PHA). We replicate them here, then run
@@ -2813,14 +2834,14 @@ VWFCursorBlank:
     PLP                                     ; restore M=16
     RTL
 
-warnpc $E096C0                              ; VWFNMI + helpers must end before data table (bumped +$80 more for Step 9a)
+warnpc $E096E0                              ; VWFNMI + helpers must end before data table (bumped +$10 for trailing-clear)
 
 ; ============================================================================
-; Data — placed at $E0:96C0, safely past VWFNMI (bumped +$80 more for
-; Step 9a; was $E09640)
-; ($E096C0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A6D1)
+; Data — placed at $E0:96E0, safely past VWFNMI (bumped +$10 for
+; trailing-clear chrome check; was $E096D0)
+; ($E096E0 + 256 widths + 16-byte zero glyph + ~3840 font bytes ≈ $E0:A6F1)
 ; ============================================================================
-org $E096C0
+org $E096E0
 
 VWFWidthTable:
     incbin "en_data/fonts/font_accented_widths.bin"
