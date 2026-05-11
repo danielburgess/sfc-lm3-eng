@@ -2543,6 +2543,20 @@ VWFNMI:
     JMP .clearAndExit                       ; HI == LO → empty range
 .dmaRangeOk2:
 
+    ; --- Step 9b: prefer run-list DMA when populated --------------------
+    ; If VWFDedupeRow captured a valid run list (NRUNS in [1..MAX_RUNS]),
+    ; iterate the runs and DMA each segment individually. This skips
+    ; interior blank tiles within the dedupe range, beyond what the v2
+    ; edge-trim achieves. NRUNS == 0 (BB or unprocessed) and NRUNS ==
+    ; MAX_RUNS+1 (overflow sentinel) fall through to the legacy path.
+    SEP #$20
+    LDA.L !VWF_DMA_NRUNS
+    BEQ .checkPolarity                      ; no runs → legacy
+    CMP.B #!VWF_DMA_MAX_RUNS+1
+    BCS .checkPolarity                      ; sentinel → legacy
+    JMP .doRunList                          ; valid → per-run DMA
+
+.checkPolarity:
     ; --- Polarity selector ----------------------------------------------
     ; BB → single contiguous DMA covering [LO..HI]
     ; WB → split at canvas $1E0..$1EF (= tile $3E, engine cursor) if range
@@ -2611,6 +2625,44 @@ VWFNMI:
 
     LDA.B #$80                              ; MDMAEN: trigger channel 7 (bit 7)
     STA.W $420B
+    BRA .clearAndExit                       ; fall-through guard for .doRunList below
+
+    ; --- Step 9b: per-run DMA loop --------------------------------------
+    ; Iterates DMA_RUNS[0..NRUNS-1], one DMA per (start, end) pair. Uses
+    ; X as byte offset into RUNS (advances +4 per entry). NRUNS is consumed
+    ; (decremented to 0) as we iterate — .clearAndExit also clears it for
+    ; safety.
+.doRunList:
+    REP #$20                                ; M=16 for word loads
+    LDX.W #$0000                            ; byte offset within RUNS
+.runLoop:
+    LDA.L !VWF_DMA_RUNS,X                   ; A = run.start (canvas byte)
+    STA.L !VWF_TMP_BASE                     ; stash for reuse
+    LDA.L !VWF_DMA_RUNS+2,X                 ; A = run.end (exclusive)
+    SEC : SBC.L !VWF_TMP_BASE               ; byte count = end - start
+    STA.W $4375                             ; DAS7L/H
+    LDA.L !VWF_TMP_BASE
+    CLC : ADC.W #$7000                      ; src = $7F:7000 + start
+    STA.W $4372                             ; A1T7L/H
+    LDA.L !VWF_TMP_BASE
+    LSR A                                   ; byte → word offset
+    CLC : ADC.W #!VWF_VRAM_WORD_BASE        ; + tile $20 word base
+    STA.W $2116                             ; VMADDL/H
+    SEP #$20
+    LDA.B #$80
+    STA.W $420B                             ; trigger this run's DMA
+
+    ; Decrement run counter; exit when zero.
+    LDA.L !VWF_DMA_NRUNS
+    DEC A
+    STA.L !VWF_DMA_NRUNS
+    BEQ .clearAndExit                       ; all runs done
+
+    REP #$20                                ; M=16 to advance X
+    TXA
+    CLC : ADC.W #$0004                      ; next entry
+    TAX
+    BRA .runLoop
 
 .clearAndExit:
     REP #$20                                ; M=16 for word stores
@@ -2618,6 +2670,8 @@ VWFNMI:
     STA.L !VWF_DMA_LO
     LDA.W #$0000
     STA.L !VWF_DMA_HI
+    STA.L !VWF_DMA_NRUNS                    ; clear run-list state (Step 9b)
+    STA.L !VWF_DMA_IN_RUN                   ; (defensive)
 
     SEP #$20                                ; M=8 for byte clear
     LDA.B #$00 : STA.L !VWF_DIRTY           ; clear dirty flag
