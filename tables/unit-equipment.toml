@@ -20,24 +20,17 @@ offset = 0x10050
 
 # Record layout: [00-01] icon/type prefix, [02-0A] weapon (9 bytes, space-pad),
 # [0B] spacer, [0C-14] armor (9 bytes, space-pad), [15] spacer, [16-1F] stats.
-# weapon.start MUST be 0x2 — starting at 0x0 clobbers the 2-byte icon prefix
-# (caused corrupt unit icons + first letter of weapon cut off). Fixed
-# originally 2026-04-11; regressed during retrotool migration — redone here.
-[[fields]]
-label = "weapon"
-start = 0x2
-len = 0x9
-fill = 0x20
-
-[[fields]]
-label = "armor"
-start = 0xC
-len = 0x9
-fill = 0x20
-
-[section]
-kind = "fixed-records"
-# Source resolves to en_data/scripts/unit-equipment.txt (auto-default).
-# retrotool's fixed-records handler packs records from the `<<$HEX:idx.label>>`
-# script using the [[fields]] schema above.
-grow = "replace"
+#
+# NAME EXPANSION (2026-05-26, see Plans/equipment-name-expansion.md): EN
+# weapon/armor names (up to 23 B) never fit the 9-byte in-record fields — they
+# were silently truncated until retrotool b7d3564 began hard-failing on field
+# overflow. Names have been RELOCATED to 24-byte tables in bank $C4
+# (equip-weapon-names @ $C4:8920, equip-armor-names @ $C4:A920) and the FF88
+# copiers repointed there (asm/equip_name_repoint.asm). This DataDef therefore
+# no longer writes the name fields; the original $02:8050 records are left
+# intact so the icon lookup (lm3_bank81.asm:8624) and the FF84 stat renderer
+# keep reading correct icon/stat bytes. The [[fields]] + [section] below are
+# intentionally removed — extraction config (entries/block_len/extract_data_len)
+# is retained for `retrotool extract`.
+#
+# (former weapon field: start 0x2 len 0x9 ; former armor field: start 0xC len 0x9)

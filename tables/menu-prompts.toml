@@ -18,6 +18,7 @@ count = 56
 size = 2
 
 [section]
+kind = "script"
 # Per-entry override for the windowed-script "preserve byte at $START"
 # behavior. Default = preserve (FFC0 stub at $START+1, byte at $START left
 # in ROM so leading control codes survive). Entries listed here flip to

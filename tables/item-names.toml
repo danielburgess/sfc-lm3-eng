@@ -1,0 +1,45 @@
+# item-names — relocated 24-byte item names in bank $C4.
+#
+# Item name expansion infra (see Plans/equipment-name-expansion.md, Phase 3).
+# Items render two ways: (1) item-shop LIST via sub_00DE49 ($01:DE49) copying
+# the 24-byte record $02:A4E0+ID*0x18 → WRAM $0E80, then FF88 @ $02:C821 copies
+# the name from $0E80 ($0A08=0); (2) item description screens via 7 direct
+# FF88 @ ptr $02:A4E0 ($0A08=ID*0x18). The in-record name is only 9 B (name +
+# stats share 24 B), so full names get relocated here (stride 0x18, name@+0,
+# up to 24 B) and the FF88 copiers will be repointed.
+#
+# NOTE (2026-05-26): this table is RESERVED/ready. The render-path WIRING is
+# not yet applied:
+#   - 7 direct FF88 ($02:A4E0) → repoint to $C4:C920, count 0x0A→0x18 (verify
+#     each site sets $0A08=ID*0x18 before applying).
+#   - shop-list FF88 ($02:C821 ← $0E80) → needs a sub_00DE49 asm patch to copy
+#     the full name from this table into a free WRAM scratch (none free near
+#     $0E80; $0E80..$0EFF is densely used — must locate one), then repoint.
+# Source is unit-items.txt (currently squished ≤9 B names; full content TBD —
+# user opted "build infra first, content later"). Table auto-regenerates when
+# unit-items.txt is expanded.
+
+entries = 128
+block_len = 0x18
+
+[table]
+name = "item-names"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+offset = 0x224920          # $C4:C920 (after equip-armor-names 0x222920..0x224920)
+
+[[fields]]
+label = "item"
+start = 0x0
+len = 0x18                 # 24 B (room for future full names)
+fill = 0x20
+
+[section]
+kind = "fixed-records"
+file = "en_data/scripts/unit-items.txt"
+grow = "replace"

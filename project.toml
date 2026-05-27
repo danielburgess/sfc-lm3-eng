@@ -9,7 +9,7 @@ en_data_dir = "en_data/scripts"
 jp_data_dir = "jp_data/scripts"
 
 [rom]
-name = "Little Master III"
+name = "LittleMaster3_en"
 file = "lm3.sfc"
 mapping = "lorom"
 size = "2M"
@@ -64,6 +64,11 @@ freespace = [[0x230200, 0x300000]]
 # so FFC0 overflow tails get allocated identically. Fixed-records tables
 # are independent of this order.
 order = []
+# Default output directory (retrotool ≥ 2026-05-26): the built ROM lands at
+# <output_dir>/<rom.name>.sfc = out/rbshura_en.sfc when build_24bit.py /
+# `retrotool build` is run without an explicit output path. retrotool creates
+# the folder if missing.
+output_dir = "out"
 
 # Project-wide placement default: in-place + FFC0 overflow for ALL script
 # tables. Pointer tables MUST NOT be rewritten — EN entries fit in the
@@ -158,6 +163,26 @@ cache = true
 alias = "unit-names"
 kind = "asar"
 file = "asm/name_expansion_patch.asm"
+
+# Equipment name expansion: repoint the FF88 weapon/armor name copiers
+# (combat-bytecode-2 entry 53) at the relocated 24-byte name tables
+# equip-weapon-names ($C4:8920) / equip-armor-names ($C4:A920) and widen the
+# copy count 10->24. The tables themselves are DataDef sections (tables/
+# equip-weapon-names.toml, equip-armor-names.toml). See
+# Plans/equipment-name-expansion.md.
+[[rom.build.sections]]
+alias = "equip-names"
+kind = "asar"
+file = "asm/equip_name_repoint.asm"
+
+# Item name expansion (Phase 3): repoint the 7 direct item-description FF88
+# copiers at the relocated item-names table ($C4:C920), count 10->24. The
+# shop-list path (sub_00DE49 + $0E80) is still TODO inside this patch.
+# Table: tables/item-names.toml. See Plans/equipment-name-expansion.md.
+[[rom.build.sections]]
+alias = "item-names"
+kind = "asar"
+file = "asm/item_name_repoint.asm"
 
 # VWF: opt-in. Flip `version = "vwf"` in [rom.build] (or `-D version=vwf` on
 # CLI) to enable the variable-width-font patch. Default builds skip it.

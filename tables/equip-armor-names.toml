@@ -1,0 +1,32 @@
+# equip-armor-names — relocated 24-byte armor names in bank $C4.
+#
+# Sibling of equip-weapon-names (see that file + Plans/equipment-name-expansion.md).
+# Armor names render via the second FF88 in combat-bytecode-2 entry 53,
+# repointed from $02:805C to $C4:A920. Same itemID*0x20 offset math, so this
+# table is also 0x20-stride with name@+0. Reads the shared unit-equipment.txt;
+# the foreign .weapon label is skipped by retrotool's fixed-records handler.
+
+entries = 256
+block_len = 0x20
+
+[table]
+name = "equip-armor-names"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+offset = 0x222920          # $C4:A920 (right after equip-weapon-names' 0x2000 block)
+
+[[fields]]
+label = "armor"
+start = 0x0
+len = 0x18                 # 24 B — covers the 21 B max
+fill = 0x20
+
+[section]
+kind = "fixed-records"
+file = "en_data/scripts/unit-equipment.txt"
+grow = "replace"

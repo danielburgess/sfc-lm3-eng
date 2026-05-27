@@ -18,3 +18,4 @@ count = 19
 size = 2
 
 [section]
+kind = "script"

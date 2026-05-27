@@ -26,3 +26,4 @@ offset = 0x1B1200
 # long for their inline slot redirect via FFC0 marker into bank $C6 freespace.
 
 [section]
+kind = "script"

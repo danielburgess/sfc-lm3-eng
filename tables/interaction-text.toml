@@ -18,3 +18,4 @@ size = 2
 offset = 0x1C0F1
 
 [section]
+kind = "script"

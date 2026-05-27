@@ -29,3 +29,4 @@ wrap_mode = "pad"
 fill_char = " "
 
 [section]
+kind = "script"

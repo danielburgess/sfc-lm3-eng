@@ -1,0 +1,41 @@
+# equip-weapon-names — relocated 24-byte weapon names in bank $C4.
+#
+# Equipment name expansion (see Plans/equipment-name-expansion.md). The
+# original $02:8050 equipment records cram a 9-byte weapon name (offset +2)
+# and 9-byte armor name (offset +0xC) alongside stats — far too small for EN
+# (weapon names reach 23 B). Names render via the FF88 control code in
+# combat-bytecode-2 entry 53: it copies `count` bytes from
+# `<embedded ptr> + ($0A08 = itemID*0x20)`. By relocating weapon names to a
+# fresh 0x20-stride table (name@+0, 24 B) and repointing that embedded ptr to
+# $C4:8920 (asm/equip_name_repoint.asm), the itemID*0x20 math is unchanged —
+# no renderer patch needed. Stats/icon stay in the original $02:8050 records
+# (read by the FF84 stat renderer + the icon lookup at lm3_bank81.asm:8624),
+# so unit-equipment.toml no longer writes name fields.
+#
+# Source is the shared unit-equipment.txt (carries both .weapon and .armor);
+# retrotool's fixed-records skips the foreign .armor label for this section.
+
+entries = 256
+block_len = 0x20
+
+[table]
+name = "equip-weapon-names"
+type = "fixed"
+
+[encoding]
+table_file = "en_data/eng.tbl"
+fallback = "jp_data/jap.tbl"
+
+[data]
+offset = 0x220920          # $C4:8920 (right after unit-names' 0x220000..0x220920)
+
+[[fields]]
+label = "weapon"
+start = 0x0
+len = 0x18                 # 24 B — covers the 23 B max
+fill = 0x20
+
+[section]
+kind = "fixed-records"
+file = "en_data/scripts/unit-equipment.txt"
+grow = "replace"

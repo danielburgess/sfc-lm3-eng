@@ -15,14 +15,12 @@ fallback = "jp_data/jap.tbl"
 [data]
 offset = 0x124E0
 
-[[fields]]
-label = "item"
-start = 0x0
-len = 0x9
-fill = 0x20
-
-# Build-pipeline step: retrotool packs en_data/scripts/unit-items.txt into
-# stride×count bytes via the [[fields]] schema above and patches in place.
-[section]
-kind = "fixed-records"
-grow = "replace"
+# NAME EXPANSION (2026-05-26, see Plans/equipment-name-expansion.md Phase 3):
+# item names relocated to the 24-byte table item-names.toml ($C4:C920); the
+# description FF88s + the shop-list path (via sub_00DE49 → $0740 scratch) are
+# repointed there by asm/item_name_repoint.asm. This DataDef no longer writes
+# the in-record name field (the original $02:A4E0 records keep their stats,
+# read by the shop via $0E80). The [[fields]] + [section] are intentionally
+# removed; extraction config (entries/block_len) is retained for `extract`.
+#
+# (former item field: start 0x0 len 0x9)

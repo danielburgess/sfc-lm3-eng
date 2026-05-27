@@ -18,6 +18,7 @@ count = 18
 size = 2
 
 [section]
+kind = "script"
 
 [section.placement]
 mode = "overflow"

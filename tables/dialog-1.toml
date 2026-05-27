@@ -15,3 +15,4 @@ count = 512
 size = 2
 
 [section]
+kind = "script"

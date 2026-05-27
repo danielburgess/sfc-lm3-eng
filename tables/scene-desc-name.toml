@@ -26,3 +26,4 @@ entries = "0-56"
 # 141/158 entries overflow their inline slot — redirect via FFC0 marker
 # into bank $C6 freespace. Ctrl-aware splitter mirrors LM3 _find_safe_split.
 [section]
+kind = "script"
