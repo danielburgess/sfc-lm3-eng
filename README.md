@@ -1,6 +1,10 @@
 # sfc-lm3-eng
 English Translation work for Little Master III: The Rainbow Jewels
 
+## Current status
+60% Complete
+Adapting the VWF routines for different menus is proving to be an unexpected challenge.
+
 ## ROM Text Table Map
 
 The game stores text across multiple pointer-table groups. Several groups contain

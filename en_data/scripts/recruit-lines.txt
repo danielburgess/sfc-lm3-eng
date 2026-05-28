@@ -1,222 +1,176 @@
 <<$1BCA4:0[$1E348]>>
 <<<window[0]:$0008-$002F>>>
-[msg][special]"Hey there, hello.[wait30] I'm coming with ya.[wait30] Cluck cluck!"
-
+[msg][special]Hey there, hello.[wait30] I'm coming with ya.[wait30] Cluck cluck!
 <<$1BCA4:1[$1E38E]>>
 <<<window[0]:$0008-$002D>>>
-[msg][special]"Hello.[wait30] I'll come along too.[wait30] Peli peli!"
-
+[msg][special]Hello.[wait30] I'll come along too.[wait30] Peli peli!
 <<$1BCA4:2[$1E3D2]>>
 <<<window[0]:$0008-$002B>>>
-[msg][special]"Welcome.[wait30] Mind if I join?[wait30] Peli peli!"
-
+[msg][special]Welcome.[wait30] Mind if I join?[wait30] Peli peli!
 <<$1BCA4:3[$1E414]>>
 <<<window[0]:$0008-$0027>>>
-[msg][special]"Buhihi! I'll fight too.[wait30] Buhi!"
-
+[msg][special]Buhihi! I'll fight too.[wait30] Buhi!
 <<$1BCA4:4[$1E452]>>
 <<<window[0]:$0008-$0043>>>
-[msg][special]"Chu chu.[wait30] If you're heading to see Professor Raddoc,[nl]
- let me come along.[wait30] Chu!"
-
+[msg][special]Chu chu.[wait30] If you're heading to see Professor Raddoc,[nl]
+ let me come along.[wait30] Chu!
 <<$1BCA4:5[$1E4AC]>>
 <<<window[0]:$0008-$005B>>>
-[msg][special]"Well, well. A visitor, how rare."[FFFE00][cls]"Hm?[wait20] You're going to the Pyramid?[nl]
-[wait30] Sounds fun.[wait30] Alright, I'll come too!"
-
+[msg][special]Well, well. A visitor, how rare.[FFFE00][cls]Hm?[wait20] You're going to the Pyramid?[nl]
+[wait30] Sounds fun.[wait30] Alright, I'll come too!
 <<$1BCA4:6[$1E51E]>>
 <<<window[0]:$0008-$0028>>>
-[msg][special]"I'll help out too.[wait30] Peli peli!"
-
+[msg][special]I'll help out too.[wait30] Peli peli!
 <<$1BCA4:7[$1E55D]>>
 <<<window[0]:$0008-$002D>>>
-[msg][special]"You're doing the seesaw, right?[wait30] I'll help out too, pon!"
-
+[msg][special]You're doing the seesaw, right?[wait30] I'll help out too, pon!
 <<$1BCA4:8[$1E5A1]>>
 <<<window[0]:$0008-$002D>>>
-[msg][special]"Po~lta~ I'll help you search.[wait30] Gagaga!★"
-
+[msg][special]Po~lta~ I'll help you search.[wait30] Gagaga!★
 <<$1BCA4:9[$1E5E5]>>
 <<<window[0]:$0008-$0027>>>
-[msg][special]"Hey there, hello.[wait30] I'm coming with ya!"
-
+[msg][special]Hey there, hello.[wait30] I'm coming with ya!
 <<$1BCA4:10[$1E623]>>
 <<<window[0]:$0008-$003F>>>
-[msg][special]"Thank goodness![wait20] I was trapped in there.[nl]
-[wait30] I thought I'd never get out!"
-
+[msg][special]Thank goodness![wait20] I was trapped in there.[nl]
+[wait30] I thought I'd never get out!
 <<$1BCA4:11[$1E679]>>
 <<<window[0]:$0008-$0047>>>
-[msg][special]"Oh, thank you.[wait30] I got lost.[nl]
-[wait30] Where's the exit?[wait30] Could you lead the way?"
-
+[msg][special]Oh, thank you.[wait30] I got lost.[nl]
+[wait30] Where's the exit?[wait30] Could you lead the way?
 <<$1BCA4:12[$1E6D7]>>
 <<<window[0]:$0008-$003C>>>
-[msg][special]"Ahh, help finally came.[nl]
-[wait30] I almost dried up out here!"
-
+[msg][special]Ahh, help finally came.[nl]
+[wait30] I almost dried up out here!
 <<$1BCA4:13[$1E72A]>>
 <<<window[0]:$0008-$0025>>>
-[msg][special]"Hissss! Let me join too!"
-
+[msg][special]Hissss! Let me join too!
 <<$1BCA4:14[$1E766]>>
 <<<window[0]:$0008-$0042>>>
-[msg][special]"Spiral! Something terrible happened.[nl]
-[wait30] I'll fight alongside you.[wait30] We'll teach 'em![wait20] Let's go!"
-
+[msg][special]Spiral! Something terrible happened.[nl]
+[wait30] I'll fight alongside you.[wait30] We'll teach 'em![wait20] Let's go!
 <<$1BCA4:15[$1E7BF]>>
 <<<window[0]:$0008-$001A>>>
-[msg][special]"Queh!★ Queh!★"
-
+[msg][special]Queh!★ Queh!★
 <<$1BCA4:16[$1E7F0]>>
 <<<window[0]:$0000-$003E>>>
-[msg][special]"Someone,[wait20] someone please stop the Bombers![nl]
-[wait30] At this rate, the village will be destroyed!"[FFFE]
-
+[msg][special]Someone,[wait20] someone please stop the Bombers![nl]
+[wait30] At this rate, the village will be razed![FFFE]
 <<$1BCA4:17[$1E830]>>
 <<<window[0]:$0008-$0037>>>
-[msg][special]"I feel like this house will be[nl]
- targeted first.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted first.[wait30] Shiver...[FFFE]
 <<$1BCA4:18[$1E869]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 2nd.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 2nd.[wait30] Shiver...[FFFE]
 <<$1BCA4:19[$1E8A3]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 3rd.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 3rd.[wait30] Shiver...[FFFE]
 <<$1BCA4:20[$1E8DD]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 4th.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 4th.[wait30] Shiver...[FFFE]
 <<$1BCA4:21[$1E917]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 5th.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 5th.[wait30] Shiver...[FFFE]
 <<$1BCA4:22[$1E951]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 6th.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 6th.[wait30] Shiver...[FFFE]
 <<$1BCA4:23[$1E98B]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 7th.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 7th.[wait30] Shiver...[FFFE]
 <<$1BCA4:24[$1E9C5]>>
 <<<window[0]:$0008-$0038>>>
-[msg][special]"I feel like this house will be[nl]
- targeted 8th.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted 8th.[wait30] Shiver...[FFFE]
 <<$1BCA4:25[$1E9FF]>>
 <<<window[0]:$0008-$0037>>>
-[msg][special]"I feel like this house will be[nl]
- targeted last.[wait30] Shiver..."[FFFE]
-
+[msg][special]I feel like this house will be[nl]
+ targeted last.[wait30] Shiver...[FFFE]
 <<$1BCA4:26[$1EA38]>>
-<<<window[0]:$0000-$003D>>>
-[msg][special]"Stand before the signpost to[nl]
-[wait30] the left of this house. Then, follow the arrows."[FFFE]
-
+<<<window[0]:$0001-$003D>>>
+[msg][special]Stand before the signpost to the left of[nl] this house.[wait20]Then, follow the arrows.[FFFE]
 <<$1BCA4:27[$1EA77]>>
 ＃[end]
-
 <<$1BCA4:28[$1EAF8]>>
 ＃[end]
-
 <<$1BCA4:29[$1EB74]>>
-<<<window[0]:$0000-$0070>>>
-[msg][special]"This is bad! This is bad![nl]
-[wait30] The Bombers have set their sights on us too!"[FFFE00][cls]"If we don't escape soon, who knows what they'll do.[nl]
-[wait30] You'd better run too!"[FFFE]
-
+<<<window[0]:$0001-$0070>>>
+[msg][special]This is bad! This is bad![nl]
+[wait30] The Bombers have set their sights on us too![FFFE00][cls]If we don't escape soon, who knows what they'll do.[nl]
+[wait30] You'd better run too![FFFE]
 <<$1BCA4:30[$1EBE6]>>
-<<<window[0]:$0000-$0015>>>
+<<<window[0]:$0001-$0015>>>
 [FF7F00]...No one seems to be here.[FFFE]
-
 <<$1BCA4:31[$1EBFD]>>
-<<<window[0]:$0000-$0063>>>
-[msg][special]"The other day, my friend got[nl]
- caught in a tornado. It was awful."[FFFE00][cls]"You should watch out too...[nl]
-[wait20] Though there's not much you can do about it."[FFFE]
-
+<<<window[0]:$0001-$0063>>>
+[msg][special]The other day, my friend got[nl]
+ caught in a tornado. It was awful.[FFFE00][cls]You should watch out too...[nl]
+[wait20] Though there's not much you can do about it.[FFFE]
 <<$1BCA4:32[$1EC62]>>
-<<<window[0]:$0000-$006F>>>
-[msg][special]"Man, what a mess.[nl]
-[wait30] I got caught in a tornado the other day."[FFFE00][cls]"It carried me all the way to the offshore island.[nl]
-[wait30] Getting back here was a real struggle."[FFFE]
-
+<<<window[0]:$0001-$006F>>>
+[msg][special]Man, what a mess.[nl]
+[wait30] I got caught in a tornado the other day.[FFFE00][cls]It carried me all the way to the offshore[nl]island.
+[wait30] Getting back here was a real pain.[FFFE]
 <<$1BCA4:33[$1ECD3]>>
-<<<window[0]:$0000-$008C>>>
-[msg][special]"It always rains around here.[nl]
-[wait30] So huge puddles form everywhere."[FFFE00][cls]"I can't swim, so puddles are a real problem.[nl]
-[wait30] I'm stuck until they dry up."[nl]
-[cls]"What a pain."[FFFE]
-
+<<<window[0]:$0001-$008C>>>
+[msg][special]It always rains around here.[nl]
+[wait30] So huge puddles form everywhere.[FFFE00][cls]I can't swim, so puddles are a real problem.[nl]
+[wait30] I'm stuck until they dry up.[nl]
+[cls]What a pain.[FFFE]
 <<$1BCA4:34[$1ED61]>>
 <<<window[0]:$0000-$0029>>>
-[msg][special]"Welcome.[nl]
-[wait30] Help yourself to the treasure chest outside."[FFFE]
-
+[msg][special]Welcome.[nl]
+[wait30] Help yourself to the treasure chest outside.[FFFE]
 <<$1BCA4:35[$1ED8C]>>
 <<<window[0]:$0000-$007B>>>
-[msg][special]"I joined the Weiss Gang, my dream team![nl]
-[wait30] I'm a treasure hunter now.[wait20] Cool, right?"[FFFE00][cls]"If you've got skill, why not join too?[nl]
-[wait30] They're looking for help, so they might take you."[FFFE]
-
+[msg][special]I joined the Weiss Gang, my dream team![nl]
+[wait30] I'm a treasure hunter now.[wait20] Cool, right?[FFFE00][cls]If you've got skill, why not join too?[nl]
+[wait30] They're looking for help, so they might take you.[FFFE]
 <<$1BCA4:36[$1EE09]>>
 <<<window[0]:$000C-$0043>>>
-[msg][special]"Whoa! You made it this far![nl]
-[wait30] How many mines did you step on?"[FFFE]
-
+[msg][special]Whoa! You made it this far![nl]
+[wait30] How many mines did you step on?[FFFE]
 <<$1BCA4:37[$1EFB3]>>
 <<<window[0]:$0000-$003D>>>
-[msg][special]"Hey, you're going to look for Poo, right?[nl]
-[wait30] You promised.[wait30] Don't give up partway!"[FFFE]
-
+[msg][special]Hey, you're going to look for Poo, right?[nl]
+[wait30] You promised.[wait30] Don't give up partway![FFFE]
 <<$1BCA4:38[$1EFF2]>>
 <<<window[0]:$0000-$0037>>>
-[msg][special]"Dig in the sandpit![nl]
-[wait30] Dig, dig,[wait20] dig like crazy!"[FFFE]
-
+[msg][special]Dig in the sandpit![nl]
+[wait30] Dig, dig,[wait20] dig like crazy![FFFE]
 <<$1BCA4:39[$1F02B]>>
 <<<window[0]:$0000-$00AC>>>
-[msg][special] The voice of Dr. Skull can be heard in the distance.[FFFE00][cls]"Hyahyahya![wait20] Did you enjoy[nl]
- the warp maze?"[FFFE00][cls]"If you don't memorize where[nl]
- the panels lead, it's quite tricky."[FFFE00][cls]"Use your heads and take on the challenge![nl]
+[msg][special] The voice of Dr. Skull can be heard in the distance.[FFFE00][cls]Hyahyahya![wait20] Did you enjoy[nl]
+ the warp maze?[FFFE00][cls]If you don't memorize where[nl]
+ the panels lead, it's quite tricky.[FFFE00][cls]"Use your heads and take on the challenge![nl]
 [wait30] Too hard?[wait20] Hyaha!"[FFFE]
-
 <<$1BCA4:40[$1F0D9]>>
 <<<window[0]:$0000-$00A7>>>
 [msg][special]　The voice of D[r.]Skull can be heard from somewhere.[FFFE00][cls]"Hey there, you're trying hard.[nl]
 [wait30] Getting tired of walking yet?"[FFFE00][cls]"Okey-dokey.[wait20] I'll make things easier for you.[nl]
 [wait30] Hop on that conveyor."[FFFE00][cls]"I'll take you somewhere nice. Hyaha!★"[FFFE]
-
 <<$1BCA4:41[$1F182]>>
 <<<window[0]:$0000-$0032>>>
 [msg][special]"This is the Spiral Forest.[nl]
 [wait30] Head west to find the Rymos Ruins."[FFFE]
-
 <<$1BCA4:42[$1F1B6]>>
 <<<window[0]:$0000-$0052>>>
 [msg][special]"The Door of Wisdom divides the rooms.[nl]
 [wait30] Step on the panel switches to match the patterns."[FFFE00][cls]"The answer is inscribed somewhere."[FFFE]
-
 <<$1BCA4:43[$1F20A]>>
 <<<window[0]:$0000-$002F>>>
 [msg][special]"This is the Jusvan Ruins.[nl]
 [wait30] Step on a switch to open the door."[FFFE]
-
 <<$1BCA4:44[$1F23B]>>
 <<<window[0]:$0000-$003A>>>
 [msg][special]"The altar is deeper inside.[nl]
 [wait30] Return the hands to their place when you're done."[FFFE]
-
 <<$1BCA4:45[$1F277]>>
 <<<window[0]:$0000-$003E>>>
 [msg][special]"This is the Mysterious Pyramid.[nl]

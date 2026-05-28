@@ -7,16 +7,16 @@ J: リイム・ライクバーン
 T: Reimu Raikuban
 E: Liam Wiebren
 Interestingly, the name Liam also has meanings rooted in strength and determination.
-His last name can be read as "like-burn", and instead of writing literally,
-we're going with the (shortened) german "equivalent" that evokes thoughts of burning (hopefully).
+His last name can be read as like-burn, and instead of writing literally,
+we're going with the (shortened) german equivalent that evokes thoughts of burning (hopefully).
 
 J: マテドラル
 T: Matedral
 E: Matedral [Castle is a Citadel]
-Seems to be a blend between the latin "Mater" for "Mother" and "Cathedral" considering the parallels in the story
+Seems to be a blend between the latin Mater for Mother and Cathedral considering the parallels in the story
 between the catholic church, and it's prevalence in the story as a literal cathedral or headquarters,
 I'd say it fits well.
-Matedral "Cathedral" or Matedral Castle will likely be referred to as the "Matedral Citadel".
+Matedral Cathedral or Matedral Castle will likely be referred to as the Matedral Citadel.
 
 J: スカルボンバーズ
 T: Skull Bombers
@@ -39,7 +39,7 @@ E: Emcee (Maybe Quiz King)
 J: ラドック
 T: Radokku
 E: Raddoc
-Playfully combining two ideas. This one seems to combine "rat" and "doctor". I like it. Even if not, that's my take.
+Playfully combining two ideas. This one seems to combine rat and doctor. I like it. Even if not, that's my take.
 
 J: ジャスバン
 T: Jusvan
@@ -62,7 +62,7 @@ Charley's other personality
 J: 蒼月
 T: Blue Moon
 E: Fang
-Because saying "whaddup, Blue Moon" is dumb. He's a wolf, so Fang. Purely a localization decision.
+Because saying whaddup, Blue Moon is dumb. He's a wolf, so Fang. Purely a localization decision.
 
 J: ヤゴ
 T: Yago

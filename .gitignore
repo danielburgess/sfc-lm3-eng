@@ -1,1 +1,4 @@
 /Plans/
+/.idea/
+# per-user script_editor session/settings state
+.script-editor-state.json
